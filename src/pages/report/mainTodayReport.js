@@ -72,6 +72,21 @@ function TodayReport() {
       );
 
       const querySnapshot = await getDocs(transactionsQuery);
+      // Jika tidak ada dokumen yang ditemukan, kembalikan array kosong
+      if (querySnapshot.empty) {
+        console.log("No transactions found for the given month and year.");
+        setTransUncheck([]);
+        setTotalQris(0);
+        setTotalTransfer(0);
+        setDataTunai([]);
+        setDataNonTunai([]);
+        setitemTerlaris({});
+        setDataTransaction([]);
+        setTotalNominal(0);
+        setTotalNominalTunai(0);
+        setTotalNominalNonTunai(0);
+        return [];
+      }
       const transactions = await Promise.all(
         querySnapshot.docs.map(async (doc) => {
           const data = doc.data();

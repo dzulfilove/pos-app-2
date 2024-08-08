@@ -37,27 +37,7 @@ class Auth extends Component {
   handlePasswordChange = (event) => {
     this.setState({ password: event.target.value });
   };
-  getUserLogin = async (email) => {
-    try {
-      const userRef = collection(db, "User");
-      const q = query(userRef, where("email", "==", email));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        return null;
-      }
-      const userData = querySnapshot.docs[0].data();
 
-      await new Promise((resolve) => {
-        this.setState({ user: userData }, resolve);
-      });
-      sessionStorage.setItem("refPerusahaan", userData.refPerusahaan.id);
-
-      return userData;
-    } catch (error) {
-      console.error("Error:", error);
-      throw error;
-    }
-  };
   issessionStorageAvailable = () => {
     try {
       const testKey = "__test__";
@@ -68,47 +48,88 @@ class Auth extends Component {
       return false;
     }
   };
+  getUserLogin = (email) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const userRef = collection(db, "users");
+        const q = query(userRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          console.log("User tidak ditemukan.");
+          resolve(null);
+        } else {
+          const userData = querySnapshot.docs[0].data();
+          this.setState({ userData: userData }, () => resolve(userData));
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        reject(error);
+      }
+    });
+  };
 
   handleSubmit = async (e) => {
     e.preventDefault();
     const { email, password } = this.state;
-    if (!email || !password) return;
 
-    const user = await this.getUserLogin(email);
-    const peran = this.state.userData.peran;
+    if (!email || !password) {
+      Swal.fire({
+        icon: "warning",
+        title: "Peringatan",
+        text: "Email dan password tidak boleh kosong.",
+        showConfirmButton: true,
+      });
+      return;
+    }
+
     try {
+      const userData = await this.getUserLogin(email);
+
+      if (!userData) {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: "Email tidak ditemukan. Silakan periksa kembali.",
+          showConfirmButton: true,
+        });
+        return;
+      }
+
+      const peran = userData.peran;
       await signInWithEmailAndPassword(auth, email, password);
+
       const cekStorage = this.issessionStorageAvailable();
       if (!cekStorage) {
         Swal.fire({
           icon: "warning",
           title: "sessionStorage is not available",
-          text: "Please disable private browsing or use another browser. ",
+          text: "Please disable private browsing or use another browser.",
           showConfirmButton: false,
           timer: 1500,
         });
+        return;
       }
 
       sessionStorage.setItem("isLoggedIn", true);
-      // sessionStorage.setItem("userEmail", email);
-      sessionStorage.setItem("nama", user.nama);
-      Swal.fire(
-        {
-          icon: "success",
-          title: "Berhasil",
-          text: "Selamat, Anda Berhasil Masuk ",
-          showConfirmButton: false,
-          timer: 1500,
-        },
-        () => {}
-      );
+      sessionStorage.setItem("userEmail", email);
+      sessionStorage.setItem("nama", userData.nama);
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Selamat, Anda Berhasil Masuk.",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+
       window.location.href = "/";
       console.log("Login successful");
     } catch (error) {
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text: "Anda Gagal Masuk, Periksa Kembali Passowrd dan Email Anda ",
+        text: "Anda Gagal Masuk, Periksa Kembali Password dan Email Anda.",
         showConfirmButton: false,
         timer: 1500,
       });
