@@ -34,6 +34,8 @@ import { IoEyeSharp } from "react-icons/io5";
 import { BiArchive } from "react-icons/bi";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import Loader from "../../../component/features/loader";
+import LoaderTable from "../../../component/features/loader2";
 const dateFormatList = ["DD/MM/YYYY", "DD/MM/YY", "DD-MM-YYYY", "DD-MM-YY"];
 
 function MasterInventory() {
@@ -60,6 +62,9 @@ function MasterInventory() {
   const [dataHistory, setDataHistory] = useState([]);
   const [dataDisplay, setDataDisplay] = useState([]);
   const [activeTabIndex, setActiveTabIndex] = useState("tab1");
+  const [isData1, setIsData1] = useState(true);
+  const [isData2, setIsData2] = useState(true);
+  const [isLoad, setIsLoad] = useState(false);
 
   const allTabs = [
     {
@@ -163,6 +168,7 @@ function MasterInventory() {
       console.log("Grouped Items", groupedArray);
       setDataStok(items);
       setDataDisplay(groupedArray);
+      setIsData1(false);
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -175,6 +181,7 @@ function MasterInventory() {
   };
 
   const getHistoryInventory = async (month, year) => {
+    setIsData2(true);
     try {
       // Ambil state bulan dan tahun
       console.log(month, "bulan");
@@ -245,6 +252,7 @@ function MasterInventory() {
       console.log("Grouped History Items", finalResult);
       // Misalnya, Anda dapat menyimpan data ke dalam state
       setDataHistory(finalResult);
+      setIsData2(false);
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -303,7 +311,7 @@ function MasterInventory() {
   };
   const handleAdd = async () => {
     // Cek jika state barang dan keterangan kosong
-
+    setIsLoad(true);
     const newData = {
       barang: barang,
       stok: Number(stok), // Pastikan stok adalah tipe number
@@ -332,6 +340,7 @@ function MasterInventory() {
       if (data.tanggal === "") {
         data.tanggal = dayjs().locale("id").format("DD/MM/YYYY");
       }
+      setIsLoad(false);
 
       if (incompleteFields.length > 0) {
         Swal.fire(
@@ -398,6 +407,7 @@ function MasterInventory() {
           });
         }
       });
+      setIsLoad(false);
 
       setBarang({});
       setStok(0);
@@ -409,6 +419,8 @@ function MasterInventory() {
       // Reset state atau lakukan tindakan lain setelah berhasil menambah data
       setIsOpen(false);
     } catch (e) {
+      setIsLoad(false);
+
       Swal.fire("Error!", "Gagal menambahkan data: " + e.message, "error");
     }
   };
@@ -507,93 +519,106 @@ function MasterInventory() {
   console.log(dataDetail, "Detail data");
   return (
     <div>
-      <div className="w-full h-full flex flex-col justify-start items-center pb-24">
-        <div
-          data-aos="slide-down"
-          data-aos-delay="50"
-          className="w-full flex justify-center items-center bg-gradient-to-r from-[#1d4ed8] to-[#8aa9fd] p-2 rounded-md"
-        >
-          <h3 className="text-white text-base font-normal">List Stok</h3>
-        </div>
-
-        <div className="w-full flex justify-start gap-5 items-center mt-10 h-full mb-5">
-          <div
-            data-aos="fade-up"
-            data-aos-delay="150"
-            className="cookieCard w-[40%] p-6"
-          >
-            <div className="cookieDescription">
-              <h3 className="text-xl font-medium">{totalStok} Stok</h3>
-            </div>
-            <h3 className="text-xs font-normal text-white w-full">
-              Total Jumlah Stok Saat Ini
+      {isLoad ? (
+        <>
+          <div className="w-full h-[100vh] flex flex-col justify-center items-center">
+            <Loader />
+            <h3 className="text-base text-blue-600 mt-5">
+              Tunggu Bentar Yaa..
             </h3>
-            <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
-              <FaLuggageCart className="text-blue-600 text-[2rem]" />
-            </div>
           </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="250"
-            className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
-          >
-            <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
-              <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xl font-medium">{totalStokMasuk} Stok</h3>
-                </div>
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xs font-normal">
-                    Total Stok Masuk Bulan {bulan} {tahun}
-                  </h3>
-                </div>
-              </div>
-              <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
-                <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
-                  <BiArchive className="text-blue-600 text-[1rem]" />
-                </div>
-              </div>
+        </>
+      ) : (
+        <>
+          <div className="w-full h-full flex flex-col justify-start items-center pb-24">
+            <div
+              data-aos="slide-down"
+              data-aos-delay="50"
+              className="w-full flex justify-center items-center bg-gradient-to-r from-[#1d4ed8] to-[#8aa9fd] p-2 rounded-md"
+            >
+              <h3 className="text-white text-base font-normal">List Stok</h3>
             </div>
-          </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="350"
-            className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
-          >
-            <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
-              <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xl font-medium">
-                    {totalStokKeluar} Stok
-                  </h3>
-                </div>
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xs font-normal">
-                    Total Stok Keluar Bulan {bulan} {tahun}
-                  </h3>
-                </div>
-              </div>
-              <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
-                <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
-                  <BiArchive className="text-blue-600 text-[1rem]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <TabBar
-          data-aos="fade-up"
-          data-aos-delay="450"
-          data={allTabs}
-          onTabChange={handleTabChange}
-        />
 
-        <div
-          data-aos="fade-up"
-          data-aos-delay="550"
-          className="w-full flex justify-end gap-4 mt-5 items-center p-2 rounded-md"
-        >
-          {/* <button
+            <div className="w-full flex justify-start gap-5 items-center mt-10 h-full mb-5">
+              <div
+                data-aos="fade-up"
+                data-aos-delay="150"
+                className="cookieCard w-[40%] p-6"
+              >
+                <div className="cookieDescription">
+                  <h3 className="text-xl font-medium">{totalStok} Stok</h3>
+                </div>
+                <h3 className="text-xs font-normal text-white w-full">
+                  Total Jumlah Stok Saat Ini
+                </h3>
+                <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
+                  <FaLuggageCart className="text-blue-600 text-[2rem]" />
+                </div>
+              </div>
+              <div
+                data-aos="fade-up"
+                data-aos-delay="250"
+                className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+              >
+                <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                  <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xl font-medium">
+                        {totalStokMasuk} Stok
+                      </h3>
+                    </div>
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xs font-normal">
+                        Total Stok Masuk Bulan {bulan} {tahun}
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                      <BiArchive className="text-blue-600 text-[1rem]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                data-aos="fade-up"
+                data-aos-delay="350"
+                className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+              >
+                <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                  <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xl font-medium">
+                        {totalStokKeluar} Stok
+                      </h3>
+                    </div>
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xs font-normal">
+                        Total Stok Keluar Bulan {bulan} {tahun}
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                      <BiArchive className="text-blue-600 text-[1rem]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <TabBar
+              data-aos="fade-up"
+              data-aos-delay="450"
+              data={allTabs}
+              onTabChange={handleTabChange}
+            />
+
+            <div
+              data-aos="fade-up"
+              data-aos-delay="550"
+              className="w-full flex justify-end gap-4 mt-5 items-center p-2 rounded-md"
+            >
+              {/* <button
             onClick={() => {
               if (isDetail) {
                 setIsDetail(false);
@@ -647,729 +672,793 @@ function MasterInventory() {
               Tambah Penerimaan
             </p>
           </button> */}
-          <button
-            onClick={() => {
-              if (isDetail) {
-                setIsDetail(false);
-              }
-              setIsOpen(!isOpen);
-              setForm("stok");
-            }}
-            type="button"
-            className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xs font-medium group"
-          >
-            <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
-              <IoAddCircleOutline className="text-[18px] text-blue-700 hover:text-blue-700" />
+              <button
+                onClick={() => {
+                  if (isDetail) {
+                    setIsDetail(false);
+                  }
+                  setIsOpen(!isOpen);
+                  setForm("stok");
+                }}
+                type="button"
+                className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xs font-medium group"
+              >
+                <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
+                  <IoAddCircleOutline className="text-[18px] text-blue-700 hover:text-blue-700" />
+                </div>
+                <p className="translate-x-2 text-[0.65rem] text-white">
+                  Tambah Data
+                </p>
+              </button>
             </div>
-            <p className="translate-x-2 text-[0.65rem] text-white">
-              Tambah Data
-            </p>
-          </button>
-        </div>
-        <div
-          className={`w-full ${
-            !isDetail ? "h-0 p-0" : "h-auto p-6 mt-3"
-          } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
-        >
-          <div
-            className={`w-full ${
-              !isDetail ? "hidden" : "flex flex-col"
-            } justify-start items-start gap-4`}
-          >
-            <h5 className="text-base font-medium">Barang ID</h5>
-            <p className="text-xs font-normal">{dataDetail.barang_id}</p>
-            <h5 className="text-base font-medium">Jumlah Stok</h5>
-            <p className="text-xs font-normal">{dataDetail.jumlah_stok}</p>
-            <h5 className="text-base font-medium">Tanggal Update</h5>
-            <p className="text-xs font-normal">{dataDetail.tanggal_update}</p>
-            <h5 className="text-base font-medium">Keterangan</h5>
-            <p className="text-xs font-normal">{dataDetail.keterangan}</p>
-          </div>
-        </div>
-
-        {form == "supplier" && (
-          <>
             <div
               className={`w-full ${
-                !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
-              } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
+                !isDetail ? "h-0 p-0" : "h-auto p-6 mt-3"
+              } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
             >
               <div
                 className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
+                  !isDetail ? "hidden" : "flex flex-col"
+                } justify-start items-start gap-4`}
               >
-                <h4 className="text-base font-medium">Tambah Data Supplier</h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 mt-5`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Nama Supplier</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Alamat</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">
-                    No Whats'app (Gunakan Format 62 )
-                  </h4>
-                  <input
-                    type="number"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Keterangan</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-              </div>
-
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4`}
-              >
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Simpan Data
-                    </p>
-                  </button>
-                </div>
+                <h5 className="text-base font-medium">Barang ID</h5>
+                <p className="text-xs font-normal">{dataDetail.barang_id}</p>
+                <h5 className="text-base font-medium">Jumlah Stok</h5>
+                <p className="text-xs font-normal">{dataDetail.jumlah_stok}</p>
+                <h5 className="text-base font-medium">Tanggal Update</h5>
+                <p className="text-xs font-normal">
+                  {dataDetail.tanggal_update}
+                </p>
+                <h5 className="text-base font-medium">Keterangan</h5>
+                <p className="text-xs font-normal">{dataDetail.keterangan}</p>
               </div>
             </div>
-          </>
-        )}
-        {form == "pemesanan" && (
-          <>
-            <div
-              className={`w-full ${
-                !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
-              } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
-            >
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
-              >
-                <h4 className="text-base font-medium">Tambah Data Pemesanan</h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-[50%] p-2 mt-5 `}
-              >
-                <h4 className="text-sm font-medium">Supplier</h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 pl-8`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Pilih Supplier</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Nama Supplier</h4>
-                  <div
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  >
-                    {" "}
-                  </div>
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">No Whats'app Supplier</h4>
-                  <div
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  ></div>
-                </div>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-[50%] p-2 mt-5`}
-              >
-                <h4 className="text-sm font-medium">Barang</h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 pl-8 pr-2`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Barang ID</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Jumlah Stok</h4>
-                  <input
-                    type="number"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Tanggal </h4>
-                  <input
-                    type="date"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-              </div>
-              {additionalForms.map((form, index) => (
+
+            {form == "supplier" && (
+              <>
                 <div
-                  key={index}
                   className={`w-full ${
-                    !isOpen ? "hidden" : "flex"
-                  } justify-start items-center gap-4 pl-8 pr-2 `}
+                    !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
+                  } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
                 >
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Barang ID</h4>
-                    <input
-                      type="text"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.barang_id}
-                      onChange={(e) =>
-                        handleInputChange(index, "barang_id", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Jumlah Stok</h4>
-                    <input
-                      type="number"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.jumlah_stok}
-                      onChange={(e) =>
-                        handleInputChange(index, "jumlah_stok", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Tanggal </h4>
-                    <input
-                      type="date"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.tanggal_update}
-                      onChange={(e) =>
-                        handleInputChange(
-                          index,
-                          "tanggal_update",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div className="w-[4%] text-xs flex flex-col justify-end items-end gap-4 h-[4rem] pr-2 ">
-                    <button
-                      className="w-[2rem] h-[2rem] flex justify-center items-center rounded-full  bg-red-200 border border-red-700 hover:bg-red-600 text-red-600 hover:text-white"
-                      onClick={() => removeForm(index)}
-                    >
-                      <RiDeleteBin5Line className="text-base" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4`}
-              >
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    onClick={addNewForm}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Tambah Data
-                    </p>
-                  </button>
-                </div>
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Simpan Data
-                    </p>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        {form == "penerimaan" && (
-          <>
-            <div
-              className={`w-full ${
-                !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
-              } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
-            >
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
-              >
-                <h4 className="text-base font-medium">
-                  Tambah Data Penerimaan
-                </h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-[50%] p-2 mt-5 `}
-              >
-                <h4 className="text-sm font-medium">Pemesanan</h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 pl-8`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">No Pemesanan</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Nama Supplier</h4>
                   <div
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
                   >
-                    {" "}
-                  </div>
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Tanggal Pemesanan</h4>
-                  <div
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  ></div>
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Tanggal Penerimaan</h4>
-                  <input
-                    type="date"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-[50%] p-2 mt-5`}
-              >
-                <h4 className="text-sm font-medium">Barang Pesanan</h4>
-              </div>
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 pl-8`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Barang ID</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Jumlah Stok Dipesan</h4>
-                  <input
-                    type="number"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Jumlah Stok Diterima</h4>
-                  <input
-                    type="number"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Keterangan</h4>
-                  <input
-                    type="text"
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-              </div>
-              {additionalForms.map((form, index) => (
-                <div
-                  key={index}
-                  className={`w-full ${
-                    !isOpen ? "hidden" : "flex"
-                  } justify-start items-center gap-4 pl-8`}
-                >
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Barang ID</h4>
-                    <input
-                      type="text"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.barang_id}
-                      onChange={(e) =>
-                        handleInputChange(index, "barang_id", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Jumlah Stok Dipesan</h4>
-                    <input
-                      type="number"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                    />
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">
-                      Jumlah Stok Diterima
+                    <h4 className="text-base font-medium">
+                      Tambah Data Supplier
                     </h4>
-                    <input
-                      type="number"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.jumlah_stok}
-                      onChange={(e) =>
-                        handleInputChange(index, "jumlah_stok", e.target.value)
-                      }
-                    />
                   </div>
-
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Keterangan</h4>
-                    <input
-                      type="text"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.keterangan}
-                      onChange={(e) =>
-                        handleInputChange(index, "keterangan", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              ))}
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4`}
-              >
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    onClick={addNewForm}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 mt-5`}
                   >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Nama Supplier</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
                     </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Tambah Data
-                    </p>
-                  </button>
-                </div>
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Alamat</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
                     </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Simpan Data
-                    </p>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        {form == "stok" && (
-          <>
-            <div
-              className={`w-full ${
-                !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
-              } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
-            >
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
-              >
-                <h4 className="text-base font-medium">
-                  Tambah Data Stok Barang
-                </h4>
-              </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">
+                        No Whats'app (Gunakan Format 62 )
+                      </h4>
+                      <input
+                        type="number"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Keterangan</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                  </div>
 
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4 pl-8 pr-14 mt-5`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Barang ID</h4>
-                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                    <DropdownSearch
-                      change={(data) => {
-                        setBarang(data);
-                      }}
-                      options={dataItems}
-                      value={barang}
-                      name={"Barang"}
-                    />
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4`}
+                  >
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Simpan Data
+                        </p>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Jumlah Stok</h4>
-                  <input
-                    type="number"
-                    value={stok}
-                    onChange={(e) => {
-                      setStok(e.target.value);
-                    }}
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Tanggal </h4>
-
-                  <Space direction="vertical" size={12}>
-                    <DatePicker
-                      defaultValue={dayjs(tanggal, dateFormatList[0])}
-                      format={dateFormatList}
-                      onChange={(date) => {
-                        handleChangeDate("mulaiTanggal", date);
-                      }}
-                      className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                    />
-                  </Space>
-                </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Keterangan</h4>
-                  <input
-                    type="text"
-                    onChange={(e) => {
-                      setKeterangan(e.target.value);
-                    }}
-                    value={keterangan}
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-              </div>
-              {additionalForms.map((form, index) => (
+              </>
+            )}
+            {form == "pemesanan" && (
+              <>
                 <div
-                  key={index}
                   className={`w-full ${
-                    !isOpen ? "hidden" : "flex"
-                  } justify-start items-center gap-4 pl-8 pr-14 `}
+                    !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
+                  } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
                 >
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Barang ID</h4>
-                    <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                      <DropdownSearch
-                        change={(data) => {
-                          handleInputChange(index, "barang", data);
-                        }}
-                        options={dataItems}
-                        value={form.barang}
-                        name={"Barang"}
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
+                  >
+                    <h4 className="text-base font-medium">
+                      Tambah Data Pemesanan
+                    </h4>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-[50%] p-2 mt-5 `}
+                  >
+                    <h4 className="text-sm font-medium">Supplier</h4>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 pl-8`}
+                  >
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Pilih Supplier</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Nama Supplier</h4>
+                      <div
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      >
+                        {" "}
+                      </div>
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">
+                        No Whats'app Supplier
+                      </h4>
+                      <div
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      ></div>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-[50%] p-2 mt-5`}
+                  >
+                    <h4 className="text-sm font-medium">Barang</h4>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 pl-8 pr-2`}
+                  >
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Barang ID</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Jumlah Stok</h4>
+                      <input
+                        type="number"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Tanggal </h4>
+                      <input
+                        type="date"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                       />
                     </div>
                   </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Jumlah Stok</h4>
-                    <input
-                      type="number"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.jumlah_stok}
-                      onChange={(e) =>
-                        handleInputChange(index, "stok", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Tanggal </h4>
-
-                    <Space direction="vertical" size={12}>
-                      <DatePicker
-                        defaultValue={dayjs(tanggal, dateFormatList[0])}
-                        format={dateFormatList}
-                        onChange={(date) => {
-                          handleInputChange(index, "tanggal", date);
-                        }}
-                        className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      />
-                    </Space>
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Keterangan</h4>
-                    <input
-                      type="text"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={form.keterangan}
-                      onChange={(e) =>
-                        handleInputChange(index, "keterangan", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="w-[4%] text-xs flex flex-col justify-end items-end gap-4 h-[4rem] pr-2 ">
-                    <button
-                      className="w-[2rem] h-[2rem] flex justify-center items-center rounded-full  bg-red-200 border border-red-700 hover:bg-red-600 text-red-600 hover:text-white"
-                      onClick={() => removeForm(index)}
+                  {additionalForms.map((form, index) => (
+                    <div
+                      key={index}
+                      className={`w-full ${
+                        !isOpen ? "hidden" : "flex"
+                      } justify-start items-center gap-4 pl-8 pr-2 `}
                     >
-                      <RiDeleteBin5Line className="text-base" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4`}
-              >
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    onClick={addNewForm}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Tambah Data
-                    </p>
-                  </button>
-                </div>
-                <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                  <button
-                    type="button"
-                    onClick={handleAdd}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Simpan Data
-                    </p>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        {activeTabIndex == "tab1" ? (
-          <>
-            <div
-              data-aos="fade-up"
-              className="w-full flex justify-center items-center mt-5 h-full mb-28"
-            >
-              <Paper data-aos="fade-up" style={{ height: 400, width: "100%" }}>
-                <MUIDataTable
-                  columns={columns}
-                  data={data}
-                  options={{
-                    fontSize: 12,
-                  }}
-                  pagination
-                  rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                />
-              </Paper>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="w-full flex flex-col justify-start items-center h-full mt-5">
-              <div
-                data-aos="fade-up"
-                className="w-full rounded-xl p-4 flex justify-between items-center bg-white shadow-md"
-              >
-                <h3 className="text-base font-medium">
-                  Perubahan Stok Bulan, {bulan} {tahun}
-                </h3>
-                <div className="w-[50%] flex justify-end items-center gap-6">
-                  <div className="w-[40%] flex justify-between items-center">
-                    <p className="text-sm font-normal">Bulan</p>
-                    <Space direction="vertical" size={12}>
-                      <DatePicker
-                        defaultValue={dayjs(bulan, "MMMM")}
-                        format={["MMMM"]}
-                        picker="month"
-                        onChange={(date) => {
-                          setBulan(date.format("MMMM"));
-                          getHistoryInventory(date.format("MMMM"), tahun);
-                        }}
-                        className="w-[6rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      />
-                    </Space>
-                  </div>
-                  <div className="w-[40%] flex justify-between items-center">
-                    <p className="text-sm font-normal">Tahun</p>
-                    <Space direction="vertical" size={12}>
-                      <DatePicker
-                        defaultValue={dayjs(tahun, "YYYY")}
-                        format={["YYYY"]}
-                        picker="year"
-                        onChange={(date) => {
-                          setTahun(date.format("YYYY"));
-                          getHistoryInventory(bulan, date.format("YYYY"));
-                        }}
-                        className="w-[6rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      />
-                    </Space>
-                  </div>
-                </div>
-              </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Barang ID</h4>
+                        <input
+                          type="text"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.barang_id}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "barang_id",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Jumlah Stok</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.jumlah_stok}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "jumlah_stok",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Tanggal </h4>
+                        <input
+                          type="date"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.tanggal_update}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "tanggal_update",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
 
-              <TableHistory
-                data={dataHistory}
-                fetchdata={getHistoryInventory}
-              />
-            </div>
-          </>
-        )}
-      </div>
+                      <div className="w-[4%] text-xs flex flex-col justify-end items-end gap-4 h-[4rem] pr-2 ">
+                        <button
+                          className="w-[2rem] h-[2rem] flex justify-center items-center rounded-full  bg-red-200 border border-red-700 hover:bg-red-600 text-red-600 hover:text-white"
+                          onClick={() => removeForm(index)}
+                        >
+                          <RiDeleteBin5Line className="text-base" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4`}
+                  >
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        onClick={addNewForm}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Tambah Data
+                        </p>
+                      </button>
+                    </div>
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Simpan Data
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            {form == "penerimaan" && (
+              <>
+                <div
+                  className={`w-full ${
+                    !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
+                  } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
+                >
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
+                  >
+                    <h4 className="text-base font-medium">
+                      Tambah Data Penerimaan
+                    </h4>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-[50%] p-2 mt-5 `}
+                  >
+                    <h4 className="text-sm font-medium">Pemesanan</h4>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 pl-8`}
+                  >
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">No Pemesanan</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Nama Supplier</h4>
+                      <div
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      >
+                        {" "}
+                      </div>
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Tanggal Pemesanan</h4>
+                      <div
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      ></div>
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">
+                        Tanggal Penerimaan
+                      </h4>
+                      <input
+                        type="date"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-[50%] p-2 mt-5`}
+                  >
+                    <h4 className="text-sm font-medium">Barang Pesanan</h4>
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 pl-8`}
+                  >
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Barang ID</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">
+                        Jumlah Stok Dipesan
+                      </h4>
+                      <input
+                        type="number"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">
+                        Jumlah Stok Diterima
+                      </h4>
+                      <input
+                        type="number"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Keterangan</h4>
+                      <input
+                        type="text"
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                  </div>
+                  {additionalForms.map((form, index) => (
+                    <div
+                      key={index}
+                      className={`w-full ${
+                        !isOpen ? "hidden" : "flex"
+                      } justify-start items-center gap-4 pl-8`}
+                    >
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Barang ID</h4>
+                        <input
+                          type="text"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.barang_id}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "barang_id",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Jumlah Stok Dipesan
+                        </h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Jumlah Stok Diterima
+                        </h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.jumlah_stok}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "jumlah_stok",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Keterangan</h4>
+                        <input
+                          type="text"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.keterangan}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "keterangan",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4`}
+                  >
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        onClick={addNewForm}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Tambah Data
+                        </p>
+                      </button>
+                    </div>
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Simpan Data
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            {form == "stok" && (
+              <>
+                <div
+                  className={`w-full ${
+                    !isOpen ? "h-0 p-0" : "h-auto p-4  mt-3"
+                  } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
+                >
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
+                  >
+                    <h4 className="text-base font-medium">
+                      Tambah Data Stok Barang
+                    </h4>
+                  </div>
+
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4 pl-8 pr-14 mt-5`}
+                  >
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Barang ID</h4>
+                      <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                        <DropdownSearch
+                          change={(data) => {
+                            setBarang(data);
+                          }}
+                          options={dataItems}
+                          value={barang}
+                          name={"Barang"}
+                        />
+                      </div>
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Jumlah Stok</h4>
+                      <input
+                        type="number"
+                        value={stok}
+                        onChange={(e) => {
+                          setStok(e.target.value);
+                        }}
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Tanggal </h4>
+
+                      <Space direction="vertical" size={12}>
+                        <DatePicker
+                          defaultValue={dayjs(tanggal, dateFormatList[0])}
+                          format={dateFormatList}
+                          onChange={(date) => {
+                            handleChangeDate("mulaiTanggal", date);
+                          }}
+                          className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                        />
+                      </Space>
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Keterangan</h4>
+                      <input
+                        type="text"
+                        onChange={(e) => {
+                          setKeterangan(e.target.value);
+                        }}
+                        value={keterangan}
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                  </div>
+                  {additionalForms.map((form, index) => (
+                    <div
+                      key={index}
+                      className={`w-full ${
+                        !isOpen ? "hidden" : "flex"
+                      } justify-start items-center gap-4 pl-8 pr-14 `}
+                    >
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Barang ID</h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          <DropdownSearch
+                            change={(data) => {
+                              handleInputChange(index, "barang", data);
+                            }}
+                            options={dataItems}
+                            value={form.barang}
+                            name={"Barang"}
+                          />
+                        </div>
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Jumlah Stok</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.jumlah_stok}
+                          onChange={(e) =>
+                            handleInputChange(index, "stok", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Tanggal </h4>
+
+                        <Space direction="vertical" size={12}>
+                          <DatePicker
+                            defaultValue={dayjs(tanggal, dateFormatList[0])}
+                            format={dateFormatList}
+                            onChange={(date) => {
+                              handleInputChange(index, "tanggal", date);
+                            }}
+                            className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          />
+                        </Space>
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Keterangan</h4>
+                        <input
+                          type="text"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={form.keterangan}
+                          onChange={(e) =>
+                            handleInputChange(
+                              index,
+                              "keterangan",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="w-[4%] text-xs flex flex-col justify-end items-end gap-4 h-[4rem] pr-2 ">
+                        <button
+                          className="w-[2rem] h-[2rem] flex justify-center items-center rounded-full  bg-red-200 border border-red-700 hover:bg-red-600 text-red-600 hover:text-white"
+                          onClick={() => removeForm(index)}
+                        >
+                          <RiDeleteBin5Line className="text-base" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-center gap-4`}
+                  >
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        onClick={addNewForm}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Tambah Data
+                        </p>
+                      </button>
+                    </div>
+                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                      <button
+                        type="button"
+                        onClick={handleAdd}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Simpan Data
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            {activeTabIndex == "tab1" ? (
+              <>
+                <div
+                  data-aos="fade-up"
+                  className="w-full flex justify-center items-center mt-5 h-full mb-28"
+                >
+                  {isData1 ? (
+                    <>
+                      <LoaderTable />
+                    </>
+                  ) : (
+                    <>
+                      <Paper
+                        data-aos="fade-up"
+                        style={{ height: 400, width: "100%" }}
+                      >
+                        <MUIDataTable
+                          columns={columns}
+                          data={data}
+                          options={{
+                            fontSize: 12,
+                          }}
+                          pagination
+                          rowsPerPageOptions={[
+                            10,
+                            50,
+                            { value: -1, label: "All" },
+                          ]}
+                        />
+                      </Paper>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-full flex flex-col justify-start items-center h-full mt-5">
+                  <div
+                    data-aos="fade-up"
+                    className="w-full rounded-xl p-4 flex justify-between items-center bg-white shadow-md"
+                  >
+                    <h3 className="text-base font-medium">
+                      Perubahan Stok Bulan, {bulan} {tahun}
+                    </h3>
+                    <div className="w-[50%] flex justify-end items-center gap-6">
+                      <div className="w-[40%] flex justify-between items-center">
+                        <p className="text-sm font-normal">Bulan</p>
+                        <Space direction="vertical" size={12}>
+                          <DatePicker
+                            defaultValue={dayjs(bulan, "MMMM")}
+                            format={["MMMM"]}
+                            picker="month"
+                            onChange={(date) => {
+                              setBulan(date.format("MMMM"));
+                              getHistoryInventory(date.format("MMMM"), tahun);
+                            }}
+                            className="w-[6rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          />
+                        </Space>
+                      </div>
+                      <div className="w-[40%] flex justify-between items-center">
+                        <p className="text-sm font-normal">Tahun</p>
+                        <Space direction="vertical" size={12}>
+                          <DatePicker
+                            defaultValue={dayjs(tahun, "YYYY")}
+                            format={["YYYY"]}
+                            picker="year"
+                            onChange={(date) => {
+                              setTahun(date.format("YYYY"));
+                              getHistoryInventory(bulan, date.format("YYYY"));
+                            }}
+                            className="w-[6rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          />
+                        </Space>
+                      </div>
+                    </div>
+                  </div>
+                  {isData2 ? (
+                    <>
+                      <LoaderTable />
+                    </>
+                  ) : (
+                    <>
+                      <TableHistory
+                        data={dataHistory}
+                        fetchdata={getHistoryInventory}
+                      />
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

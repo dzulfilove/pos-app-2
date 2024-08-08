@@ -28,6 +28,7 @@ import { IoEyeSharp } from "react-icons/io5";
 import { BiArchive } from "react-icons/bi";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import LoaderTable from "../../../component/features/loader2";
 function InventoryDetail({ params }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
@@ -40,6 +41,7 @@ function InventoryDetail({ params }) {
   const [totalStok, setTotalStok] = useState(0);
   const [additionalForms, setAdditionalForms] = useState([]);
   const [dataStok, setDataStok] = useState([]);
+  const [isData, setIsData] = useState(true);
 
   useEffect(() => {
     getInventory();
@@ -96,10 +98,13 @@ function InventoryDetail({ params }) {
         "Jumlah Objek dengan Stock di Bawah MinStock:",
         countBelowMinStock
       );
+      setIsData(false);
 
       // Simpan data yang diambil ke state
       setDataStok(items);
     } catch (e) {
+      setIsData(false);
+
       Swal.fire({
         title: "Error!",
         text: "Gagal mendapatkan data: " + e.message,
@@ -359,17 +364,25 @@ function InventoryDetail({ params }) {
           data-aos="fade-up"
           className="w-full flex justify-center items-center mt-5 h-full mb-28"
         >
-          <Paper style={{ height: 400, width: "100%" }}>
-            <MUIDataTable
-              columns={columns}
-              data={data}
-              options={{
-                fontSize: 12,
-              }}
-              pagination
-              rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-            />
-          </Paper>
+          {isData ? (
+            <>
+              <LoaderTable />
+            </>
+          ) : (
+            <>
+              <Paper style={{ height: 400, width: "100%" }}>
+                <MUIDataTable
+                  columns={columns}
+                  data={data}
+                  options={{
+                    fontSize: 12,
+                  }}
+                  pagination
+                  rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
+                />
+              </Paper>
+            </>
+          )}
         </div>
       </div>
     </div>

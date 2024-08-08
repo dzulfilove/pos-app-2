@@ -27,6 +27,8 @@ import { MdDelete } from "react-icons/md";
 import { IoEyeSharp } from "react-icons/io5";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import Loader from "../../component/features/loader";
+import LoaderTable from "../../component/features/loader2";
 function MainTransaction() {
   const [isEdit, setIsEdit] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
@@ -48,6 +50,8 @@ function MainTransaction() {
   const [totalNominalTunai, setTotalNominalTunai] = useState(0);
   const [totalNominalNonTunai, setTotalNominalNonTunai] = useState(0);
   const [itemTerlaris, setitemTerlaris] = useState({});
+  const [isLoad, setIsLoad] = useState(false);
+  const [isData, setIsData] = useState(true);
 
   useEffect(() => {
     fetchItems();
@@ -166,6 +170,7 @@ function MainTransaction() {
 
       console.log("Most Frequent Item:", mostFrequentItem);
       setitemTerlaris(mostFrequentItem);
+      setIsData(false);
       setDataTransaction(transactions); // Simpan transaksi ke state
       setTotalNominal(totalNominal); // Simpan total nominal ke state
       setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
@@ -205,7 +210,7 @@ function MainTransaction() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setIsLoad(true);
     // Cek jika state kosong
     if (
       selectedBarang == null ||
@@ -216,7 +221,7 @@ function MainTransaction() {
       if (selectedBarang == null) missingFields.push("Barang");
       if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
       if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
-
+      setIsLoad(false);
       Swal.fire(
         "Error",
         `${missingFields.join(" dan ")} tidak boleh kosong`,
@@ -271,6 +276,7 @@ function MainTransaction() {
         // Gunakan transaction untuk menambahkan ke historyInventory
         transaction.set(doc(collection(db, "historyInventory")), historyData);
       });
+      setIsLoad(false);
 
       // Panggil getTransactions untuk memperbarui data transaksi
       getTransactions();
@@ -282,6 +288,8 @@ function MainTransaction() {
       setIsOpen(false);
     } catch (error) {
       console.error("Error adding transaction: ", error);
+      setIsLoad(false);
+
       Swal.fire("Error", "Failed to add transaction", "error");
     }
   };
@@ -296,12 +304,15 @@ function MainTransaction() {
     });
 
     if (confirmDelete.isConfirmed) {
+      setIsLoad(true);
+
       try {
         // Buat referensi ke dokumen kategori yang ingin dihapus
         const dataRef = doc(db, "transactions", data.id);
 
         // Hapus dokumen dari Firestore
         await deleteDoc(dataRef);
+        setIsLoad(false);
 
         // Tampilkan alert sukses
         Swal.fire({
@@ -312,6 +323,8 @@ function MainTransaction() {
         });
         getTransactions();
       } catch (error) {
+        setIsLoad(false);
+
         console.error("Error deleting transaksi:", error.message);
         // Tampilkan alert error
         Swal.fire({
@@ -467,144 +480,157 @@ function MainTransaction() {
     <div>
       {" "}
       <div>
-        <div className="w-full h-full flex flex-col justify-start items-center pb-25">
-          <div
-            data-aos="slide-down"
-            data-aos-delay="50"
-            className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
-          >
-            <h3 className="text-white text-base font-normal">
-              Transaksi Hari Ini
-            </h3>
-          </div>
-          <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
-            <div
-              data-aos="slide-down"
-              data-aos-delay="50"
-              className="cookieCard w-[50%]"
-            >
-              <div className="cookieDescription">
-                <h3 className="text-xl font-medium">
-                  {dataTransaction.length} Transaksi
-                </h3>
-              </div>
-              <h3 className="text-xs font-normal text-white w-full">
-                Total Transaksi Hari Ini
+        {isLoad ? (
+          <>
+            <div className="w-full h-[100vh] flex flex-col justify-center items-center">
+              <Loader />
+              <h3 className="text-base text-blue-600 mt-5">
+                Tunggu Bentar Yaa..
               </h3>
-              <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white  rounded-full">
-                <FaLuggageCart className="text-blue-700 text-[2rem]" />
-              </div>
             </div>
-            <div
-              data-aos="fade-up"
-              data-aos-delay="250"
-              className="w-[50%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
-            >
-              <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
-                <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
-                  <div className="w-full flex justify-start gap-4 items-center">
-                    <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominal)}
-                    </h3>
-                  </div>
-                  <div className="w-full flex justify-start gap-4 items-center">
-                    <h3 className="text-xs font-normal">
-                      Nominal Transaksi Hari Ini
-                    </h3>
-                  </div>
-                </div>
-                <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
-                  <div className=" w-[4rem] h-[4rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
-                    <GiReceiveMoney className="text-blue-600 text-[2.2rem]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4">
-            <div
-              data-aos="fade-up"
-              data-aos-delay="350"
-              className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-            >
-              <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Tunai</h3>
-                <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                  <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
-                </div>
-              </div>
-              <div className="w-full flex flex-col justify-between items-start gap-1">
-                <h3 className="text-xl font-medium">
-                  {formatRupiah(totalNominalTunai)}
-                </h3>
-                <h3 className="text-xs font-medium">Transaksi Tunai</h3>
-              </div>
-            </div>
-
-            <div
-              data-aos="fade-up"
-              data-aos-delay="350"
-              className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-            >
-              <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Non Tunai</h3>
-                <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                  <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
-                </div>
-              </div>
-              <div className="w-full flex flex-col justify-between items-start gap-1">
-                <h3 className="text-xl font-medium">
-                  {formatRupiah(totalNominalNonTunai)}
-                </h3>
-
-                <h3 className="text-xs font-medium">Transaksi Non Tunai</h3>
-              </div>
-            </div>
-
-            <div
-              data-aos="fade-up"
-              data-aos-delay="450"
-              className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-            >
-              <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Item Terlaris</h3>
-                <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                  <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
-                </div>
-              </div>
-              <div className="w-full flex flex-col justify-between items-start gap-1">
-                <h3 className="text-xl font-medium">
-                  {itemTerlaris.totalBarang} {itemTerlaris.unit}
-                </h3>
-                <h3 className="text-xs font-medium">{itemTerlaris.itemName}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div
-            data-aos="fade-up"
-            data-aos-delay="550"
-            className="w-full flex justify-end items-center  p-2 rounded-md mt-5"
-          >
-            <div>
-              <button
-                onClick={() => {
-                  if (isDetail) {
-                    setIsDetail(false);
-                  }
-                  setIsOpen(!isOpen);
-                }}
-                type="button"
-                class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+          </>
+        ) : (
+          <>
+            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+              <div
+                data-aos="slide-down"
+                data-aos-delay="50"
+                className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
               >
-                <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                  <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                <h3 className="text-white text-base font-normal">
+                  Transaksi Hari Ini
+                </h3>
+              </div>
+              <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
+                <div
+                  data-aos="slide-down"
+                  data-aos-delay="50"
+                  className="cookieCard w-[50%]"
+                >
+                  <div className="cookieDescription">
+                    <h3 className="text-xl font-medium">
+                      {dataTransaction.length} Transaksi
+                    </h3>
+                  </div>
+                  <h3 className="text-xs font-normal text-white w-full">
+                    Total Transaksi Hari Ini
+                  </h3>
+                  <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white  rounded-full">
+                    <FaLuggageCart className="text-blue-700 text-[2rem]" />
+                  </div>
                 </div>
-                <p class="translate-x-2 text-xs text-white">Tambah Data</p>
-              </button>
-            </div>
-          </div>
-          {/* <div
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="250"
+                  className="w-[50%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+                >
+                  <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                    <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                      <div className="w-full flex justify-start gap-4 items-center">
+                        <h3 className="text-xl font-medium">
+                          {formatRupiah(totalNominal)}
+                        </h3>
+                      </div>
+                      <div className="w-full flex justify-start gap-4 items-center">
+                        <h3 className="text-xs font-normal">
+                          Nominal Transaksi Hari Ini
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
+                      <div className=" w-[4rem] h-[4rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                        <GiReceiveMoney className="text-blue-600 text-[2.2rem]" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4">
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="350"
+                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Tunai</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {formatRupiah(totalNominalTunai)}
+                    </h3>
+                    <h3 className="text-xs font-medium">Transaksi Tunai</h3>
+                  </div>
+                </div>
+
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="350"
+                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Non Tunai</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {formatRupiah(totalNominalNonTunai)}
+                    </h3>
+
+                    <h3 className="text-xs font-medium">Transaksi Non Tunai</h3>
+                  </div>
+                </div>
+
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="450"
+                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Item Terlaris</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {itemTerlaris.totalBarang} {itemTerlaris.unit}
+                    </h3>
+                    <h3 className="text-xs font-medium">
+                      {itemTerlaris.itemName}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                data-aos="fade-up"
+                data-aos-delay="550"
+                className="w-full flex justify-end items-center  p-2 rounded-md mt-5"
+              >
+                <div>
+                  <button
+                    onClick={() => {
+                      if (isDetail) {
+                        setIsDetail(false);
+                      }
+                      setIsOpen(!isOpen);
+                    }}
+                    type="button"
+                    class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                  >
+                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                    </div>
+                    <p class="translate-x-2 text-xs text-white">Tambah Data</p>
+                  </button>
+                </div>
+              </div>
+              {/* <div
             className={`w-full ${
               !isDetail ? "h-0 p-0" : "h-[auto]  p-6 mt-3  "
             } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
@@ -644,101 +670,117 @@ function MainTransaction() {
             </div>
           </div> */}
 
-          <div
-            className={`w-full ${
-              !isOpen ? "h-0 p-0" : "h-[11rem] p-2 mt-3"
-            } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
-          >
-            <div
-              className={`w-full ${
-                !isOpen ? "hidden" : "flex"
-              } justify-start items-center gap-4`}
-            >
-              <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                <h4 className="font-medium text-xs">Pilih Barang</h4>
-                <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                  <DropdownSearch
-                    change={(data) => {
-                      setSelectedBarang(data);
-                      setHarga(data.price);
-                    }}
-                    options={dataBarang}
-                    value={selectedBarang}
-                    name={"Pilih Barang"}
-                  />
-                </div>
-              </div>
-              <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                <h4 className="font-medium text-xs">Harga Barang</h4>
-                <input
-                  type="text"
-                  readOnly
-                  className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={formatRupiah(harga)}
-                  onChange={(e) => {
-                    setHarga(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="w-[20%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                <h4 className="font-medium text-xs">Jumlah Barang</h4>
-                <input
-                  type="number"
-                  className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={jumlahBarang}
-                  onChange={(e) => {
-                    setJumlahBarang(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                <h4 className="font-medium text-xs">Jenis Pembayaran</h4>
-                <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                  <DropdownSearch
-                    change={(data) => {
-                      setJenisPembayaran(data);
-                    }}
-                    options={optionPembayaran}
-                    value={jenisPembayaran}
-                    name={"Pembayaran"}
-                  />
-                </div>
-              </div>
-            </div>
-            <div
-              className={`w-full ${
-                !isOpen ? "hidden" : "flex"
-              } justify-start items-end gap-4 mt-3 pl-2`}
-            >
-              <button
-                type="button"
-                className="bg-blue-500 text-center mb-2 w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                onClick={handleSubmit}
+              <div
+                className={`w-full ${
+                  !isOpen ? "h-0 p-0" : "h-[11rem] p-2 mt-3"
+                } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
               >
-                <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                  <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
+                <div
+                  className={`w-full ${
+                    !isOpen ? "hidden" : "flex"
+                  } justify-start items-center gap-4`}
+                >
+                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                    <h4 className="font-medium text-xs">Pilih Barang</h4>
+                    <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                      <DropdownSearch
+                        change={(data) => {
+                          setSelectedBarang(data);
+                          setHarga(data.price);
+                        }}
+                        options={dataBarang}
+                        value={selectedBarang}
+                        name={"Pilih Barang"}
+                      />
+                    </div>
+                  </div>
+                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                    <h4 className="font-medium text-xs">Harga Barang</h4>
+                    <input
+                      type="text"
+                      readOnly
+                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={formatRupiah(harga)}
+                      onChange={(e) => {
+                        setHarga(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[20%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                    <h4 className="font-medium text-xs">Jumlah Barang</h4>
+                    <input
+                      type="number"
+                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={jumlahBarang}
+                      onChange={(e) => {
+                        setJumlahBarang(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                    <h4 className="font-medium text-xs">Jenis Pembayaran</h4>
+                    <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                      <DropdownSearch
+                        change={(data) => {
+                          setJenisPembayaran(data);
+                        }}
+                        options={optionPembayaran}
+                        value={jenisPembayaran}
+                        name={"Pembayaran"}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="translate-x-2 text-xs text-white">Simpan Data</p>
-              </button>
+                <div
+                  className={`w-full ${
+                    !isOpen ? "hidden" : "flex"
+                  } justify-start items-end gap-4 mt-3 pl-2`}
+                >
+                  <button
+                    type="button"
+                    className="bg-blue-500 text-center mb-2 w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                    onClick={handleSubmit}
+                  >
+                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                      <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
+                    </div>
+                    <p className="translate-x-2 text-xs text-white">
+                      Simpan Data
+                    </p>
+                  </button>
+                </div>
+              </div>
+              <div
+                data-aos="fade-up"
+                className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+              >
+                {isData ? (
+                  <>
+                    <LoaderTable />
+                  </>
+                ) : (
+                  <>
+                    <Paper style={{ height: 400, width: "100%" }}>
+                      <MUIDataTable
+                        columns={columns}
+                        data={data}
+                        options={{
+                          fontSize: 12, // adjust font size here
+                        }}
+                        pagination
+                        rowsPerPageOptions={[
+                          10,
+                          50,
+                          { value: -1, label: "All" },
+                        ]}
+                      />
+                    </Paper>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-          <div
-            data-aos="fade-up"
-            className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-          >
-            <Paper style={{ height: 400, width: "100%" }}>
-              <MUIDataTable
-                columns={columns}
-                data={data}
-                options={{
-                  fontSize: 12, // adjust font size here
-                }}
-                pagination
-                rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-              />
-            </Paper>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

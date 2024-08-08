@@ -23,6 +23,8 @@ import { IoAddCircleOutline } from "react-icons/io5";
 import { IoEyeSharp } from "react-icons/io5";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import Loader from "../../../component/features/loader";
+import LoaderTable from "../../../component/features/loader2";
 function MasterBarang() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -40,6 +42,8 @@ function MasterBarang() {
   const [stokMinimal, setStokMinimal] = useState(0);
   const [kategoriBarang, setKategoriBarang] = useState({});
   const [dataBarang, setDataBarang] = useState([]);
+  const [isLoad, setIsLoad] = useState(false);
+  const [isData, setIsData] = useState(true);
 
   useEffect(() => {
     fetchCategories();
@@ -80,6 +84,7 @@ function MasterBarang() {
       );
       console.log("baang", items);
       setDataBarang(items);
+      setIsData(false);
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -103,6 +108,8 @@ function MasterBarang() {
   };
   const handleAdd = async () => {
     // Cek apakah semua field yang diperlukan terisi
+    setIsLoad(true);
+
     if (
       !namaBarang ||
       !satuan ||
@@ -113,6 +120,8 @@ function MasterBarang() {
       stokMinimal <= 0 ||
       !kategoriBarang.value
     ) {
+      setIsLoad(false);
+
       Swal.fire({
         title: "Peringatan!",
         text: "Harap lengkapi semua field sebelum menambahkan barang.",
@@ -136,6 +145,7 @@ function MasterBarang() {
         unit: satuan,
         itemCategory: categoryRef, // Simpan referensi ke dokumen category
       });
+      setIsLoad(false);
 
       Swal.fire(
         "Berhasil!",
@@ -158,6 +168,8 @@ function MasterBarang() {
       setStokMinimal(0);
       setKategoriBarang({});
     } catch (e) {
+      setIsLoad(false);
+
       Swal.fire("Error!", "Gagal menambahkan data: " + e.message, "error");
     }
   };
@@ -179,6 +191,8 @@ function MasterBarang() {
     setKategoriBarang(option[0]);
   };
   const handleUpdate = async () => {
+    setIsLoad(true);
+
     const categoryRef = doc(db, "category", kategoriBarang.value);
     const data = {
       itemName: namaBarang,
@@ -208,6 +222,8 @@ function MasterBarang() {
       setIsEdit(false);
       setIsAdd(true);
       // Tampilkan alert sukses
+      setIsLoad(false);
+
       Swal.fire({
         title: "Sukses!",
         text: "Data kategori berhasil diperbarui.",
@@ -216,6 +232,8 @@ function MasterBarang() {
       });
       getItems();
     } catch (error) {
+      setIsLoad(false);
+
       console.error("Error updating category:", error.message);
       // Tampilkan alert error
       Swal.fire({
@@ -237,12 +255,15 @@ function MasterBarang() {
     });
 
     if (confirmDelete.isConfirmed) {
+      setIsLoad(true);
+
       try {
         // Buat referensi ke dokumen kategori yang ingin dihapus
         const itemRef = doc(db, "items", item.id);
 
         // Hapus dokumen dari Firestore
         await deleteDoc(itemRef);
+        setIsLoad(false);
 
         // Tampilkan alert sukses
         Swal.fire({
@@ -253,6 +274,8 @@ function MasterBarang() {
         });
         getItems();
       } catch (error) {
+        setIsLoad(false);
+
         console.error("Error deleting category:", error.message);
         // Tampilkan alert error
         Swal.fire({
@@ -375,261 +398,292 @@ function MasterBarang() {
     <div>
       {" "}
       <div>
-        <div className="w-full h-full flex flex-col justify-start items-center pb-25">
-          <div
-            data-aos="slide-down"
-            data-aos-delay="50"
-            className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
-          >
-            <h3 className="text-white text-base font-normal">
-              {" "}
-              List Item Barang
-            </h3>
-          </div>
-          <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
-            <div
-              data-aos="fade-up"
-              data-aos-delay="150"
-              className="cookieCard w-[40%]"
-            >
-              <div className="cookieDescription">
-                <h3 className="text-xl font-medium">
-                  {dataBarang.length} Barang
+        {isLoad ? (
+          <>
+            <div className="w-full h-[100vh] flex flex-col justify-center items-center">
+              <Loader />
+              <h3 className="text-base text-blue-600 mt-5">
+                Tunggu Bentar Yaa..
+              </h3>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+              <div
+                data-aos="slide-down"
+                data-aos-delay="50"
+                className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
+              >
+                <h3 className="text-white text-base font-normal">
+                  {" "}
+                  List Item Barang
                 </h3>
               </div>
-              <h3 className="text-xs font-normal text-white w-full">
-                Total Item Barang
-              </h3>
-              <div className="z-[999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
-                <FaLuggageCart className="text-blue-700  text-[2rem]" />
-              </div>
-            </div>
-          </div>
-
-          <div
-            data-aos="fade-up"
-            data-aos-delay="250"
-            className="w-full flex justify-end items-center  p-2 rounded-md"
-          >
-            <div>
-              <button
-                onClick={() => {
-                  if (isDetail) {
-                    setIsDetail(false);
-                  }
-                  setIsOpen(!isOpen);
-                }}
-                type="button"
-                class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
-              >
-                <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                  <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+              <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="150"
+                  className="cookieCard w-[40%]"
+                >
+                  <div className="cookieDescription">
+                    <h3 className="text-xl font-medium">
+                      {dataBarang.length} Barang
+                    </h3>
+                  </div>
+                  <h3 className="text-xs font-normal text-white w-full">
+                    Total Item Barang
+                  </h3>
+                  <div className="z-[999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
+                    <FaLuggageCart className="text-blue-700  text-[2rem]" />
+                  </div>
                 </div>
-                <p class="translate-x-2 text-xs text-white">Tambah Data</p>
-              </button>
-            </div>
-          </div>
-          <div
-            className={`w-full ${
-              !isDetail ? "h-0 p-0" : "h-[auto]  p-6 mt-3  "
-            } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
-          >
-            <div
-              className={`w-full  ${
-                !isDetail ? "hidden" : "flex flex-col "
-              } justify-start items-start gap-4`}
-            >
-              <h5 className="text-base font-medium ">Nama Barang</h5>
-              <p className="text-xs font-normal ">{dataDetail.itemName}</p>
-              <p className="text-xs font-normal ">
-                {dataDetail.itemDescription}
-              </p>
-              <h5 className="text-base font-medium ">Kategori Barang</h5>
-              <p className="text-xs font-normal ">{dataDetail.categoryName}</p>
-              <h5 className="text-base font-medium ">Stok Barang</h5>
-              {/* <div className="flex justify-start gap-6 items-center w-full pl-6">
+              </div>
+
+              <div
+                data-aos="fade-up"
+                data-aos-delay="250"
+                className="w-full flex justify-end items-center  p-2 rounded-md"
+              >
+                <div>
+                  <button
+                    onClick={() => {
+                      if (isDetail) {
+                        setIsDetail(false);
+                      }
+                      setIsOpen(!isOpen);
+                    }}
+                    type="button"
+                    class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                  >
+                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                    </div>
+                    <p class="translate-x-2 text-xs text-white">Tambah Data</p>
+                  </button>
+                </div>
+              </div>
+              <div
+                className={`w-full ${
+                  !isDetail ? "h-0 p-0" : "h-[auto]  p-6 mt-3  "
+                } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
+              >
+                <div
+                  className={`w-full  ${
+                    !isDetail ? "hidden" : "flex flex-col "
+                  } justify-start items-start gap-4`}
+                >
+                  <h5 className="text-base font-medium ">Nama Barang</h5>
+                  <p className="text-xs font-normal ">{dataDetail.itemName}</p>
+                  <p className="text-xs font-normal ">
+                    {dataDetail.itemDescription}
+                  </p>
+                  <h5 className="text-base font-medium ">Kategori Barang</h5>
+                  <p className="text-xs font-normal ">
+                    {dataDetail.categoryName}
+                  </p>
+                  <h5 className="text-base font-medium ">Stok Barang</h5>
+                  {/* <div className="flex justify-start gap-6 items-center w-full pl-6">
                 <div className="text-xs font-normal w-[15%]">Stok Saat Ini</div>
                 <p className="text-xs font-normal ">: 5 Buah</p>
               </div> */}
-              <div className="flex justify-start gap-6 items-center w-full pl-6">
-                <div className="text-xs font-normal w-[15%]">Stok Minimum</div>
-                <p className="text-xs font-normal ">
-                  : {dataDetail.minStock} {dataDetail.unit}
-                </p>
-              </div>
-              <div className="flex justify-start gap-6 items-center w-full pl-6">
-                <div className="text-xs font-normal w-[15%]">Stok Maksimum</div>
-                <p className="text-xs font-normal ">
-                  : {dataDetail.maxStock} {dataDetail.unit}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`w-full ${
-              !isOpen ? "h-0 p-0" : "h-[15rem]  p-2 mt-3  "
-            } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
-          >
-            <div
-              className={`w-full  ${
-                !isOpen ? "hidden" : "flex "
-              } justify-start items-center gap-4`}
-            >
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Nama Barang</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={namaBarang}
-                  onChange={(e) => {
-                    setNamaBarang(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Deskripsi</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={deskripsi}
-                  onChange={(e) => {
-                    setDeskripsi(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Harga Beli</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={hargaBeli}
-                  onChange={(e) => {
-                    setHargaBeli(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Harga Jual</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={hargaJual}
-                  onChange={(e) => {
-                    setHargaJual(e.target.value);
-                  }}
-                />
-              </div>
-            </div>
-            <div
-              className={`w-full ${
-                !isOpen ? "hidden" : "flex "
-              } justify-start items-end gap-4`}
-            >
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Kategori Barang</h4>
-                <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                  <DropdownSearch
-                    change={(data) => {
-                      setKategoriBarang(data);
-                    }}
-                    options={dataCategory}
-                    value={kategoriBarang}
-                    name={"Kategori Barang"}
-                  />
+                  <div className="flex justify-start gap-6 items-center w-full pl-6">
+                    <div className="text-xs font-normal w-[15%]">
+                      Stok Minimum
+                    </div>
+                    <p className="text-xs font-normal ">
+                      : {dataDetail.minStock} {dataDetail.unit}
+                    </p>
+                  </div>
+                  <div className="flex justify-start gap-6 items-center w-full pl-6">
+                    <div className="text-xs font-normal w-[15%]">
+                      Stok Maksimum
+                    </div>
+                    <p className="text-xs font-normal ">
+                      : {dataDetail.maxStock} {dataDetail.unit}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Satuan</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={satuan}
-                  onChange={(e) => {
-                    setSatuan(e.target.value);
-                  }}
-                />
+
+              <div
+                className={`w-full ${
+                  !isOpen ? "h-0 p-0" : "h-[15rem]  p-2 mt-3  "
+                } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
+              >
+                <div
+                  className={`w-full  ${
+                    !isOpen ? "hidden" : "flex "
+                  } justify-start items-center gap-4`}
+                >
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Nama Barang</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={namaBarang}
+                      onChange={(e) => {
+                        setNamaBarang(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Deskripsi</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={deskripsi}
+                      onChange={(e) => {
+                        setDeskripsi(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Harga Beli</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={hargaBeli}
+                      onChange={(e) => {
+                        setHargaBeli(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Harga Jual</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={hargaJual}
+                      onChange={(e) => {
+                        setHargaJual(e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div
+                  className={`w-full ${
+                    !isOpen ? "hidden" : "flex "
+                  } justify-start items-end gap-4`}
+                >
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Kategori Barang</h4>
+                    <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                      <DropdownSearch
+                        change={(data) => {
+                          setKategoriBarang(data);
+                        }}
+                        options={dataCategory}
+                        value={kategoriBarang}
+                        name={"Kategori Barang"}
+                      />
+                    </div>
+                  </div>
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Satuan</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={satuan}
+                      onChange={(e) => {
+                        setSatuan(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Stok Minimal</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={stokMinimal}
+                      onChange={(e) => {
+                        setStokMinimal(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                    <h4 className="font-medium text-xs">Stok Maksimal</h4>
+                    <input
+                      type="text"
+                      className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      value={stokMaksimal}
+                      onChange={(e) => {
+                        setStokMaksimal(e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div
+                  className={`w-full ${
+                    !isOpen ? "hidden" : "flex "
+                  } justify-start items-end gap-4 mt-3 pl-2`}
+                >
+                  {isEdit == true && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleUpdate}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-xs text-white">
+                          Update Data
+                        </p>
+                      </button>
+                    </>
+                  )}
+                  {isAdd && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleAdd}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-xs text-white">
+                          Simpan Data
+                        </p>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Stok Minimal</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={stokMinimal}
-                  onChange={(e) => {
-                    setStokMinimal(e.target.value);
-                  }}
-                />
-              </div>
-              <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                <h4 className="font-medium text-xs">Stok Maksimal</h4>
-                <input
-                  type="text"
-                  className="w-full flex p-2  font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  value={stokMaksimal}
-                  onChange={(e) => {
-                    setStokMaksimal(e.target.value);
-                  }}
-                />
+              <div
+                data-aos="fade-up"
+                data-aos-delay="350"
+                className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+              >
+                {isData ? (
+                  <>
+                    <LoaderTable />
+                  </>
+                ) : (
+                  <>
+                    <Paper style={{ height: 400, width: "100%" }}>
+                      <MUIDataTable
+                        columns={columns}
+                        data={data}
+                        options={{
+                          fontSize: 12, // adjust font size here
+                        }}
+                        pagination
+                        rowsPerPageOptions={[
+                          10,
+                          50,
+                          { value: -1, label: "All" },
+                        ]}
+                      />
+                    </Paper>
+                  </>
+                )}
               </div>
             </div>
-            <div
-              className={`w-full ${
-                !isOpen ? "hidden" : "flex "
-              } justify-start items-end gap-4 mt-3 pl-2`}
-            >
-              {isEdit == true && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleUpdate}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-xs text-white">
-                      Update Data
-                    </p>
-                  </button>
-                </>
-              )}
-              {isAdd && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleAdd}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-xs text-white">
-                      Simpan Data
-                    </p>
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="350"
-            className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-          >
-            <Paper style={{ height: 400, width: "100%" }}>
-              <MUIDataTable
-                columns={columns}
-                data={data}
-                options={{
-                  fontSize: 12, // adjust font size here
-                }}
-                pagination
-                rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-              />
-            </Paper>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import Swal from "sweetalert2";
 import dayjs from "dayjs";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import LoaderTable from "../../../component/features/loader2";
 function HistoryDetail({ params }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
@@ -30,7 +31,7 @@ function HistoryDetail({ params }) {
   const { id } = params;
   const idTanggal = params.id;
   const [dataHistory, setDataHistory] = useState([]);
-
+  const [isData, setIsData] = useState(true);
   const formatLink = (str) => {
     return str.replace(/-/g, "/");
   };
@@ -92,11 +93,15 @@ function HistoryDetail({ params }) {
       console.log("Fetched History Inventory Items", historyItems);
       console.log("Total Stok Masuk:", totalStokMasuk);
       console.log("Total Stok Keluar:", totalStokKeluar);
+
       setTotalStok(totalStok);
       setTotalStokKeluar(totalStokKeluar);
       setTotalStokMasuk(totalStokMasuk);
       setDataHistory(historyItems); // Set data ke state atau lakukan tindakan lain sesuai kebutuhan
+      setIsData(false);
     } catch (e) {
+      setIsData(false);
+
       Swal.fire({
         title: "Error!",
         text: "Gagal mendapatkan data: " + e.message,
@@ -178,7 +183,15 @@ function HistoryDetail({ params }) {
           data-aos="fade-up"
           className="w-full flex justify-center items-center h-full "
         >
-          <TableDetailHistory data={dataHistory} />
+          {isData ? (
+            <>
+              <LoaderTable />
+            </>
+          ) : (
+            <>
+              <TableDetailHistory data={dataHistory} />
+            </>
+          )}
         </div>
       </div>
     </div>

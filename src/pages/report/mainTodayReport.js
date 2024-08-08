@@ -29,6 +29,8 @@ import { IoEyeSharp } from "react-icons/io5";
 import { TabBar } from "../../component/features/tabBar";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import Loader from "../../component/features/loader";
+import LoaderTable from "../../component/features/loader2";
 function TodayReport() {
   const [isEdit, setIsEdit] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
@@ -58,6 +60,8 @@ function TodayReport() {
   const [activeTabIndex, setActiveTabIndex] = useState("tab1");
   const [selectedItems, setSelectedItems] = useState([]);
   const nama = sessionStorage.getItem("nama");
+  const [isData, setIsData] = useState(true);
+  const [isLoad, setIsLoad] = useState(false);
 
   useEffect(() => {
     getTransactions();
@@ -85,6 +89,7 @@ function TodayReport() {
         setTotalNominal(0);
         setTotalNominalTunai(0);
         setTotalNominalNonTunai(0);
+        setIsData(false);
         return [];
       }
       const transactions = await Promise.all(
@@ -187,6 +192,7 @@ function TodayReport() {
       setTotalQris(totalQris);
       setTotalTransfer(totalTrnsfer);
       setDataTunai(transactionTunai);
+      setIsData(false);
       setDataNonTunai(transactionNonTunai);
       setitemTerlaris(mostFrequentItem);
       setDataTransaction(transactions); // Simpan transaksi ke state
@@ -215,13 +221,14 @@ function TodayReport() {
     });
 
     if (confirmDelete.isConfirmed) {
+      setIsLoad(true);
       try {
         // Buat referensi ke dokumen kategori yang ingin dihapus
         const dataRef = doc(db, "transactions", data.id);
 
         // Hapus dokumen dari Firestore
         await deleteDoc(dataRef);
-
+        setIsLoad(false);
         // Tampilkan alert sukses
         Swal.fire({
           title: "Sukses!",
@@ -232,6 +239,8 @@ function TodayReport() {
         getTransactions();
       } catch (error) {
         console.error("Error deleting transaksi:", error.message);
+        setIsLoad(false);
+
         // Tampilkan alert error
         Swal.fire({
           title: "Error!",
@@ -256,6 +265,7 @@ function TodayReport() {
   };
 
   const handleUpdate = async () => {
+    setIsLoad(true);
     console.log(selectedItems);
     let data = [];
     if (selectedItems.length === 0) {
@@ -287,7 +297,7 @@ function TodayReport() {
 
         // Jalankan semua promises secara paralel
         await Promise.all(updatePromises);
-
+        setIsLoad(false);
         Swal.fire(
           "Berhasil!",
           `${data.length} data transaksi telah diceklis.`,
@@ -296,6 +306,8 @@ function TodayReport() {
 
         console.log("All transactions updated successfully");
       } catch (error) {
+        setIsLoad(false);
+
         console.error("Error updating transactions: ", error);
         Swal.fire(
           "Gagal!",
@@ -711,219 +723,272 @@ function TodayReport() {
     <div>
       {" "}
       <div>
-        <div className="w-full h-full flex flex-col justify-start items-center pb-25">
-          <div
-            data-aos="slide-down"
-            data-aos-delay="50"
-            className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
-          >
-            <h3 className="text-white text-base font-normal">
-              Laporan Transaksi Hari Ini
-            </h3>
-          </div>
-          <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
-            <div
-              data-aos="fade-up"
-              data-aos-delay="250"
-              className="cookieCard w-[50%]"
-            >
-              <div className="cookieDescription">
-                <h3 className="text-xl font-medium">
-                  {dataTransaction.length} Transaksi
-                </h3>
-              </div>
-              <h3 className="text-xs font-normal text-white w-full">
-                Total Transaksi Hari Ini
+        {isLoad ? (
+          <>
+            <div className="w-full h-[100vh] flex flex-col justify-center items-center">
+              <Loader />
+              <h3 className="text-base text-blue-600 mt-5">
+                Tunggu Bentar Yaa..
               </h3>
-              <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white  rounded-full">
-                <FaLuggageCart className="text-blue-700 text-[2rem]" />
-              </div>
             </div>
-            <div
-              data-aos="fade-up"
-              data-aos-delay="350"
-              className="w-[50%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
-            >
-              <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
-                <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
-                  <div className="w-full flex justify-start gap-4 items-center">
+          </>
+        ) : (
+          <>
+            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+              <div
+                data-aos="slide-down"
+                data-aos-delay="50"
+                className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
+              >
+                <h3 className="text-white text-base font-normal">
+                  Laporan Transaksi Hari Ini
+                </h3>
+              </div>
+              <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="250"
+                  className="cookieCard w-[50%]"
+                >
+                  <div className="cookieDescription">
                     <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominal)}
+                      {dataTransaction.length} Transaksi
                     </h3>
                   </div>
-                  <div className="w-full flex justify-start gap-4 items-center">
-                    <h3 className="text-xs font-normal">
-                      Nominal Transaksi Hari Ini
+                  <h3 className="text-xs font-normal text-white w-full">
+                    Total Transaksi Hari Ini
+                  </h3>
+                  <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white  rounded-full">
+                    <FaLuggageCart className="text-blue-700 text-[2rem]" />
+                  </div>
+                </div>
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="350"
+                  className="w-[50%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+                >
+                  <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                    <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                      <div className="w-full flex justify-start gap-4 items-center">
+                        <h3 className="text-xl font-medium">
+                          {formatRupiah(totalNominal)}
+                        </h3>
+                      </div>
+                      <div className="w-full flex justify-start gap-4 items-center">
+                        <h3 className="text-xs font-normal">
+                          Nominal Transaksi Hari Ini
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
+                      <div className=" w-[4rem] h-[4rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                        <GiReceiveMoney className="text-blue-600 text-[2.2rem]" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="450"
+                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Tunai</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {formatRupiah(totalNominalTunai)}
+                    </h3>
+                    <h3 className="text-xs font-medium">Transaksi Tunai</h3>
+                  </div>
+                </div>
+
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="550"
+                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Non Tunai</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {formatRupiah(totalNominalNonTunai)}
+                    </h3>
+
+                    <h3 className="text-xs font-medium">Transaksi Non Tunai</h3>
+                  </div>
+                </div>
+
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="650"
+                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Item Terlaris</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {itemTerlaris.totalBarang} {itemTerlaris.unit}
+                    </h3>
+                    <h3 className="text-xs font-medium">
+                      {itemTerlaris.itemName}
                     </h3>
                   </div>
                 </div>
-                <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
-                  <div className=" w-[4rem] h-[4rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
-                    <GiReceiveMoney className="text-blue-600 text-[2.2rem]" />
+              </div>
+              <div
+                data-aos="fade-up"
+                data-aos-delay="750"
+                className="w-full flex justify-end items-center  p-2 rounded-md mb-5"
+              >
+                <div>
+                  <button
+                    onClick={handleUpdate}
+                    type="button"
+                    class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                  >
+                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
+                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                    </div>
+                    <p class="translate-x-2 text-xs text-white">
+                      Ceklis Transaksi
+                    </p>
+                  </button>
+                </div>
+              </div>
+              <TabBar data={allTabs} onTabChange={handleTabChange} />
+
+              {activeTabIndex == "tab1" && (
+                <>
+                  <div
+                    data-aos="fade-up"
+                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                  >
+                    {isData ? (
+                      <>
+                        <LoaderTable />
+                      </>
+                    ) : (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columnsAll}
+                            data={dataAll}
+                            options={{
+                              fontSize: 12, // adjust font size here
+                            }}
+                            pagination
+                            rowsPerPageOptions={[
+                              10,
+                              50,
+                              { value: -1, label: "All" },
+                            ]}
+                          />
+                        </Paper>
+                      </>
+                    )}
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
-            <div
-              data-aos="fade-up"
-              data-aos-delay="450"
-              className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-            >
-              <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Tunai</h3>
-                <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                  <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
-                </div>
-              </div>
-              <div className="w-full flex flex-col justify-between items-start gap-1">
-                <h3 className="text-xl font-medium">
-                  {formatRupiah(totalNominalTunai)}
-                </h3>
-                <h3 className="text-xs font-medium">Transaksi Tunai</h3>
-              </div>
-            </div>
+                </>
+              )}
 
-            <div
-              data-aos="fade-up"
-              data-aos-delay="550"
-              className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-            >
-              <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Non Tunai</h3>
-                <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                  <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
-                </div>
-              </div>
-              <div className="w-full flex flex-col justify-between items-start gap-1">
-                <h3 className="text-xl font-medium">
-                  {formatRupiah(totalNominalNonTunai)}
-                </h3>
-
-                <h3 className="text-xs font-medium">Transaksi Non Tunai</h3>
-              </div>
+              {activeTabIndex == "tab2" && (
+                <>
+                  <div
+                    data-aos="fade-up"
+                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                  >
+                    {isData ? (
+                      <>
+                        <LoaderTable />
+                      </>
+                    ) : (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columns}
+                            data={dataCash}
+                            options={{
+                              fontSize: 12, // adjust font size here
+                            }}
+                            pagination
+                            rowsPerPageOptions={[
+                              10,
+                              50,
+                              { value: -1, label: "All" },
+                            ]}
+                          />
+                        </Paper>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+              {activeTabIndex == "tab3" && (
+                <>
+                  <div
+                    data-aos="fade-up"
+                    className="w-full p-2 flex justify-start gap-6 items-center mt-5"
+                  >
+                    <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                      <h3 className="text-base font-medium">
+                        {formatRupiah(totalTransfer)}
+                      </h3>
+                      <p className="text-xs font-normal">
+                        Total Nominal Transaksi Transfer
+                      </p>
+                    </div>
+                    <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                      <h3 className="text-base font-medium">
+                        {formatRupiah(totalQris)}
+                      </h3>
+                      <p className="text-xs font-normal">
+                        Total Nominal Transaksi QRIS
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-full flex justify-center  items-center mt-5 h-full mb-28">
+                    {isData ? (
+                      <>
+                        <LoaderTable />
+                      </>
+                    ) : (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columnsNonCash}
+                            data={dataNonCash}
+                            options={{
+                              fontSize: 12, // adjust font size here
+                            }}
+                            pagination
+                            rowsPerPageOptions={[
+                              10,
+                              50,
+                              { value: -1, label: "All" },
+                            ]}
+                          />
+                        </Paper>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-
-            <div
-              data-aos="fade-up"
-              data-aos-delay="650"
-              className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-            >
-              <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Item Terlaris</h3>
-                <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                  <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
-                </div>
-              </div>
-              <div className="w-full flex flex-col justify-between items-start gap-1">
-                <h3 className="text-xl font-medium">
-                  {itemTerlaris.totalBarang} {itemTerlaris.unit}
-                </h3>
-                <h3 className="text-xs font-medium">{itemTerlaris.itemName}</h3>
-              </div>
-            </div>
-          </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="750"
-            className="w-full flex justify-end items-center  p-2 rounded-md mb-5"
-          >
-            <div>
-              <button
-                onClick={handleUpdate}
-                type="button"
-                class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
-              >
-                <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
-                  <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
-                </div>
-                <p class="translate-x-2 text-xs text-white">Ceklis Transaksi</p>
-              </button>
-            </div>
-          </div>
-          <TabBar data={allTabs} onTabChange={handleTabChange} />
-
-          {activeTabIndex == "tab1" && (
-            <>
-              <div
-                data-aos="fade-up"
-                className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-              >
-                <Paper style={{ height: 400, width: "100%" }}>
-                  <MUIDataTable
-                    columns={columnsAll}
-                    data={dataAll}
-                    options={{
-                      fontSize: 12, // adjust font size here
-                    }}
-                    pagination
-                    rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                  />
-                </Paper>
-              </div>
-            </>
-          )}
-
-          {activeTabIndex == "tab2" && (
-            <>
-              <div
-                data-aos="fade-up"
-                className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-              >
-                <Paper style={{ height: 400, width: "100%" }}>
-                  <MUIDataTable
-                    columns={columns}
-                    data={dataCash}
-                    options={{
-                      fontSize: 12, // adjust font size here
-                    }}
-                    pagination
-                    rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                  />
-                </Paper>
-              </div>
-            </>
-          )}
-          {activeTabIndex == "tab3" && (
-            <>
-              <div
-                data-aos="fade-up"
-                className="w-full p-2 flex justify-start gap-6 items-center mt-5"
-              >
-                <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
-                  <h3 className="text-base font-medium">
-                    {formatRupiah(totalTransfer)}
-                  </h3>
-                  <p className="text-xs font-normal">
-                    Total Nominal Transaksi Transfer
-                  </p>
-                </div>
-                <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
-                  <h3 className="text-base font-medium">
-                    {formatRupiah(totalQris)}
-                  </h3>
-                  <p className="text-xs font-normal">
-                    Total Nominal Transaksi QRIS
-                  </p>
-                </div>
-              </div>
-              <div className="w-full flex justify-center  items-center mt-5 h-full mb-28">
-                <Paper style={{ height: 400, width: "100%" }}>
-                  <MUIDataTable
-                    columns={columnsNonCash}
-                    data={dataNonCash}
-                    options={{
-                      fontSize: 12, // adjust font size here
-                    }}
-                    pagination
-                    rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                  />
-                </Paper>
-              </div>
-            </>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

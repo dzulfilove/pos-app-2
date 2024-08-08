@@ -31,6 +31,7 @@ import { IoEyeSharp } from "react-icons/io5";
 import { TabBar } from "../../component/features/tabBar";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import LoaderTable from "../../component/features/loader2";
 function PeriodeReport() {
   const [isEdit, setIsEdit] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
@@ -59,11 +60,14 @@ function PeriodeReport() {
   const [itemTerlaris, setItemTerlaris] = useState({});
   const [activeTabIndex, setActiveTabIndex] = useState("tab1");
   const [selectedItems, setSelectedItems] = useState([]);
+  const [isData, setIsData] = useState(true);
+
   useEffect(() => {
     getTransactions(bulan, tahun);
   }, []);
 
   const getTransactions = async (month, year) => {
+    setIsData(true);
     try {
       // Buat query dengan filter where untuk bulan dan tahun
       const transactionsQuery = query(
@@ -77,6 +81,7 @@ function PeriodeReport() {
       // Jika tidak ada dokumen yang ditemukan, kembalikan array kosong
       if (querySnapshot.empty) {
         console.log("No transactions found for the given month and year.");
+        setIsData(false);
         setTransUncheck([]);
         setTotalQris(0);
         setTotalTransfer(0);
@@ -184,6 +189,7 @@ function PeriodeReport() {
       setTransUncheck(transactionUnCheck);
       setTotalQris(totalQris);
       setTotalTransfer(totalTransfer);
+      setIsData(false);
       setDataTunai(transactionTunai);
       setDataNonTunai(transactionNonTunai);
       setItemTerlaris(mostFrequentItem);
@@ -192,6 +198,8 @@ function PeriodeReport() {
       setTotalNominalTunai(totalNominalTunai);
       setTotalNominalNonTunai(totalNominalNonTunai);
     } catch (e) {
+      setIsData(false);
+
       Swal.fire({
         title: "Error!",
         text: "Gagal mendapatkan data: " + e.message,
@@ -633,17 +641,29 @@ function PeriodeReport() {
                 data-aos="fade-up"
                 className="w-full flex justify-center  items-center mt-5 h-full mb-28"
               >
-                <Paper style={{ height: 400, width: "100%" }}>
-                  <MUIDataTable
-                    columns={columnsAll}
-                    data={dataAll}
-                    options={{
-                      fontSize: 12, // adjust font size here
-                    }}
-                    pagination
-                    rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                  />
-                </Paper>
+                {isData ? (
+                  <>
+                    <LoaderTable />
+                  </>
+                ) : (
+                  <>
+                    <Paper style={{ height: 400, width: "100%" }}>
+                      <MUIDataTable
+                        columns={columnsAll}
+                        data={dataAll}
+                        options={{
+                          fontSize: 12, // adjust font size here
+                        }}
+                        pagination
+                        rowsPerPageOptions={[
+                          10,
+                          50,
+                          { value: -1, label: "All" },
+                        ]}
+                      />
+                    </Paper>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -654,17 +674,29 @@ function PeriodeReport() {
                 data-aos="fade-up"
                 className="w-full flex justify-center  items-center mt-5 h-full mb-28"
               >
-                <Paper style={{ height: 400, width: "100%" }}>
-                  <MUIDataTable
-                    columns={columns}
-                    data={dataCash}
-                    options={{
-                      fontSize: 12, // adjust font size here
-                    }}
-                    pagination
-                    rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                  />
-                </Paper>
+                {isData ? (
+                  <>
+                    <LoaderTable />
+                  </>
+                ) : (
+                  <>
+                    <Paper style={{ height: 400, width: "100%" }}>
+                      <MUIDataTable
+                        columns={columns}
+                        data={dataCash}
+                        options={{
+                          fontSize: 12, // adjust font size here
+                        }}
+                        pagination
+                        rowsPerPageOptions={[
+                          10,
+                          50,
+                          { value: -1, label: "All" },
+                        ]}
+                      />
+                    </Paper>
+                  </>
+                )}
               </div>
             </>
           )}
@@ -692,17 +724,29 @@ function PeriodeReport() {
                 </div>
               </div>
               <div className="w-full flex justify-center  items-center mt-5 h-full mb-28">
-                <Paper style={{ height: 400, width: "100%" }}>
-                  <MUIDataTable
-                    columns={columnsNonCash}
-                    data={dataNonCash}
-                    options={{
-                      fontSize: 12, // adjust font size here
-                    }}
-                    pagination
-                    rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
-                  />
-                </Paper>
+                {isData ? (
+                  <>
+                    <LoaderTable />
+                  </>
+                ) : (
+                  <>
+                    <Paper style={{ height: 400, width: "100%" }}>
+                      <MUIDataTable
+                        columns={columnsNonCash}
+                        data={dataNonCash}
+                        options={{
+                          fontSize: 12, // adjust font size here
+                        }}
+                        pagination
+                        rowsPerPageOptions={[
+                          10,
+                          50,
+                          { value: -1, label: "All" },
+                        ]}
+                      />
+                    </Paper>
+                  </>
+                )}
               </div>
             </>
           )}
