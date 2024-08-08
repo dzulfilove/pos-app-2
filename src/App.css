@@ -36,3 +36,10 @@
     transform: rotate(360deg);
   }
 }
+
+/* Tablet landscape mode */
+@media only screen and (min-width: 800px) and (max-width: 1000px) and (orientation: landscape) {
+  .body-main {
+  }
+  /* Your styles here */
+}
