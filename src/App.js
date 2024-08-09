@@ -157,7 +157,7 @@ const App = () => {
                               menu?.margin && "mt-5"
                             } z-[9] group flex ${
                               open == true
-                                ? "justify-start w-[8rem] px-4 gap-3.5"
+                                ? "justify-start w-[8.3rem] px-4 gap-3.5"
                                 : " p-2 justify-center w-[4rem]"
                             } items-center  text-lg button  font-medium rounded-md  transition duration-300 ease-in-out`}
                           >
