@@ -110,7 +110,7 @@ class Auth extends Component {
         });
         return;
       }
-
+      console.log(userData.nama);
       sessionStorage.setItem("isLoggedIn", true);
       sessionStorage.setItem("userEmail", email);
       sessionStorage.setItem("nama", userData.nama);
@@ -123,7 +123,7 @@ class Auth extends Component {
         timer: 1500,
       });
 
-      window.location.href = "/";
+      // window.location.href = "/";
       console.log("Login successful");
     } catch (error) {
       Swal.fire({
