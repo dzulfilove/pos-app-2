@@ -298,6 +298,7 @@ function TodayReport() {
         // Jalankan semua promises secara paralel
         await Promise.all(updatePromises);
         setIsLoad(false);
+        getTransactions();
         Swal.fire(
           "Berhasil!",
           `${data.length} data transaksi telah diceklis.`,

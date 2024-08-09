@@ -207,10 +207,43 @@ function MainTransaction() {
       console.error("Error fetching categories: ", error);
     }
   };
+  const getInventory = async () => {
+    try {
+      // Ambil referensi item yang diinginkan dari state
+      const itemRef = doc(db, "items", selectedBarang.value);
+
+      // Buat query dengan filter where refItem == itemRef
+      const inventoryQuery = query(
+        collection(db, "inventorys"),
+        where("refItem", "==", itemRef)
+      );
+
+      const querySnapshot = await getDocs(inventoryQuery);
+      const items = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+          };
+        })
+      );
+      return items[0];
+    } catch (e) {
+      Swal.fire({
+        title: "Error!",
+        text: "Gagal mendapatkan data: " + e.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return [];
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoad(true);
+    // setIsLoad(true);
+
     // Cek jika state kosong
     if (
       selectedBarang == null ||
@@ -232,12 +265,25 @@ function MainTransaction() {
 
     try {
       const itemRef = doc(db, "items", selectedBarang.value);
-      const categoryRef = doc(db, "category", selectedBarang.refCategory);
 
-      // Mulai transaksi
+      const dataItems= await getInventory()
       await runTransaction(db, async (transaction) => {
+        console.log(dataItems, "data Items Invent");
+        // Jika data inventory tidak ditemukan
+        if (!dataItems) {
+          throw new Error("Inventory data not found.");
+        }
+
+        // Cek apakah stok mencukupi
+        const newStock = parseInt(dataItems.stock) - parseInt(jumlahBarang);
+        if (newStock < 0) {
+          throw new Error("Stock tidak mencukupi.");
+        }
+
+        const categoryRef = doc(db, "category", selectedBarang.refCategory);
+
         // Tambahkan data ke koleksi transactions
-        const transactionRef = await addDoc(collection(db, "transactions"), {
+        await transaction.set(doc(collection(db, "transactions")), {
           refItem: itemRef,
           refCategory: categoryRef,
           quantity: parseInt(jumlahBarang),
@@ -249,17 +295,16 @@ function MainTransaction() {
           isCheck: false,
         });
 
-        // Tambahkan data ke historyInventory
+        // Data yang akan ditambahkan ke historyInventory
         const dateInput = dayjs().format("DD/MM/YYYY");
         const timeInput = dayjs().format("HH:mm");
-        const monthInput = dayjs().format("MMMM"); // Format bulan seperti "May"
-        const yearInput = dayjs().format("YYYY"); // Format tahun
+        const monthInput = dayjs().format("MMMM");
+        const yearInput = dayjs().format("YYYY");
 
-        // Data yang akan ditambahkan ke historyInventory
         const historyData = {
           refItem: itemRef,
           refCategory: categoryRef,
-          stock: parseInt(jumlahBarang), // Pastikan stok sudah dalam tipe number
+          stock: parseInt(jumlahBarang),
           dateUpdate: tanggal,
           info: `Penjualan ${
             selectedBarang.text
@@ -273,12 +318,21 @@ function MainTransaction() {
           status: "Stok Keluar",
         };
 
-        // Gunakan transaction untuk menambahkan ke historyInventory
-        transaction.set(doc(collection(db, "historyInventory")), historyData);
-      });
-      setIsLoad(false);
+        // Tambahkan data ke historyInventory
+        await transaction.set(
+          doc(collection(db, "historyInventory")),
+          historyData
+        );
 
-      // Panggil getTransactions untuk memperbarui data transaksi
+        // Update stok di inventory
+        transaction.update(doc(db, "inventorys", dataItems.id), {
+          stock: newStock,
+          dateUpdate: tanggal,
+        });
+        console.log(dataItems);
+      });
+
+      setIsLoad(false);
       getTransactions();
       Swal.fire("Success", "Transaction added successfully", "success");
       setJenisPembayaran(null);
@@ -287,12 +341,16 @@ function MainTransaction() {
       setJumlahBarang(0);
       setIsOpen(false);
     } catch (error) {
-      console.error("Error adding transaction: ", error);
       setIsLoad(false);
-
-      Swal.fire("Error", "Failed to add transaction", "error");
+      if (error.message === "Stock tidak mencukupi.") {
+        Swal.fire("Error", "Stock tidak mencukupi", "error");
+      } else {
+        console.error("Error adding transaction: ", error);
+        Swal.fire("Error", "Failed to add transaction", "error");
+      }
     }
   };
+
   const handleDelete = async (data) => {
     const confirmDelete = await Swal.fire({
       title: "Konfirmasi Hapus",
