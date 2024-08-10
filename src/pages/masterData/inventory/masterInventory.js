@@ -530,7 +530,7 @@ function MasterInventory() {
         </>
       ) : (
         <>
-          <div className="w-full h-full flex flex-col justify-start items-center pb-24">
+          <div className="w-full h-full flex flex-col justify-start items-center">
             <div
               data-aos="slide-down"
               data-aos-delay="50"
@@ -1387,11 +1387,7 @@ function MasterInventory() {
                             fontSize: 12,
                           }}
                           pagination
-                          rowsPerPageOptions={[
-                            10,
-                            50,
-                            { value: -1, label: "All" },
-                          ]}
+                          rowsPerPageOptions={[10, { value: -1, label: "All" }]}
                         />
                       </Paper>
                     </>

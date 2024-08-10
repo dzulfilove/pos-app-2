@@ -294,8 +294,8 @@ const App = () => {
                   </div>
                 </div>
               </div>
-              <div className=" mt-8 text-gray-900 font-semibold w-full flex flex-col justify-start items-center bg-blue-50 px-6 overflow-y-scroll">
-                <div className="h-[100vh] w-[100%]  p-0 m-0">
+              <div className=" mt-8 text-gray-900 font-semibold w-full flex flex-col justify-start items-center bg-blue-50 px-6 overflow-y-scroll mb-36">
+                <div className="h-[100vh] w-[100%]  p-0 pb-12 m-0">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/barang" element={<MainBarang />} />
@@ -318,6 +318,7 @@ const App = () => {
                       element={<MasterKategori />}
                     />
                   </Routes>
+                  <div className="w-full flex justify-center  items-center mt-5 h-[30rem] mb-12"></div>
                 </div>
               </div>
             </section>

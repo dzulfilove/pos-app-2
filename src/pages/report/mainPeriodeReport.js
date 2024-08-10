@@ -737,12 +737,6 @@ function PeriodeReport() {
                         options={{
                           fontSize: 12, // adjust font size here
                         }}
-                        pagination
-                        rowsPerPageOptions={[
-                          10,
-                          50,
-                          { value: -1, label: "All" },
-                        ]}
                       />
                     </Paper>
                   </>

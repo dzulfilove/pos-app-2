@@ -130,7 +130,9 @@ function HistoryDetail({ params }) {
             className="cookieCard w-[40%] p-6 shadow-md"
           >
             <div className="cookieDescription">
-              <h3 className="text-xl font-medium">{totalStok} Stok</h3>
+              <h3 className="text-xl font-medium">
+                {parseInt(totalStokMasuk) - parseInt(totalStokKeluar)} Stok
+              </h3>
             </div>
             <h3 className="text-xs font-normal text-white w-full">
               Total Jumlah Stok

@@ -124,8 +124,6 @@ const TableDetailHistory = (props) => {
           options={{
             fontSize: 12,
           }}
-          pagination
-          rowsPerPageOptions={[10, 50, { value: -1, label: "All" }]}
         />
       </Paper>
     </div>

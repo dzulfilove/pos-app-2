@@ -71,6 +71,7 @@ function MainTransaction() {
       // Jika tidak ada dokumen yang ditemukan, kembalikan array kosong
       if (querySnapshot.empty) {
         console.log("No transactions found for the given month and year.");
+        setIsData(false);
 
         setitemTerlaris({});
         setDataTransaction([]);
@@ -207,10 +208,9 @@ function MainTransaction() {
       console.error("Error fetching categories: ", error);
     }
   };
-  const getInventory = async () => {
+  const getInventory = async (itemRef) => {
     try {
       // Ambil referensi item yang diinginkan dari state
-      const itemRef = doc(db, "items", selectedBarang.value);
 
       // Buat query dengan filter where refItem == itemRef
       const inventoryQuery = query(
@@ -266,7 +266,7 @@ function MainTransaction() {
     try {
       const itemRef = doc(db, "items", selectedBarang.value);
 
-      const dataItems= await getInventory()
+      const dataItems = await getInventory(itemRef);
       await runTransaction(db, async (transaction) => {
         console.log(dataItems, "data Items Invent");
         // Jika data inventory tidak ditemukan
@@ -352,6 +352,8 @@ function MainTransaction() {
   };
 
   const handleDelete = async (data) => {
+    const nama = sessionStorage.getItem("nama");
+
     const confirmDelete = await Swal.fire({
       title: "Konfirmasi Hapus",
       text: "Anda yakin ingin menghapus Transaksi ini?",
@@ -362,29 +364,70 @@ function MainTransaction() {
     });
 
     if (confirmDelete.isConfirmed) {
-      setIsLoad(true);
-
+      // setIsLoad(true);
       try {
-        // Buat referensi ke dokumen kategori yang ingin dihapus
-        const dataRef = doc(db, "transactions", data.id);
+        const itemRef = doc(db, "items", data.itemId);
+        const categoryRef = doc(db, "category", data.categoryId);
 
-        // Hapus dokumen dari Firestore
-        await deleteDoc(dataRef);
+        // Jalankan transaction
+        await runTransaction(db, async (transaction) => {
+          // Dapatkan data inventory terkait
+          const dataItems = await getInventory(itemRef);
+          if (!dataItems) {
+            throw new Error("Inventory data not found.");
+          }
+
+          const dataRef = doc(db, "transactions", data.id);
+
+          // Hapus dokumen dari Firestore (transactions)
+          transaction.delete(dataRef);
+
+          // Data yang akan ditambahkan ke historyInventory
+          const dateInput = dayjs().format("DD/MM/YYYY");
+          const timeInput = dayjs().format("HH:mm");
+          const monthInput = dayjs().format("MMMM");
+          const yearInput = dayjs().format("YYYY");
+
+          const historyData = {
+            refItem: itemRef,
+            refCategory: categoryRef,
+            stock: parseInt(data.quantity),
+            dateUpdate: tanggal,
+            info: `Penghapusan Data Transaksi ${data.item.itemName} Sejumlah ${
+              data.quantity
+            } dengan Total Harga ${formatRupiah(
+              parseInt(data.quantity) * parseInt(data.price)
+            )} Oleh ${nama}`,
+            dateInput: dateInput,
+            timeInput: timeInput,
+            month: monthInput,
+            year: yearInput,
+            status: "Stok Masuk",
+          };
+
+          // Tambahkan data ke historyInventory
+          transaction.set(doc(collection(db, "historyInventory")), historyData);
+
+          // Update stok di inventory
+          const newStock = parseInt(data.quantity) + dataItems.stock;
+          transaction.update(doc(db, "inventorys", dataItems.id), {
+            stock: newStock,
+            dateUpdate: tanggal,
+          });
+        });
+
         setIsLoad(false);
-
-        // Tampilkan alert sukses
         Swal.fire({
           title: "Sukses!",
-          text: "Kategori berhasil dihapus.",
+          text: "Transaksi berhasil dihapus.",
           icon: "success",
           confirmButtonText: "OK",
         });
         getTransactions();
       } catch (error) {
+        console.error("Error deleting transaksi:", error.message);
         setIsLoad(false);
 
-        console.error("Error deleting transaksi:", error.message);
-        // Tampilkan alert error
         Swal.fire({
           title: "Error!",
           text: "Terjadi kesalahan saat menghapus transaksi.",
@@ -394,6 +437,7 @@ function MainTransaction() {
       }
     }
   };
+
   const handleDetailData = (data) => {
     if (indexDetail === data.id && isDetail) {
       setIsDetail(false);
@@ -825,12 +869,6 @@ function MainTransaction() {
                         options={{
                           fontSize: 12, // adjust font size here
                         }}
-                        pagination
-                        rowsPerPageOptions={[
-                          10,
-                          50,
-                          { value: -1, label: "All" },
-                        ]}
                       />
                     </Paper>
                   </>
