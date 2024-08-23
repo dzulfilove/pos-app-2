@@ -224,7 +224,6 @@ function InventoryDetail({ params }) {
   };
 
   const handleKurang = async (gap, item) => {
-    alert("kurang");
     try {
       await runTransaction(db, async (transaction) => {
         // Referensi untuk item dan kategori
@@ -247,6 +246,7 @@ function InventoryDetail({ params }) {
           date: tanggal,
           month: bulan,
           year: tahun,
+          type: "Stock",
           isCheck: false,
           isBayar: false,
           user: nama,
@@ -307,7 +307,6 @@ function InventoryDetail({ params }) {
   };
 
   const handleLebih = async (gap, item) => {
-    alert("kurang");
     try {
       await runTransaction(db, async (transaction) => {
         // Referensi untuk item dan kategori
@@ -367,6 +366,7 @@ function InventoryDetail({ params }) {
         dateCheck: tanggal,
         type: "Stock",
         info,
+        user: nama,
         timeCheck: timeInput,
       });
       console.log("berhasil");

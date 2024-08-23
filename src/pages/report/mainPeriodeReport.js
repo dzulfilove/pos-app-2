@@ -661,7 +661,7 @@ function PeriodeReport() {
           {activeTabIndex == "tab1" && (
             <>
               <div
-                data-aos="fade-up"
+                // data-aos="fade-up"
                 className="w-full flex justify-center  items-center mt-5 h-full mb-28"
               >
                 {isData ? (
@@ -694,7 +694,7 @@ function PeriodeReport() {
           {activeTabIndex == "tab2" && (
             <>
               <div
-                data-aos="fade-up"
+                // data-aos="fade-up"
                 className="w-full flex justify-center  items-center mt-5 h-full mb-28"
               >
                 {isData ? (
@@ -726,7 +726,7 @@ function PeriodeReport() {
           {activeTabIndex == "tab3" && (
             <>
               <div
-                data-aos="fade-up"
+                // data-aos="fade-up"
                 className="w-full p-2 flex justify-start gap-6 items-center mt-5"
               >
                 <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">

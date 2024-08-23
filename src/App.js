@@ -41,6 +41,8 @@ import { MdOutlineHistory } from "react-icons/md";
 import Auth from "./pages/auth/auth";
 import MainHistory from "./pages/history/mainHistory";
 import HistoryCash from "./pages/history/historyCash";
+import HistoryStok from "./pages/history/historyStok";
+import OtherIncomeReport from "./pages/report/mainOtherIncome";
 
 const App = () => {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn");
@@ -304,6 +306,11 @@ const App = () => {
                     <Route path="/report" element={<MainReport />} />
                     <Route path="/history" element={<MainHistory />} />
                     <Route path="/history-cash" element={<HistoryCash />} />
+                    <Route path="/history-stok" element={<HistoryStok />} />
+                    <Route
+                      path="/transaction-other"
+                      element={<OtherIncomeReport />}
+                    />
                     <Route path="/transaction" element={<MainTransaction />} />
                     <Route path="/today-report" element={<TodayReport />} />
                     <Route path="/all-report" element={<PeriodeReport />} />

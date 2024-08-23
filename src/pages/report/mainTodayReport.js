@@ -32,7 +32,7 @@ import "aos/dist/aos.css";
 import Loader from "../../component/features/loader";
 import LoaderTable from "../../component/features/loader2";
 function TodayReport() {
-  const [isCek, setIsCek] = useState(true);
+  const [isCek, setIsCek] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
   const [dataDetail, setDataDetail] = useState({});
   const [isOpen, setIsOpen] = useState(false);
@@ -453,6 +453,7 @@ function TodayReport() {
         totalActuallyCash: parseInt(nominalTransaksi),
         totalTransaction: parseInt(dataTransaction.length),
         dateCheck: tanggal,
+        user: nama,
         info,
         type: "Cash",
         timeCheck: timeInput,
@@ -511,6 +512,7 @@ function TodayReport() {
         date: tanggal,
         month: bulan,
         year: tahun,
+        type: "Cash",
         isCheck: false,
         isBayar: false,
         user: nama,
@@ -1090,9 +1092,10 @@ function TodayReport() {
                   </div>
                 </>
               )}
+
               <div
                 data-aos="fade-up"
-                className="w-full bg-white rounded-xl flex flex-col p-4 justify-start items-center shadow-md my-5"
+                className="w-full bg-white rounded-xl flex flex-col p-4 justify-start items-center shadow-md mt-5"
               >
                 <div className="w-full bg-white flex  justify-start items-center ">
                   <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
@@ -1143,7 +1146,7 @@ function TodayReport() {
                   <div
                     data-aos="fade-up"
                     data-aos-delay="750"
-                    className="w-full flex justify-end items-center  p-2 rounded-md mb-5"
+                    className="w-full flex justify-end items-center  p-2 rounded-md"
                   >
                     <div>
                       <button
