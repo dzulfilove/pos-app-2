@@ -37,7 +37,10 @@ import MainTransaction from "./pages/transaction/mainTransaction";
 import MainReport from "./pages/report/mainReport";
 import TodayReport from "./pages/report/mainTodayReport";
 import PeriodeReport from "./pages/report/mainPeriodeReport";
+import { MdOutlineHistory } from "react-icons/md";
 import Auth from "./pages/auth/auth";
+import MainHistory from "./pages/history/mainHistory";
+import HistoryCash from "./pages/history/historyCash";
 
 const App = () => {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn");
@@ -60,12 +63,11 @@ const App = () => {
       icon: IoStatsChartSharp,
       main: false,
     },
-    { name: "Karyawan", link: "employee", icon: BsPersonWorkspace, main: true },
     {
-      name: "Master Data",
-      link: "masterData",
-      icon: CgDatabase,
-      main: true,
+      name: "Riwayat",
+      link: "history",
+      icon: MdOutlineHistory,
+      main: false,
     },
   ];
 
@@ -300,6 +302,8 @@ const App = () => {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/barang" element={<MainBarang />} />
                     <Route path="/report" element={<MainReport />} />
+                    <Route path="/history" element={<MainHistory />} />
+                    <Route path="/history-cash" element={<HistoryCash />} />
                     <Route path="/transaction" element={<MainTransaction />} />
                     <Route path="/today-report" element={<TodayReport />} />
                     <Route path="/all-report" element={<PeriodeReport />} />

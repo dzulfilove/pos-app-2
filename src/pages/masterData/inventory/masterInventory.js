@@ -28,6 +28,7 @@ import {
 import { db } from "../../../config/database";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
+
 import { DatePicker, Space } from "antd";
 import Swal from "sweetalert2";
 import { IoEyeSharp } from "react-icons/io5";
@@ -53,18 +54,22 @@ function MasterInventory() {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const [tanggalExp, setTanggalExp] = useState(
+    dayjs().locale("id").format("DD/MM/YYYY")
+  );
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
 
   const [keterangan, setKeterangan] = useState("");
+  const [satuan, setSatuan] = useState("");
   const [additionalForms, setAdditionalForms] = useState([]);
   const [dataStok, setDataStok] = useState([]);
   const [dataHistory, setDataHistory] = useState([]);
   const [dataDisplay, setDataDisplay] = useState([]);
-  const [activeTabIndex, setActiveTabIndex] = useState("tab1");
   const [isData1, setIsData1] = useState(true);
   const [isData2, setIsData2] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
+  const [activeTabIndex, setActiveTabIndex] = useState("tab1");
 
   const allTabs = [
     {
@@ -76,7 +81,9 @@ function MasterInventory() {
       name: "Riwayat Perubahan Stok",
     },
   ];
-
+  const handleTabChange = (index) => {
+    setActiveTabIndex(`tab${index + 1}`);
+  };
   useEffect(() => {
     fetchItems();
     getInventory();
@@ -269,13 +276,15 @@ function MasterInventory() {
     if (!dayjsDate.isValid()) {
       return;
     }
+    if (name == "tanggalExp") {
+      const formattedDate = dayjsDate.format("DD/MM/YYYY");
+      setTanggalExp(formattedDate);
+    } else {
+      const formattedDate = dayjsDate.format("DD/MM/YYYY");
+      setTanggal(formattedDate);
+    }
+  };
 
-    const formattedDate = dayjsDate.format("DD/MM/YYYY");
-    setTanggal(formattedDate);
-  };
-  const handleTabChange = (index) => {
-    setActiveTabIndex(`tab${index + 1}`);
-  };
   const handleInputChange = (index, field, value) => {
     const newForms = [...additionalForms];
 
@@ -298,28 +307,32 @@ function MasterInventory() {
     setAdditionalForms([
       ...additionalForms,
       {
-        barang: "",
-        stok: "",
-        tanggal: "",
-        keterangan: "",
+        barang: barang,
+        stok: parseInt(stok),
+        satuan: satuan,
+        tanggalExp: tanggalExp || dayjs().locale("id").format("DD/MM/YYYY"),
+        tanggal: tanggal || dayjs().locale("id").format("DD/MM/YYYY"),
+        // keterangan: "",
       },
     ]);
+    setTanggal(dayjs().locale("id").format("DD/MM/YYYY"));
+    setTanggalExp(dayjs().locale("id").format("DD/MM/YYYY"));
+    setStok(0);
+    setSatuan("");
+    setBarang(null);
   };
-  const removeForm = (index) => {
-    const newForms = additionalForms.filter((_, i) => i !== index);
+  const removeForm = (item) => {
+    const newForms = additionalForms.filter(
+      (i) => i.barang.value != item.barang.value
+    );
     setAdditionalForms(newForms);
   };
+
   const handleAdd = async () => {
     // Cek jika state barang dan keterangan kosong
     setIsLoad(true);
-    const newData = {
-      barang: barang,
-      stok: Number(stok), // Pastikan stok adalah tipe number
-      tanggal: tanggal || dayjs().locale("id").format("DD/MM/YYYY"), // Isi tanggal jika kosong
-      keterangan: keterangan,
-    };
 
-    const dataGroup = [...additionalForms, newData];
+    const dataGroup = additionalForms;
     console.log("data Send", dataGroup);
 
     // Cek properti pada setiap objek di dataGroup
@@ -328,8 +341,8 @@ function MasterInventory() {
       if (data.barang == null || data.barang.value === "") {
         incompleteFields.push("Barang");
       }
-      if (data.keterangan === "") {
-        incompleteFields.push("Keterangan");
+      if (data.satuan === "") {
+        incompleteFields.push("Satuan");
       }
       if (data.stok === "") {
         Swal.fire("Error", "Stok tidak boleh kosong", "error");
@@ -340,6 +353,7 @@ function MasterInventory() {
       if (data.tanggal === "") {
         data.tanggal = dayjs().locale("id").format("DD/MM/YYYY");
       }
+
       setIsLoad(false);
 
       if (incompleteFields.length > 0) {
@@ -372,7 +386,10 @@ function MasterInventory() {
             transaction.update(itemInventoryRef, {
               stock: newStock, // Update stok yang baru
               dateUpdate: data.tanggal,
-              info: data.keterangan,
+              unit: data.satuan,
+              dateExp: data.tanggalExp,
+
+              // info: data.keterangan,
             });
           } else {
             // Jika item belum ada, lakukan insert baru
@@ -380,9 +397,11 @@ function MasterInventory() {
             transaction.set(inventoryRef, {
               refItem: itemRef,
               refCategory: categoryRef,
+              unit: data.satuan,
               stock: parseInt(data.stok), // Pastikan stok sudah dalam tipe number
               dateUpdate: data.tanggal,
-              info: data.keterangan,
+              dateExp: data.tanggalExp,
+              // info: data.keterangan,
             });
           }
 
@@ -398,7 +417,8 @@ function MasterInventory() {
             refCategory: categoryRef,
             stock: parseInt(data.stok), // Pastikan stok sudah dalam tipe number
             dateUpdate: data.tanggal,
-            info: data.keterangan,
+            dateExp: data.tanggalExp,
+            // info: data.keterangan,
             dateInput: dateInput,
             timeInput: timeInput,
             month: monthInput,
@@ -482,6 +502,7 @@ function MasterInventory() {
         },
       },
     },
+
     {
       name: "data",
       label: "Aksi",
@@ -1221,6 +1242,17 @@ function MasterInventory() {
                       </div>
                     </div>
                     <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Satuan</h4>
+                      <input
+                        type="text"
+                        value={satuan}
+                        onChange={(e) => {
+                          setSatuan(e.target.value);
+                        }}
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                       <h4 className="font-medium text-xs">Jumlah Stok</h4>
                       <input
                         type="number"
@@ -1231,7 +1263,13 @@ function MasterInventory() {
                         className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                       />
                     </div>
-                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                  </div>
+                  <div
+                    className={`w-full ${
+                      !isOpen ? "hidden" : "flex"
+                    } justify-start items-end gap-4 pl-8 pr-14`}
+                  >
+                    <div className="w-[32%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                       <h4 className="font-medium text-xs">Tanggal </h4>
 
                       <Space direction="vertical" size={12}>
@@ -1241,11 +1279,37 @@ function MasterInventory() {
                           onChange={(date) => {
                             handleChangeDate("mulaiTanggal", date);
                           }}
-                          className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          className="w-[12rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                         />
                       </Space>
                     </div>
                     <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Tanggal Exp. </h4>
+
+                      <Space direction="vertical" size={12}>
+                        <DatePicker
+                          defaultValue={dayjs(tanggalExp, dateFormatList[0])}
+                          format={dateFormatList}
+                          onChange={(date) => {
+                            handleChangeDate("tanggalExp", date);
+                          }}
+                          className="w-[12rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                        />
+                      </Space>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addNewForm}
+                      className="bg-blue-500 text-center w-48 rounded-2xl h-10 mb-2 relative text-black text-xl font-semibold group"
+                    >
+                      <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                        <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
+                      </div>
+                      <p className="translate-x-2 text-[0.65rem] text-white">
+                        Tambah Data
+                      </p>
+                    </button>
+                    {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                       <h4 className="font-medium text-xs">Keterangan</h4>
                       <input
                         type="text"
@@ -1255,97 +1319,50 @@ function MasterInventory() {
                         value={keterangan}
                         className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                       />
+                    </div> */}
+                  </div>
+                  <div className="w-full mt-5 flex justify-center items-center px-6">
+                    <div className="w-full  flex justify-between items-center p-2 rounded-md bg-blue-600 text-white text-xs font-medium">
+                      <div className="w-[20%] flex justify-center items-center">
+                        Barang
+                      </div>
+                      <div className="w-[20%] flex justify-center items-center">
+                        Stok
+                      </div>
+                      <div className="w-[20%] flex justify-center items-center">
+                        Tanggal
+                      </div>
+                      <div className="w-[20%] flex justify-center items-center">
+                        Tanggal Exp.
+                      </div>
                     </div>
                   </div>
-                  {additionalForms.map((form, index) => (
-                    <div
-                      key={index}
-                      className={`w-full ${
-                        !isOpen ? "hidden" : "flex"
-                      } justify-start items-center gap-4 pl-8 pr-14 `}
-                    >
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Barang ID</h4>
-                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                          <DropdownSearch
-                            change={(data) => {
-                              handleInputChange(index, "barang", data);
-                            }}
-                            options={dataItems}
-                            value={form.barang}
-                            name={"Barang"}
-                          />
+                  <div className="w-full mt-2 flex flex-col justify-between items-center rounded-md text-xs font-medium">
+                    {additionalForms.map((form, index) => (
+                      <>
+                        <div className="w-full mt-2 flex border border-blue-500 shadow-md justify-between items-center p-2 rounded-md  text-xs font-medium">
+                          <div className="w-[20%] flex justify-center items-center">
+                            {form.barang.text}
+                          </div>
+                          <div className="w-[20%] flex justify-center items-center">
+                            {form.stok} {form.satuan}
+                          </div>
+                          <div className="w-[20%] flex justify-center items-center">
+                            {form.tanggal}
+                          </div>
+                          <div className="w-[20%] flex justify-center items-center">
+                            {form.tanggalExp}
+                          </div>
                         </div>
-                      </div>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Jumlah Stok</h4>
-                        <input
-                          type="number"
-                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                          value={form.jumlah_stok}
-                          onChange={(e) =>
-                            handleInputChange(index, "stok", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Tanggal </h4>
+                      </>
+                    ))}
+                  </div>
 
-                        <Space direction="vertical" size={12}>
-                          <DatePicker
-                            defaultValue={dayjs(tanggal, dateFormatList[0])}
-                            format={dateFormatList}
-                            onChange={(date) => {
-                              handleInputChange(index, "tanggal", date);
-                            }}
-                            className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                          />
-                        </Space>
-                      </div>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Keterangan</h4>
-                        <input
-                          type="text"
-                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                          value={form.keterangan}
-                          onChange={(e) =>
-                            handleInputChange(
-                              index,
-                              "keterangan",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="w-[4%] text-xs flex flex-col justify-end items-end gap-4 h-[4rem] pr-2 ">
-                        <button
-                          className="w-[2rem] h-[2rem] flex justify-center items-center rounded-full  bg-red-200 border border-red-700 hover:bg-red-600 text-red-600 hover:text-white"
-                          onClick={() => removeForm(index)}
-                        >
-                          <RiDeleteBin5Line className="text-base" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
                   <div
                     className={`w-full ${
                       !isOpen ? "hidden" : "flex"
                     } justify-start items-center gap-4`}
                   >
-                    <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
-                      <button
-                        type="button"
-                        onClick={addNewForm}
-                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
-                      >
-                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                          <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
-                        </div>
-                        <p className="translate-x-2 text-[0.65rem] text-white">
-                          Tambah Data
-                        </p>
-                      </button>
-                    </div>
                     <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
                       <button
                         type="button"

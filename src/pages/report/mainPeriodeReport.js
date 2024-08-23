@@ -50,6 +50,8 @@ function PeriodeReport() {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const [totalProfit, setTotalProfit] = useState(0);
+
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const [totalNominal, setTotalNominal] = useState(0);
@@ -111,13 +113,23 @@ function PeriodeReport() {
 
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
+          let profit = 0;
 
+          if (
+            itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
+            itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+          ) {
+            profit = total;
+          } else {
+            profit = total - data.quantity * itemData.buyPrice;
+          }
           return {
             id: doc.id,
             ...data,
             item: itemData,
             category: categoryData,
             itemId: itemRef.id,
+            profit: profit,
             categoryId: categoryRef.id,
             total: total, // Tambahkan properti total
           };
@@ -125,19 +137,30 @@ function PeriodeReport() {
       );
 
       // Menghitung total dari semua transaksi
-      const totalNominal = transactions.reduce(
-        (acc, transaction) => acc + transaction.total,
-        0
-      );
+      const totalNominal = transactions
+        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+      // Menghitung total untuk payment "Tunai"
 
+      const profitTotal = transactions
+        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .reduce((acc, transaction) => acc + transaction.profit, 0);
       // Menghitung total untuk payment "Tunai"
       const totalNominalTunai = transactions
-        .filter((transaction) => transaction.payment === "Tunai")
+        .filter(
+          (transaction) =>
+            transaction.payment === "Tunai" &&
+            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Menghitung total untuk payment selain "Tunai"
       const totalNominalNonTunai = transactions
-        .filter((transaction) => transaction.payment !== "Tunai")
+        .filter(
+          (transaction) =>
+            transaction.payment !== "Tunai" &&
+            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Kelompokkan data berdasarkan refItem
@@ -186,6 +209,7 @@ function PeriodeReport() {
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       console.log("Most Frequent Item:", mostFrequentItem);
+      setTotalProfit(profitTotal);
       setTransUncheck(transactionUnCheck);
       setTotalQris(totalQris);
       setTotalTransfer(totalTransfer);
@@ -506,11 +530,11 @@ function PeriodeReport() {
                 <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
                   <div className="w-full flex justify-start gap-4 items-center">
                     <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominal)}
+                      {formatRupiah(totalProfit)}
                     </h3>
                   </div>
                   <div className="w-full flex justify-start gap-4 items-center">
-                    <h3 className="text-xs font-normal">Nominal Transaksi</h3>
+                    <h3 className="text-xs font-normal">Nominal Profit</h3>
                   </div>
                 </div>
                 <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
@@ -567,16 +591,15 @@ function PeriodeReport() {
               className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
             >
               <div className="w-full flex justify-between items-start ">
-                <h3 className="text-base font-medium">Item Terlaris</h3>
+                <h3 className="text-base font-medium">Nominal Transaksi</h3>
                 <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
                   <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
                 </div>
               </div>
               <div className="w-full flex flex-col justify-between items-start gap-1">
                 <h3 className="text-xl font-medium">
-                  {itemTerlaris.totalBarang} {itemTerlaris.unit}
+                  {formatRupiah(totalNominal)}
                 </h3>
-                <h3 className="text-xs font-medium">{itemTerlaris.itemName}</h3>
               </div>
             </div>
           </div>

@@ -32,16 +32,16 @@ import "aos/dist/aos.css";
 import Loader from "../../component/features/loader";
 import LoaderTable from "../../component/features/loader2";
 function TodayReport() {
-  const [isEdit, setIsEdit] = useState(false);
+  const [isCek, setIsCek] = useState(true);
   const [isDetail, setIsDetail] = useState(false);
   const [dataDetail, setDataDetail] = useState({});
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedBarang, setSelectedBarang] = useState(null);
-  const [jumlahBarang, setJumlahBarang] = useState(0);
-  const [harga, setHarga] = useState(0);
+
+  const [nominalTransaksi, setNominalTransaksi] = useState(0);
+  const [selisih, setSelisih] = useState("");
   const [jenisPembayaran, setJenisPembayaran] = useState(null);
   const [indexDetail, setIndexDetail] = useState(0);
-  const [dataBarang, setDataBarang] = useState([]);
+
   const [dataTransaction, setDataTransaction] = useState([]);
   const [transUncheck, setTransUncheck] = useState([]);
   const [dataTunai, setDataTunai] = useState([]);
@@ -52,6 +52,7 @@ function TodayReport() {
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const [totalNominal, setTotalNominal] = useState(0);
+  const [totalProfit, setTotalProfit] = useState(0);
   const [totalNominalTunai, setTotalNominalTunai] = useState(0);
   const [totalQris, setTotalQris] = useState(0);
   const [totalTransfer, setTotalTransfer] = useState(0);
@@ -108,6 +109,16 @@ function TodayReport() {
 
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
+          let profit = 0;
+
+          if (
+            itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
+            itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+          ) {
+            profit = total;
+          } else {
+            profit = total - data.quantity * itemData.buyPrice;
+          }
 
           return {
             id: doc.id,
@@ -115,6 +126,7 @@ function TodayReport() {
             item: itemData,
             category: categoryData,
             itemId: itemRef.id,
+            profit: profit,
             categoryId: categoryRef.id,
             total: total, // Tambahkan properti total
           };
@@ -122,19 +134,33 @@ function TodayReport() {
       );
 
       // Menghitung total dari semua transaksi
-      const totalNominal = transactions.reduce(
-        (acc, transaction) => acc + transaction.total,
-        0
-      );
+      const totalNominal = transactions
+        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .reduce((acc, transaction) => acc + transaction.total, 0);
 
+      const totalPiutang = transactions
+        .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const profitTotal = transactions
+        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .reduce((acc, transaction) => acc + transaction.profit, 0);
       // Menghitung total untuk payment "Tunai"
       const totalNominalTunai = transactions
-        .filter((transaction) => transaction.payment === "Tunai")
+        .filter(
+          (transaction) =>
+            transaction.payment === "Tunai" &&
+            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Menghitung total untuk payment selain "Tunai"
       const totalNominalNonTunai = transactions
-        .filter((transaction) => transaction.payment !== "Tunai")
+        .filter(
+          (transaction) =>
+            transaction.payment !== "Tunai" &&
+            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       console.log("transactions", transactions);
@@ -188,6 +214,7 @@ function TodayReport() {
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       console.log("Most Frequent Item:", mostFrequentItem);
+      setTotalProfit(profitTotal);
       setTransUncheck(transactionUnCheck);
       setTotalQris(totalQris);
       setTotalTransfer(totalTrnsfer);
@@ -262,38 +289,47 @@ function TodayReport() {
           // Hapus dokumen dari Firestore (transactions)
           transaction.delete(dataRef);
 
-          // Data yang akan ditambahkan ke historyInventory
-          const dateInput = dayjs().format("DD/MM/YYYY");
-          const timeInput = dayjs().format("HH:mm");
-          const monthInput = dayjs().format("MMMM");
-          const yearInput = dayjs().format("YYYY");
+          // Periksa apakah itemId sesuai dengan pengecualian
+          if (
+            data.itemId !== "GBwAvYWhBOpnvkUBDCV6" &&
+            data.itemId !== "zYIsvQcu1HFFYBsfnCF7"
+          ) {
+            // Data yang akan ditambahkan ke historyInventory
+            const dateInput = dayjs().format("DD/MM/YYYY");
+            const timeInput = dayjs().format("HH:mm");
+            const monthInput = dayjs().format("MMMM");
+            const yearInput = dayjs().format("YYYY");
 
-          const historyData = {
-            refItem: itemRef,
-            refCategory: categoryRef,
-            stock: parseInt(data.quantity),
-            dateUpdate: tanggal,
-            info: `Penghapusan Data Transaksi ${data.item.itemName} Sejumlah ${
-              data.quantity
-            } dengan Total Harga ${formatRupiah(
-              parseInt(data.quantity) * parseInt(data.price)
-            )} Oleh ${nama}`,
-            dateInput: dateInput,
-            timeInput: timeInput,
-            month: monthInput,
-            year: yearInput,
-            status: "Stok Masuk",
-          };
+            const historyData = {
+              refItem: itemRef,
+              refCategory: categoryRef,
+              stock: parseInt(data.quantity),
+              dateUpdate: tanggal,
+              info: `Penghapusan Data Transaksi ${
+                data.item.itemName
+              } Sejumlah ${data.quantity} dengan Total Harga ${formatRupiah(
+                parseInt(data.quantity) * parseInt(data.price)
+              )} Oleh ${nama}`,
+              dateInput: dateInput,
+              timeInput: timeInput,
+              month: monthInput,
+              year: yearInput,
+              status: "Stok Masuk",
+            };
 
-          // Tambahkan data ke historyInventory
-          transaction.set(doc(collection(db, "historyInventory")), historyData);
+            // Tambahkan data ke historyInventory
+            transaction.set(
+              doc(collection(db, "historyInventory")),
+              historyData
+            );
 
-          // Update stok di inventory
-          const newStock = parseInt(data.quantity) + dataItems.stock;
-          transaction.update(doc(db, "inventorys", dataItems.id), {
-            stock: newStock,
-            dateUpdate: tanggal,
-          });
+            // Update stok di inventory
+            const newStock = parseInt(data.quantity) + dataItems.stock;
+            transaction.update(doc(db, "inventorys", dataItems.id), {
+              stock: newStock,
+              dateUpdate: tanggal,
+            });
+          }
         });
 
         setIsLoad(false);
@@ -407,6 +443,132 @@ function TodayReport() {
     // Membalik urutan kembali dan menambahkan prefix "Rp"
     return "Rp " + rupiah.split("").reverse().join("");
   }
+
+  const handleHistory = async (status, info) => {
+    try {
+      const timeInput = dayjs().format("HH:mm");
+      await addDoc(collection(db, "historyCheck"), {
+        totalSystemCash: totalNominal,
+        totalGap: parseInt(status),
+        totalActuallyCash: parseInt(nominalTransaksi),
+        totalTransaction: parseInt(dataTransaction.length),
+        dateCheck: tanggal,
+        info,
+        type: "Cash",
+        timeCheck: timeInput,
+      });
+      console.log("berhasil");
+      getTransactions();
+    } catch (error) {
+      setIsLoad(false);
+
+      console.error("Error adding category: ", error);
+      Swal.fire("Error", "Failed to add category", "error");
+    }
+  };
+
+  const handleLebih = async (gap) => {
+    try {
+      const timeInput = dayjs().format("HH:mm");
+      const itemRef = doc(db, "items", "zYIsvQcu1HFFYBsfnCF7");
+      const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
+
+      await addDoc(collection(db, "transactions"), {
+        refItem: itemRef,
+        refCategory: categoryRef,
+        quantity: parseInt(1),
+        price: parseInt(gap),
+        payment: "Tunai",
+        info: `Kelebihan Nominal Cash`,
+        date: tanggal,
+        month: bulan,
+        year: tahun,
+        isCheck: false,
+        user: nama,
+      });
+      console.log("berhasil");
+    } catch (error) {
+      setIsLoad(false);
+
+      console.error("Error adding Transactions: ", error);
+      Swal.fire("Error", "Failed to add Transactions", "error");
+    }
+  };
+
+  const handleKurang = async (gap) => {
+    try {
+      const timeInput = dayjs().format("HH:mm");
+      const itemRef = doc(db, "items", "GBwAvYWhBOpnvkUBDCV6");
+      const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
+
+      await addDoc(collection(db, "transactions"), {
+        refItem: itemRef,
+        refCategory: categoryRef,
+        quantity: parseInt(1),
+        price: parseInt(gap),
+        payment: "Piutang",
+        info: `Kekurangan Nominal Cash`,
+        date: tanggal,
+        month: bulan,
+        year: tahun,
+        isCheck: false,
+        isBayar: false,
+        user: nama,
+      });
+      console.log("berhasil");
+    } catch (error) {
+      setIsLoad(false);
+
+      console.error("Error adding Transactions: ", error);
+      Swal.fire("Error", "Failed to add Transactions", "error");
+    }
+  };
+
+  const handleCekTransaksi = async (e) => {
+    e.preventDefault();
+    setIsLoad(true);
+
+    const selisih = parseInt(totalNominal) - parseInt(nominalTransaksi);
+    let status = "";
+    if (totalNominal < nominalTransaksi) {
+      status = "Lebih";
+      await handleLebih(Math.abs(selisih));
+      Swal.fire({
+        title: "Perhatian Ada Selisih!",
+        text:
+          "Nominal Fisik Anda " +
+          status +
+          " Sebesar : " +
+          formatRupiah(Math.abs(selisih)) +
+          "",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } else if (totalNominal > nominalTransaksi) {
+      status = "Kurang";
+      await handleKurang(Math.abs(selisih));
+
+      Swal.fire({
+        title: "Perhatian Ada Selisih!",
+        text:
+          "Nominal Fisik Anda " +
+          status +
+          " Sebesar : " +
+          formatRupiah(Math.abs(selisih)) +
+          "",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } else {
+      status = "Sama";
+    }
+    const statusSelisih = `${status} ${formatRupiah(Math.abs(selisih))}`;
+    setSelisih(`${status} ${formatRupiah(Math.abs(selisih))}`);
+    await handleHistory(Math.abs(selisih), status);
+
+    setIsLoad(false);
+    setIsCek(true);
+  };
   const columns = [
     {
       name: "itemName",
@@ -839,12 +1001,12 @@ function TodayReport() {
                     <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
                       <div className="w-full flex justify-start gap-4 items-center">
                         <h3 className="text-xl font-medium">
-                          {formatRupiah(totalNominal)}
+                          {formatRupiah(totalProfit)}
                         </h3>
                       </div>
                       <div className="w-full flex justify-start gap-4 items-center">
                         <h3 className="text-xs font-normal">
-                          Nominal Transaksi Hari Ini
+                          Nominal Profit Hari Ini
                         </h3>
                       </div>
                     </div>
@@ -856,198 +1018,262 @@ function TodayReport() {
                   </div>
                 </div>
               </div>
-              <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
-                <div
-                  data-aos="fade-up"
-                  data-aos-delay="450"
-                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-                >
-                  <div className="w-full flex justify-between items-start ">
-                    <h3 className="text-base font-medium">Tunai</h3>
-                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                      <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+
+              {/* tutup */}
+
+              {isCek == true && (
+                <>
+                  <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
+                    <div
+                      data-aos="fade-up"
+                      data-aos-delay="450"
+                      className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                    >
+                      <div className="w-full flex justify-between items-start ">
+                        <h3 className="text-base font-medium">Tunai</h3>
+                        <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                          <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                        </div>
+                      </div>
+                      <div className="w-full flex flex-col justify-between items-start gap-1">
+                        <h3 className="text-xl font-medium">
+                          {formatRupiah(totalNominalTunai)}
+                        </h3>
+                        <h3 className="text-xs font-medium">Transaksi Tunai</h3>
+                      </div>
+                    </div>
+
+                    <div
+                      data-aos="fade-up"
+                      data-aos-delay="550"
+                      className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                    >
+                      <div className="w-full flex justify-between items-start ">
+                        <h3 className="text-base font-medium">Non Tunai</h3>
+                        <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                          <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                        </div>
+                      </div>
+                      <div className="w-full flex flex-col justify-between items-start gap-1">
+                        <h3 className="text-xl font-medium">
+                          {formatRupiah(totalNominalNonTunai)}
+                        </h3>
+
+                        <h3 className="text-xs font-medium">
+                          Transaksi Non Tunai
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div
+                      data-aos="fade-up"
+                      data-aos-delay="650"
+                      className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                    >
+                      <div className="w-full flex justify-between items-start ">
+                        <h3 className="text-base font-medium">
+                          Nominal Transaksi
+                        </h3>
+                        <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                          <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
+                        </div>
+                      </div>
+                      <div className="w-full flex flex-col justify-between items-start gap-1">
+                        <h3 className="text-xl font-medium">
+                          {formatRupiah(totalNominal)}
+                        </h3>
+                        <h3 className="text-xs font-medium">
+                          Total Nominal Semua Transaksi
+                        </h3>
+                      </div>
                     </div>
                   </div>
-                  <div className="w-full flex flex-col justify-between items-start gap-1">
-                    <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominalTunai)}
-                    </h3>
-                    <h3 className="text-xs font-medium">Transaksi Tunai</h3>
-                  </div>
-                </div>
-
-                <div
-                  data-aos="fade-up"
-                  data-aos-delay="550"
-                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-                >
-                  <div className="w-full flex justify-between items-start ">
-                    <h3 className="text-base font-medium">Non Tunai</h3>
-                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                      <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
-                    </div>
-                  </div>
-                  <div className="w-full flex flex-col justify-between items-start gap-1">
-                    <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominalNonTunai)}
-                    </h3>
-
-                    <h3 className="text-xs font-medium">Transaksi Non Tunai</h3>
-                  </div>
-                </div>
-
-                <div
-                  data-aos="fade-up"
-                  data-aos-delay="650"
-                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-                >
-                  <div className="w-full flex justify-between items-start ">
-                    <h3 className="text-base font-medium">Item Terlaris</h3>
-                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                      <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
-                    </div>
-                  </div>
-                  <div className="w-full flex flex-col justify-between items-start gap-1">
-                    <h3 className="text-xl font-medium">
-                      {itemTerlaris.totalBarang} {itemTerlaris.unit}
-                    </h3>
-                    <h3 className="text-xs font-medium">
-                      {itemTerlaris.itemName}
-                    </h3>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
               <div
                 data-aos="fade-up"
-                data-aos-delay="750"
-                className="w-full flex justify-end items-center  p-2 rounded-md mb-5"
+                className="w-full bg-white rounded-xl flex flex-col p-4 justify-start items-center shadow-md my-5"
               >
-                <div>
-                  <button
-                    onClick={handleUpdate}
-                    type="button"
-                    class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
-                  >
-                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
-                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p class="translate-x-2 text-xs text-white">
-                      Ceklis Transaksi
-                    </p>
-                  </button>
+                <div className="w-full bg-white flex  justify-start items-center ">
+                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                    <h4 className="font-medium text-xs">
+                      Masukkan Nominal Semua Transaksi
+                    </h4>
+                    <input
+                      type="number"
+                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      // value={formatRupiah(nominalTransaksi)}
+                      onChange={(e) => {
+                        setNominalTransaksi(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-start items-end h-[5rem] ml-4 ">
+                    <button
+                      type="button"
+                      className="bg-blue-500 text-center mb-2 w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                      onClick={handleCekTransaksi}
+                    >
+                      <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                        <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
+                      </div>
+                      <p className="translate-x-2 text-xs text-white">
+                        Cek Transaksi
+                      </p>
+                    </button>
+                  </div>
+                  {isCek && (
+                    <>
+                      <div className="w-[33%] ml-4 text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Selisih</h4>
+                        <div className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]">
+                          {selisih}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="w-full bg-white flex  justify-start items-center text-xs mt-5 text-red-700">
+                  Catatan : Hanya Masukkan Semua Total Nominal Transaksi Non
+                  E-Money Saja
                 </div>
               </div>
-              <TabBar data={allTabs} onTabChange={handleTabChange} />
-
-              {activeTabIndex == "tab1" && (
+              {isCek == true && (
                 <>
                   <div
                     data-aos="fade-up"
-                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                    data-aos-delay="750"
+                    className="w-full flex justify-end items-center  p-2 rounded-md mb-5"
                   >
-                    {isData ? (
-                      <>
-                        <LoaderTable />
-                      </>
-                    ) : (
-                      <>
-                        <Paper style={{ height: 400, width: "100%" }}>
-                          <MUIDataTable
-                            columns={columnsAll}
-                            data={dataAll}
-                            options={{
-                              fontSize: 12, // adjust font size here
-                            }}
-                            pagination
-                            rowsPerPageOptions={[
-                              10,
-                              50,
-                              { value: -1, label: "All" },
-                            ]}
-                          />
-                        </Paper>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {activeTabIndex == "tab2" && (
-                <>
-                  <div
-                    data-aos="fade-up"
-                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-                  >
-                    {isData ? (
-                      <>
-                        <LoaderTable />
-                      </>
-                    ) : (
-                      <>
-                        <Paper style={{ height: 400, width: "100%" }}>
-                          <MUIDataTable
-                            columns={columns}
-                            data={dataCash}
-                            options={{
-                              fontSize: 12, // adjust font size here
-                            }}
-                            pagination
-                            rowsPerPageOptions={[
-                              10,
-                              50,
-                              { value: -1, label: "All" },
-                            ]}
-                          />
-                        </Paper>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
-              {activeTabIndex == "tab3" && (
-                <>
-                  <div
-                    data-aos="fade-up"
-                    className="w-full p-2 flex justify-start gap-6 items-center mt-5"
-                  >
-                    <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
-                      <h3 className="text-base font-medium">
-                        {formatRupiah(totalTransfer)}
-                      </h3>
-                      <p className="text-xs font-normal">
-                        Total Nominal Transaksi Transfer
-                      </p>
-                    </div>
-                    <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
-                      <h3 className="text-base font-medium">
-                        {formatRupiah(totalQris)}
-                      </h3>
-                      <p className="text-xs font-normal">
-                        Total Nominal Transaksi QRIS
-                      </p>
+                    <div>
+                      <button
+                        onClick={handleUpdate}
+                        type="button"
+                        class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                      >
+                        <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
+                          <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p class="translate-x-2 text-xs text-white">
+                          Ceklis Transaksi
+                        </p>
+                      </button>
                     </div>
                   </div>
-                  <div className="w-full flex justify-center  items-center mt-5 h-full mb-40">
-                    {isData ? (
-                      <>
-                        <LoaderTable />
-                      </>
-                    ) : (
-                      <>
-                        <Paper style={{ height: 400, width: "100%" }}>
-                          <MUIDataTable
-                            columns={columnsNonCash}
-                            data={dataNonCash}
-                            options={{
-                              fontSize: 12, // adjust font size here
-                            }}
-                          />
-                        </Paper>
-                      </>
-                    )}
-                  </div>
+                  <TabBar data={allTabs} onTabChange={handleTabChange} />
+
+                  {activeTabIndex == "tab1" && (
+                    <>
+                      <div
+                        // data-aos="fade-up"
+                        className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                      >
+                        {isData ? (
+                          <>
+                            <LoaderTable />
+                          </>
+                        ) : (
+                          <>
+                            <Paper style={{ height: 400, width: "100%" }}>
+                              <MUIDataTable
+                                columns={columnsAll}
+                                data={dataAll}
+                                options={{
+                                  fontSize: 12, // adjust font size here
+                                }}
+                                pagination
+                                rowsPerPageOptions={[
+                                  10,
+                                  50,
+                                  { value: -1, label: "All" },
+                                ]}
+                              />
+                            </Paper>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {activeTabIndex == "tab2" && (
+                    <>
+                      <div
+                        // data-aos="fade-up"
+                        className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                      >
+                        {isData ? (
+                          <>
+                            <LoaderTable />
+                          </>
+                        ) : (
+                          <>
+                            <Paper style={{ height: 400, width: "100%" }}>
+                              <MUIDataTable
+                                columns={columns}
+                                data={dataCash}
+                                options={{
+                                  fontSize: 12, // adjust font size here
+                                }}
+                                pagination
+                                rowsPerPageOptions={[
+                                  10,
+                                  50,
+                                  { value: -1, label: "All" },
+                                ]}
+                              />
+                            </Paper>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {activeTabIndex == "tab3" && (
+                    <>
+                      <div
+                        // data-aos="fade-up"
+                        className="w-full p-2 flex justify-start gap-6 items-center mt-5"
+                      >
+                        <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                          <h3 className="text-base font-medium">
+                            {formatRupiah(totalTransfer)}
+                          </h3>
+                          <p className="text-xs font-normal">
+                            Total Nominal Transaksi Transfer
+                          </p>
+                        </div>
+                        <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                          <h3 className="text-base font-medium">
+                            {formatRupiah(totalQris)}
+                          </h3>
+                          <p className="text-xs font-normal">
+                            Total Nominal Transaksi QRIS
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-full flex justify-center  items-center mt-5 h-full mb-40">
+                        {isData ? (
+                          <>
+                            <LoaderTable />
+                          </>
+                        ) : (
+                          <>
+                            <Paper style={{ height: 400, width: "100%" }}>
+                              <MUIDataTable
+                                columns={columnsNonCash}
+                                data={dataNonCash}
+                                options={{
+                                  fontSize: 12, // adjust font size here
+                                }}
+                              />
+                            </Paper>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
+              {/* end tutup */}
             </div>
           </>
         )}

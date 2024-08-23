@@ -194,7 +194,8 @@ function MainTransaction() {
         id: doc.id,
         ...doc.data(),
       }));
-      const dataOption = categoriesArray.map((a) => {
+      const dataItem = categoriesArray.filter((a) => !a.isCheck);
+      const dataOption = dataItem.map((a) => {
         return {
           value: a.id,
           text: a.itemName,
@@ -593,7 +594,7 @@ function MainTransaction() {
           </>
         ) : (
           <>
-            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+            <div className="w-full h-full flex flex-col justify-start items-center pb-28">
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

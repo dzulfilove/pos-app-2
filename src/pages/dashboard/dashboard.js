@@ -28,36 +28,26 @@ function Dashboard() {
   const [totalTransfer, setTotalTransfer] = useState(0);
   const [totalNominalNonTunai, setTotalNominalNonTunai] = useState(0);
   const [itemTerlaris, setItemTerlaris] = useState([]);
-
+  const [dataBulan, setDataBulan] = useState([]);
   useEffect(() => {
     getTransactions(bulan, tahun);
     AOS.init({ duration: 700 });
   }, []);
 
-  const getTransactions = async (month, year) => {
+  const getTransactions = async (year) => {
     try {
-      // Buat query dengan filter where untuk bulan dan tahun
+      // Buat query dengan filter where untuk tahun
       const transactionsQuery = query(
         collection(db, "transactions"),
-        where("month", "==", month), // Ganti kondisi where untuk bulan
-        where("year", "==", year) // Ganti kondisi where untuk tahun
+        where("year", "==", year)
       );
 
       const querySnapshot = await getDocs(transactionsQuery);
 
       // Jika tidak ada dokumen yang ditemukan, kembalikan array kosong
       if (querySnapshot.empty) {
-        console.log("No transactions found for the given month and year.");
-        setTransUncheck([]);
-        setTotalQris(0);
-        setTotalTransfer(0);
-        setDataTunai([]);
-        setDataNonTunai([]);
-        setItemTerlaris([]);
-        setDataTransaction([]);
-        setTotalNominal(0);
-        setTotalNominalTunai(0);
-        setTotalNominalNonTunai(0);
+        console.log("No transactions found for the given year.");
+        setDataBulan([]);
         return [];
       }
 
@@ -70,11 +60,6 @@ function Dashboard() {
           const itemDoc = await getDoc(itemRef);
           const itemData = itemDoc.data();
 
-          // Fetch data category berdasarkan refCategory
-          const categoryRef = data.refCategory;
-          const categoryDoc = await getDoc(categoryRef);
-          const categoryData = categoryDoc.data();
-
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
 
@@ -82,88 +67,54 @@ function Dashboard() {
             id: doc.id,
             ...data,
             item: itemData,
-            category: categoryData,
-            itemId: itemRef.id,
-            categoryId: categoryRef.id,
             total: total, // Tambahkan properti total
           };
         })
       );
 
-      // Menghitung total dari semua transaksi
-      const totalNominal = transactions.reduce(
-        (acc, transaction) => acc + transaction.total,
-        0
-      );
-
-      // Menghitung total untuk payment "Tunai"
-      const totalNominalTunai = transactions
-        .filter((transaction) => transaction.payment === "Tunai")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      // Menghitung total untuk payment selain "Tunai"
-      const totalNominalNonTunai = transactions
-        .filter((transaction) => transaction.payment !== "Tunai")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      // Kelompokkan data berdasarkan refItem
-      const groupedByItem = transactions.reduce((acc, transaction) => {
-        const itemId = transaction.itemId;
-        if (!acc[itemId]) {
-          acc[itemId] = {
-            itemId: itemId,
-            itemName: transaction.item.itemName,
-            unit: transaction.item.unit,
-            jumlahTransaksi: 0,
-            totalBarang: 0,
-            dataTransaksi: [],
+      // Mengelompokkan transaksi berdasarkan bulan
+      const groupedByMonth = transactions.reduce((acc, transaction) => {
+        const month = transaction.month;
+        if (!acc[month]) {
+          acc[month] = {
+            totalNominal: 0,
+            totalOrder: 0,
           };
         }
-        acc[itemId].jumlahTransaksi += 1;
-        acc[itemId].totalBarang += transaction.quantity;
-        acc[itemId].dataTransaksi.push(transaction);
+        acc[month].totalNominal += transaction.total;
+        acc[month].totalOrder += 1;
         return acc;
       }, {});
 
-      // Urutkan item berdasarkan jumlah transaksi dan total quantity
-      const sortedItems = Object.values(groupedByItem).sort((a, b) => {
-        if (b.jumlahTransaksi === a.jumlahTransaksi) {
-          return b.totalBarang - a.totalBarang; // Jika jumlah transaksi sama, urutkan berdasarkan quantity
-        }
-        return b.jumlahTransaksi - a.jumlahTransaksi; // Urutkan berdasarkan jumlah transaksi
+      // Nama bulan dalam bahasa Inggris
+      const monthNames = [
+        { nama: "Jan.", text: "January" },
+        { nama: "Feb.", text: "February" },
+        { nama: "Mar.", text: "March" },
+        { nama: "Apr.", text: "April" },
+        { nama: "Mei", text: "May" },
+        { nama: "Juni", text: "June" },
+        { nama: "Juli", text: "July" },
+        { nama: "Agust.", text: "August" },
+        { nama: "Sept.", text: "September" },
+        { nama: "Okto.", text: "October" },
+        { nama: "Nov.", text: "November" },
+        { nama: "Dec.", text: "December" },
+      ];
+
+      // Membuat array data bulan dengan nama, totalNominal, dan totalOrder
+      const dataBulan = monthNames.map((month, index) => {
+        const key = index + 1; // Bulan dimulai dari 1 (January)
+        return {
+          nama: month.nama,
+          text: month.text,
+          totalNominal: groupedByMonth[key]?.totalNominal || 0,
+          totalOrder: groupedByMonth[key]?.totalOrder || 0,
+        };
       });
 
-      // Ambil 5 item terlaris
-      const top5Items = sortedItems.slice(0, 3);
-
-      const transactionTunai = transactions.filter((a) => a.payment == "Tunai");
-      const transactionNonTunai = transactions.filter(
-        (a) => a.payment != "Tunai"
-      );
-      const transactionUnCheck = transactions.filter(
-        (a) => a.isCheck == false || !a.isCheck
-      );
-
-      // Menghitung total untuk payment selain "Tunai"
-      const totalQris = transactionNonTunai
-        .filter((transaction) => transaction.payment == "QRIS")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const totalTransfer = transactionNonTunai
-        .filter((transaction) => transaction.payment !== "QRIS")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      console.log("Top 5 Items:", top5Items);
-      setTransUncheck(transactionUnCheck);
-      setTotalQris(totalQris);
-      setTotalTransfer(totalTransfer);
-      setDataTunai(transactionTunai);
-      setDataNonTunai(transactionNonTunai);
-      setItemTerlaris(top5Items);
-      setDataTransaction(transactions);
-      setTotalNominal(totalNominal);
-      setTotalNominalTunai(totalNominalTunai);
-      setTotalNominalNonTunai(totalNominalNonTunai);
+      setDataBulan(dataBulan);
+      console.log("Data Bulan:", dataBulan);
     } catch (e) {
       Swal.fire({
         title: "Error!",

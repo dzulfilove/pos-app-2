@@ -130,32 +130,16 @@ function HistoryDetail({ params }) {
             className="cookieCard w-[40%] p-6 shadow-md"
           >
             <div className="cookieDescription">
-              <h3 className="text-xl font-medium">
-                {parseInt(totalStokMasuk) - parseInt(totalStokKeluar)} Stok
-              </h3>
+              <h3 className="text-xl font-medium">{totalStokKeluar} Stok</h3>
             </div>
             <h3 className="text-xs font-normal text-white w-full">
-              Total Jumlah Stok
+              Total Stok Keluar
             </h3>
             <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
               <FaLuggageCart className="text-blue-600 text-[2rem]" />
             </div>
           </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="450"
-            className="w-[30%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center"
-          >
-            <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-4  bg-white flex flex-col justify-between items-center">
-              {" "}
-              <div className="w-full flex justify-between items-center">
-                <h3 className="text-sm font-normal">Total Stok Keluar</h3>
-              </div>
-              <div className="w-full flex justify-start gap-4 items-center">
-                <h3 className="text-xl font-medium">{totalStokKeluar}</h3>
-              </div>
-            </div>
-          </div>
+
           <div
             data-aos="fade-up"
             data-aos-delay="650"
