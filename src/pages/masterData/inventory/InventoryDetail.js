@@ -60,6 +60,7 @@ function InventoryDetail({ params }) {
     dayjs().locale("id").format("DD/MM/YYYY")
   );
   const cabang = sessionStorage.getItem("cabang");
+  const peran = sessionStorage.getItem("peran");
 
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
@@ -185,8 +186,18 @@ function InventoryDetail({ params }) {
         }
 
         if (status == "Kurang") {
+          Swal.fire(
+            "Error",
+            `Ada Selisih Stok ${item1.barang.text}, ${status} ${selisih}`,
+            "error"
+          );
           await handleKurang(selisih, matchedItem);
         } else if (status == "Lebih") {
+          Swal.fire(
+            "Error",
+            `Ada Selisih Stok ${item1.barang.text}, ${status} ${selisih}`,
+            "error"
+          );
           await handleLebih(selisih, matchedItem);
         }
 
@@ -222,6 +233,7 @@ function InventoryDetail({ params }) {
     setActiveTabIndex("tab2");
     setDataCheck(result);
     setIndexTab(1);
+    setAdditionalForms([]);
     return result;
   };
 

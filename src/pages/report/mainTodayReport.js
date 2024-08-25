@@ -79,6 +79,12 @@ function TodayReport() {
       );
 
       const querySnapshot = await getDocs(transactionsQuery);
+      const categoriesArray = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      console.log(categoriesArray, "wuery result");
       // Jika tidak ada dokumen yang ditemukan, kembalikan array kosong
       if (querySnapshot.empty) {
         console.log("No transactions found for the given month and year.");
@@ -94,140 +100,148 @@ function TodayReport() {
         setTotalNominalNonTunai(0);
         setIsData(false);
         return [];
+      } else {
+        const transactions = await Promise.all(
+          querySnapshot.docs.map(async (doc) => {
+            const data = doc.data();
+
+            // Fetch data item berdasarkan refItem
+            const itemRef = data.refItem;
+            const itemDoc = await getDoc(itemRef);
+            const itemData = itemDoc.data();
+
+            // Fetch data category berdasarkan refCategory
+            const categoryRef = data.refCategory;
+            const categoryDoc = await getDoc(categoryRef);
+            const categoryData = categoryDoc.data();
+
+            // Menghitung total harga dari price * quantity
+            const total = data.price * data.quantity;
+            let profit = 0;
+
+            if (
+              itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
+              itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+            ) {
+              profit = total;
+            } else {
+              profit = total - data.quantity * itemData.buyPrice;
+            }
+
+            return {
+              id: doc.id,
+              ...data,
+              item: itemData,
+              category: categoryData,
+              itemId: itemRef.id,
+              profit: profit,
+              categoryId: categoryRef.id,
+              total: total, // Tambahkan properti total
+            };
+          })
+        );
+        const dataFull = transactions.filter(
+          (a) => a.category.nameCategory !== "E-Money"
+        );
+
+        if (dataFull.length > 0) {
+          // Menghitung total dari semua transaksi
+          const totalNominal = dataFull
+            .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+            .reduce((acc, transaction) => acc + transaction.total, 0);
+
+          const totalPiutang = dataFull
+            .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
+            .reduce((acc, transaction) => acc + transaction.total, 0);
+
+          const profitTotal = dataFull
+            .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+            .reduce((acc, transaction) => acc + transaction.profit, 0);
+          // Menghitung total untuk payment "Tunai"
+          const totalNominalTunai = dataFull
+            .filter(
+              (transaction) =>
+                transaction.payment === "Tunai" &&
+                transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+            )
+            .reduce((acc, transaction) => acc + transaction.total, 0);
+
+          // Menghitung total untuk payment selain "Tunai"
+          const totalNominalNonTunai = dataFull
+            .filter(
+              (transaction) =>
+                transaction.payment !== "Tunai" &&
+                transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+            )
+            .reduce((acc, transaction) => acc + transaction.total, 0);
+
+          console.log(`dataFull${cabang}`, dataFull);
+          console.log("Total Nominal", totalNominal);
+          console.log("Total Nominal Tunai", totalNominalTunai);
+          console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
+
+          // Kelompokkan data berdasarkan refItem
+          const groupedByItem = dataFull.reduce((acc, transaction) => {
+            const itemId = transaction.itemId;
+            if (!acc[itemId]) {
+              acc[itemId] = {
+                itemId: itemId,
+                itemName: transaction.item.itemName, // Tambahkan nama item
+                unit: transaction.item.unit, // Tambahkan nama item
+                jumlahTransaksi: 0,
+                totalBarang: 0, // Inisialisasi totalBarang
+                dataTransaksi: [],
+              };
+            }
+            acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
+            acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
+            acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
+            return acc;
+          }, {});
+
+          // Temukan item dengan jumlah transaksi terbanyak
+          const mostFrequentItem = Object.values(groupedByItem).reduce(
+            (prev, current) => {
+              return current.jumlahTransaksi > prev.jumlahTransaksi
+                ? current
+                : prev;
+            }
+          );
+
+          const transactionTunai = dataFull.filter((a) => a.payment == "Tunai");
+          const transactionNonTunai = dataFull.filter(
+            (a) => a.payment != "Tunai"
+          );
+          const transactionUnCheck = dataFull.filter(
+            (a) => a.isCheck == false || !a.isCheck
+          );
+
+          // Menghitung total untuk payment selain "Tunai"
+          const totalQris = transactionNonTunai
+            .filter((transaction) => transaction.payment == "QRIS")
+            .reduce((acc, transaction) => acc + transaction.total, 0);
+
+          const totalTrnsfer = transactionNonTunai
+            .filter((transaction) => transaction.payment !== "QRIS")
+            .reduce((acc, transaction) => acc + transaction.total, 0);
+
+          console.log("Most Frequent Item:", mostFrequentItem);
+          setTotalProfit(profitTotal);
+          setTransUncheck(transactionUnCheck);
+          setTotalQris(totalQris);
+          setTotalTransfer(totalTrnsfer);
+          setDataTunai(transactionTunai);
+          setIsData(false);
+          setDataNonTunai(transactionNonTunai);
+          setitemTerlaris(mostFrequentItem);
+          setDataTransaction(dataFull); // Simpan transaksi ke state
+          setTotalNominal(totalNominal); // Simpan total nominal ke state
+          setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
+          setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
+        } else {
+          setIsData(false);
+        }
       }
-      const transactions = await Promise.all(
-        querySnapshot.docs.map(async (doc) => {
-          const data = doc.data();
-
-          // Fetch data item berdasarkan refItem
-          const itemRef = data.refItem;
-          const itemDoc = await getDoc(itemRef);
-          const itemData = itemDoc.data();
-
-          // Fetch data category berdasarkan refCategory
-          const categoryRef = data.refCategory;
-          const categoryDoc = await getDoc(categoryRef);
-          const categoryData = categoryDoc.data();
-
-          // Menghitung total harga dari price * quantity
-          const total = data.price * data.quantity;
-          let profit = 0;
-
-          if (
-            itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
-            itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
-          ) {
-            profit = total;
-          } else {
-            profit = total - data.quantity * itemData.buyPrice;
-          }
-
-          return {
-            id: doc.id,
-            ...data,
-            item: itemData,
-            category: categoryData,
-            itemId: itemRef.id,
-            profit: profit,
-            categoryId: categoryRef.id,
-            total: total, // Tambahkan properti total
-          };
-        })
-      );
-      const dataFull = transactions.filter(
-        (a) => a.category.nameCategory !== "E-Money"
-      );
-      // Menghitung total dari semua transaksi
-      const totalNominal = dataFull
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const totalPiutang = dataFull
-        .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const profitTotal = dataFull
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.profit, 0);
-      // Menghitung total untuk payment "Tunai"
-      const totalNominalTunai = dataFull
-        .filter(
-          (transaction) =>
-            transaction.payment === "Tunai" &&
-            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
-        )
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      // Menghitung total untuk payment selain "Tunai"
-      const totalNominalNonTunai = dataFull
-        .filter(
-          (transaction) =>
-            transaction.payment !== "Tunai" &&
-            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
-        )
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      console.log(`dataFull${cabang}`, dataFull);
-      console.log("Total Nominal", totalNominal);
-      console.log("Total Nominal Tunai", totalNominalTunai);
-      console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
-
-      // Kelompokkan data berdasarkan refItem
-      const groupedByItem = dataFull.reduce((acc, transaction) => {
-        const itemId = transaction.itemId;
-        if (!acc[itemId]) {
-          acc[itemId] = {
-            itemId: itemId,
-            itemName: transaction.item.itemName, // Tambahkan nama item
-            unit: transaction.item.unit, // Tambahkan nama item
-            jumlahTransaksi: 0,
-            totalBarang: 0, // Inisialisasi totalBarang
-            dataTransaksi: [],
-          };
-        }
-        acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
-        acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
-        acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
-        return acc;
-      }, {});
-
-      // Temukan item dengan jumlah transaksi terbanyak
-      const mostFrequentItem = Object.values(groupedByItem).reduce(
-        (prev, current) => {
-          return current.jumlahTransaksi > prev.jumlahTransaksi
-            ? current
-            : prev;
-        }
-      );
-
-      const transactionTunai = dataFull.filter((a) => a.payment == "Tunai");
-      const transactionNonTunai = dataFull.filter((a) => a.payment != "Tunai");
-      const transactionUnCheck = dataFull.filter(
-        (a) => a.isCheck == false || !a.isCheck
-      );
-
-      // Menghitung total untuk payment selain "Tunai"
-      const totalQris = transactionNonTunai
-        .filter((transaction) => transaction.payment == "QRIS")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const totalTrnsfer = transactionNonTunai
-        .filter((transaction) => transaction.payment !== "QRIS")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      console.log("Most Frequent Item:", mostFrequentItem);
-      setTotalProfit(profitTotal);
-      setTransUncheck(transactionUnCheck);
-      setTotalQris(totalQris);
-      setTotalTransfer(totalTrnsfer);
-      setDataTunai(transactionTunai);
-      setIsData(false);
-      setDataNonTunai(transactionNonTunai);
-      setitemTerlaris(mostFrequentItem);
-      setDataTransaction(dataFull); // Simpan transaksi ke state
-      setTotalNominal(totalNominal); // Simpan total nominal ke state
-      setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
-      setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
     } catch (e) {
       Swal.fire({
         title: "Error!",

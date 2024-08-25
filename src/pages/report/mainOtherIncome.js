@@ -10,7 +10,8 @@ import DropdownSearch from "../../component/features/dropdown";
 import { FaRegSave } from "react-icons/fa";
 import { FaArrowTrendUp } from "react-icons/fa6";
 import { IoSearch } from "react-icons/io5";
-
+import { RiPencilFill } from "react-icons/ri";
+import { FaCheck } from "react-icons/fa6";
 import {
   addDoc,
   collection,
@@ -153,73 +154,77 @@ function OtherIncomeReport() {
           a.itemId == "GBwAvYWhBOpnvkUBDCV6" ||
           a.itemId == "zYIsvQcu1HFFYBsfnCF7"
       );
-      // Menghitung total dari semua transaksi
-      const totalNominal = otherData
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
+      if (otherData.length > 0) {
+        // Menghitung total dari semua transaksi
+        const totalNominal = otherData
+          .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const totalPiutang = otherData
-        .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
+        const totalPiutang = otherData
+          .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
+          .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      // Menghitung total untuk payment "Tunai"
-      const totalNominalLain = otherData
-        .filter((transaction) => transaction.itemId != "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
+        // Menghitung total untuk payment "Tunai"
+        const totalNominalLain = otherData
+          .filter((transaction) => transaction.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      console.log(`transactions${cabang}`, otherData);
-      console.log("Total Nominal", totalNominal);
+        console.log(`transactions${cabang}`, otherData);
+        console.log("Total Nominal", totalNominal);
 
-      // Kelompokkan data berdasarkan refItem
-      const groupedByItem = otherData.reduce((acc, transaction) => {
-        const itemId = transaction.itemId;
-        if (!acc[itemId]) {
-          acc[itemId] = {
-            itemId: itemId,
-            itemName: transaction.item.itemName, // Tambahkan nama item
-            unit: transaction.item.unit, // Tambahkan nama item
-            jumlahTransaksi: 0,
-            totalBarang: 0, // Inisialisasi totalBarang
-            dataTransaksi: [],
-          };
-        }
-        acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
-        acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
-        acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
-        return acc;
-      }, {});
+        // Kelompokkan data berdasarkan refItem
+        const groupedByItem = otherData.reduce((acc, transaction) => {
+          const itemId = transaction.itemId;
+          if (!acc[itemId]) {
+            acc[itemId] = {
+              itemId: itemId,
+              itemName: transaction.item.itemName, // Tambahkan nama item
+              unit: transaction.item.unit, // Tambahkan nama item
+              jumlahTransaksi: 0,
+              totalBarang: 0, // Inisialisasi totalBarang
+              dataTransaksi: [],
+            };
+          }
+          acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
+          acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
+          acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
+          return acc;
+        }, {});
 
-      // Temukan item dengan jumlah transaksi terbanyak
-      const mostFrequentItem = Object.values(groupedByItem).reduce(
-        (prev, current) => {
-          return current.jumlahTransaksi > prev.jumlahTransaksi
-            ? current
-            : prev;
-        }
-      );
+        // Temukan item dengan jumlah transaksi terbanyak
+        const mostFrequentItem = Object.values(groupedByItem).reduce(
+          (prev, current) => {
+            return current.jumlahTransaksi > prev.jumlahTransaksi
+              ? current
+              : prev;
+          }
+        );
 
-      const transactionPiutang = otherData.filter(
-        (a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6"
-      );
-      const transactionOther = otherData.filter(
-        (a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6"
-      );
-      const transactionUnCheck = otherData.filter(
-        (a) => a.isCheck == false || !a.isCheck
-      );
+        const transactionPiutang = otherData.filter(
+          (a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6"
+        );
+        const transactionOther = otherData.filter(
+          (a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        );
+        const transactionUnCheck = otherData.filter(
+          (a) => a.isCheck == false || !a.isCheck
+        );
 
-      console.log("Most Frequent Item:", mostFrequentItem);
-      setTransUncheck(transactionUnCheck);
-      setTotalQris(totalQris);
+        console.log("Most Frequent Item:", mostFrequentItem);
+        setTransUncheck(transactionUnCheck);
+        setTotalQris(totalQris);
 
-      setDataPiutang(transactionPiutang);
-      setIsData(false);
-      setDataOther(transactionOther);
-      setitemTerlaris(mostFrequentItem);
-      setDataTransaction(otherData); // Simpan transaksi ke state
-      setTotalNominal(totalNominal); // Simpan total nominal ke state
-      setTotalNominalPiutang(totalPiutang); // Simpan total nominal tunai ke state
-      setTotalNominalLain(totalNominalLain); // Simpan total nominal non-tunai ke state
+        setDataPiutang(transactionPiutang);
+        setIsData(false);
+        setDataOther(transactionOther);
+        setitemTerlaris(mostFrequentItem);
+        setDataTransaction(otherData); // Simpan transaksi ke state
+        setTotalNominal(totalNominal); // Simpan total nominal ke state
+        setTotalNominalPiutang(totalPiutang); // Simpan total nominal tunai ke state
+        setTotalNominalLain(totalNominalLain); // Simpan total nominal non-tunai ke state}
+      } else {
+        setIsData(false);
+      }
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -359,78 +364,38 @@ function OtherIncomeReport() {
     }
   };
 
-  const handleCheck = (item) => {
-    // Cek jika item sudah ada dalam selectedItems
-    if (!selectedItems.some((selectedItem) => selectedItem.id === item.id)) {
-      setSelectedItems([...selectedItems, item]); // Tambahkan item ke array
-    } else {
-      // Jika sudah ada, hapus dari selectedItems
-      setSelectedItems(
-        selectedItems.filter((selectedItem) => selectedItem.id !== item.id)
-      );
-    }
-  };
-  const handleChangeDate = (name, date) => {
-    const dayjsDate = dayjs(date);
-
-    if (!dayjsDate.isValid()) {
-      return;
-    }
-    if (name == "tanggalAwal") {
-      const formattedDate = dayjsDate.format("DD/MM/YYYY");
-      setTanggalAwal(formattedDate);
-    } else {
-      const formattedDate = dayjsDate.format("DD/MM/YYYY");
-      setTanggalAkhir(formattedDate);
-    }
-  };
-
-  const handleUpdate = async () => {
+  const handleUpdate = async (transaction) => {
     setIsLoad(true);
-    console.log(selectedItems);
-    let data = [];
-    if (selectedItems.length === 0) {
-      data = transUncheck;
-    } else {
-      data = selectedItems;
-    }
 
     // Tampilkan SweetAlert konfirmasi
     const result = await Swal.fire({
       title: "Apakah Anda Yakin?",
-      text: `Apakah Anda Yakin Untuk Menceklis ${data.length} data Transaksi?`,
+      text: `Apakah Piutang Sudah dibayarkan?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Ya, ceklis!",
+      confirmButtonText: "Ya",
       cancelButtonText: "Tidak",
     });
 
     if (result.isConfirmed) {
       try {
-        // Buat array promises untuk semua operasi updateDoc
-        const updatePromises = data.map(async (transaction) => {
-          const transactionRef = doc(db, `transactions${cabang}`, transaction.id);
-          return updateDoc(transactionRef, {
-            isCheck: true,
-            checker: nama,
-          });
+        // Referensi dokumen yang akan di-update
+        const transactionRef = doc(db, `transactions${cabang}`, transaction.id);
+
+        // Lakukan update pada dokumen tersebut
+        await updateDoc(transactionRef, {
+          isBayar: true,
         });
 
-        // Jalankan semua promises secara paralel
-        await Promise.all(updatePromises);
         setIsLoad(false);
-        getTransactions();
-        Swal.fire(
-          "Berhasil!",
-          `${data.length} data transaksi telah diceklis.`,
-          "success"
-        );
+        getTransactions(bulan, tahun);
+        Swal.fire("Berhasil!", `Data transaksi telah diceklis.`, "success");
 
-        console.log("All transactions updated successfully");
+        console.log("Transaction updated successfully");
       } catch (error) {
         setIsLoad(false);
 
-        console.error("Error updating transactions: ", error);
+        console.error("Error updating transaction: ", error);
         Swal.fire(
           "Gagal!",
           "Terjadi kesalahan saat memperbarui data transaksi.",
@@ -541,7 +506,7 @@ function OtherIncomeReport() {
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
-            <div className="flex justify-start gap-4 items-center">
+            <div className="flex justify-start gap-2 items-center">
               {value.isBayar == true ? (
                 <>
                   <label className="container">
@@ -551,6 +516,17 @@ function OtherIncomeReport() {
                 </>
               ) : (
                 <>
+                  <button
+                    className="Btn-see text-white"
+                    onClick={() => {
+                      handleUpdate(value);
+                    }}
+                  >
+                    <span className="svgContainer">
+                      <FaCheck className="text-xl " />
+                    </span>
+                    <span className="BG bg-teal-500"></span>
+                  </button>
                   <button
                     className="Btn-see text-white"
                     onClick={() => {
@@ -886,12 +862,22 @@ function OtherIncomeReport() {
                     !isDetail ? "hidden" : "flex flex-col "
                   } justify-start items-start gap-4`}
                 >
-                  <h5 className="text-base font-medium ">Nama Barang</h5>
-                  <p className="text-xs font-normal ">
-                    {dataDetail != null ? dataDetail.item.itemName : ""}
-                  </p>
                   <div className=" w-full flex justify-start gap-6">
-                    <div className=" flex flex-col justify-center items-start gap-2">
+                    <div className=" flex flex-col justify-center items-start gap-2 w-[11rem]">
+                      <h5 className="text-base font-medium ">Nama Barang</h5>
+                      <p className="text-xs font-normal ">
+                        {dataDetail != null ? dataDetail.item.itemName : ""}
+                      </p>
+                    </div>
+                    <div className=" flex flex-col justify-center items-start gap-2 ">
+                      <h5 className="text-base font-medium ">Nama Pengecek</h5>
+                      <p className="text-xs font-normal ">
+                        {dataDetail != null ? dataDetail.user : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className=" w-full flex justify-start gap-6">
+                    <div className=" flex flex-col justify-center items-start gap-2 w-[11rem]">
                       <h5 className="text-base font-medium ">
                         Tanggal Transaksi
                       </h5>
@@ -902,14 +888,6 @@ function OtherIncomeReport() {
                       </p>
                     </div>
                     <div className=" flex flex-col justify-center items-start gap-2">
-                      <h5 className="text-base font-medium ">Nama Pengecek</h5>
-                      <p className="text-xs font-normal ">
-                        {dataDetail != null ? dataDetail.user : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className=" w-full flex justify-start gap-6">
-                    <div className=" flex flex-col justify-center items-start gap-2">
                       <h5 className="text-base font-medium ">Total</h5>
                       <p className="text-xs font-normal ">
                         {dataDetail != null
@@ -917,7 +895,9 @@ function OtherIncomeReport() {
                           : ""}
                       </p>
                     </div>
-                    <div className=" flex flex-col justify-center items-start gap-2">
+                  </div>
+                  <div className=" w-full flex justify-start gap-6">
+                    <div className=" flex flex-col justify-center items-start gap-2 w-[11rem]">
                       <h5 className="text-base font-medium ">Asal</h5>
                       <p className="text-xs font-normal ">
                         Selisih{" "}
@@ -928,12 +908,13 @@ function OtherIncomeReport() {
                           : ""}
                       </p>
                     </div>
+                    <div className=" flex flex-col justify-center items-start gap-2">
+                      <h5 className="text-base font-medium ">Keterangan</h5>
+                      <p className="text-xs font-normal ">
+                        {dataDetail != null ? dataDetail.info : ""}
+                      </p>
+                    </div>
                   </div>
-
-                  <h5 className="text-base font-medium ">Keterangan</h5>
-                  <p className="text-xs font-normal capitalize">
-                    {dataDetail != null ? dataDetail.info : ""}
-                  </p>
                 </div>
               </div>
               <TabBar data={allTabs} onTabChange={handleTabChange} />

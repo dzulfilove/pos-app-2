@@ -141,109 +141,117 @@ function TodayEmoney() {
       const dataEmoney = transactions.filter(
         (a) => a.category.nameCategory == "E-Money"
       );
-      const transactionTarik = dataEmoney.filter((a) => a.type == "Tarik Dana");
-      const transactionTopup = dataEmoney.filter((a) => a.type == "Topup");
-      const transactionUnCheck = dataEmoney.filter(
-        (a) => a.isCheck == false || !a.isCheck
-      );
 
-      const profitTotal = dataEmoney
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.adminFee, 0);
-      // Menghitung total dari semua transaksi
-      const totalNominal = dataEmoney
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      // Menghitung total untuk payment "Tunai"
-      const totalTarik = dataEmoney
-        .filter(
-          (transaction) =>
-            transaction.type === "Tarik Dana" &&
-            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
-        )
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const totalNominTarikLuar = transactionTarik
-        .filter((transaction) => transaction.payment == "Admin Luar")
-        .reduce((acc, transaction) => acc + transaction.price, 0);
-      const totalNominTarikDalam = transactionTarik
-        .filter((transaction) => transaction.payment == "Admin Dalam")
-        .reduce((acc, transaction) => acc + transaction.price, 0);
-      const totalTarikLuar = transactionTarik
-        .filter((transaction) => transaction.payment == "Admin Luar")
-        .reduce(
-          (acc, transaction) =>
-            acc +
-            (parseInt(transaction.price) - parseInt(transaction.adminFee) * 2),
-          0
+      if (dataEmoney.length > 0) {
+        const transactionTarik = dataEmoney.filter(
+          (a) => a.type == "Tarik Dana"
+        );
+        const transactionTopup = dataEmoney.filter((a) => a.type == "Topup");
+        const transactionUnCheck = dataEmoney.filter(
+          (a) => a.isCheck == false || !a.isCheck
         );
 
-      const totalTarikDalam = transactionTarik
-        .filter((transaction) => transaction.payment == "Admin Dalam")
-        .reduce(
-          (acc, transaction) =>
-            acc +
-            (parseInt(transaction.price) - parseInt(transaction.adminFee)),
-          0
+        const profitTotal = dataEmoney
+          .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .reduce((acc, transaction) => acc + transaction.adminFee, 0);
+        // Menghitung total dari semua transaksi
+        const totalNominal = dataEmoney
+          .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .reduce((acc, transaction) => acc + transaction.total, 0);
+
+        // Menghitung total untuk payment "Tunai"
+        const totalTarik = dataEmoney
+          .filter(
+            (transaction) =>
+              transaction.type === "Tarik Dana" &&
+              transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+          )
+          .reduce((acc, transaction) => acc + transaction.total, 0);
+
+        const totalNominTarikLuar = transactionTarik
+          .filter((transaction) => transaction.payment == "Admin Luar")
+          .reduce((acc, transaction) => acc + transaction.price, 0);
+        const totalNominTarikDalam = transactionTarik
+          .filter((transaction) => transaction.payment == "Admin Dalam")
+          .reduce((acc, transaction) => acc + transaction.price, 0);
+        const totalTarikLuar = transactionTarik
+          .filter((transaction) => transaction.payment == "Admin Luar")
+          .reduce(
+            (acc, transaction) =>
+              acc +
+              (parseInt(transaction.price) -
+                parseInt(transaction.adminFee) * 2),
+            0
+          );
+
+        const totalTarikDalam = transactionTarik
+          .filter((transaction) => transaction.payment == "Admin Dalam")
+          .reduce(
+            (acc, transaction) =>
+              acc +
+              (parseInt(transaction.price) - parseInt(transaction.adminFee)),
+            0
+          );
+        // Menghitung total untuk payment selain "Tunai"
+        const totalTopup = dataEmoney
+          .filter(
+            (transaction) =>
+              transaction.type == "Topup" &&
+              transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+          )
+          .reduce((acc, transaction) => acc + transaction.total, 0);
+
+        const sisaFisik =
+          parseInt(totalTopup) -
+          parseInt(totalTarikLuar) -
+          parseInt(totalTarikDalam);
+        // Kelompokkan data berdasarkan refItem
+        const groupedByItem = dataEmoney.reduce((acc, transaction) => {
+          const itemId = transaction.itemId;
+          if (!acc[itemId]) {
+            acc[itemId] = {
+              itemId: itemId,
+              itemName: transaction.item.itemName, // Tambahkan nama item
+              unit: transaction.item.unit, // Tambahkan nama item
+              jumlahTransaksi: 0,
+              totalBarang: 0, // Inisialisasi totalBarang
+              dataTransaksi: [],
+            };
+          }
+          acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
+          acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
+          acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
+          return acc;
+        }, {});
+
+        // Temukan item dengan jumlah transaksi terbanyak
+        const mostFrequentItem = Object.values(groupedByItem).reduce(
+          (prev, current) => {
+            return current.jumlahTransaksi > prev.jumlahTransaksi
+              ? current
+              : prev;
+          }
         );
-      // Menghitung total untuk payment selain "Tunai"
-      const totalTopup = dataEmoney
-        .filter(
-          (transaction) =>
-            transaction.type == "Topup" &&
-            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
-        )
-        .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const sisaFisik =
-        parseInt(totalTopup) -
-        parseInt(totalTarikLuar) -
-        parseInt(totalTarikDalam);
-      // Kelompokkan data berdasarkan refItem
-      const groupedByItem = dataEmoney.reduce((acc, transaction) => {
-        const itemId = transaction.itemId;
-        if (!acc[itemId]) {
-          acc[itemId] = {
-            itemId: itemId,
-            itemName: transaction.item.itemName, // Tambahkan nama item
-            unit: transaction.item.unit, // Tambahkan nama item
-            jumlahTransaksi: 0,
-            totalBarang: 0, // Inisialisasi totalBarang
-            dataTransaksi: [],
-          };
-        }
-        acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
-        acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
-        acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
-        return acc;
-      }, {});
-
-      // Temukan item dengan jumlah transaksi terbanyak
-      const mostFrequentItem = Object.values(groupedByItem).reduce(
-        (prev, current) => {
-          return current.jumlahTransaksi > prev.jumlahTransaksi
-            ? current
-            : prev;
-        }
-      );
-
-      console.log("Most Frequent Item:", mostFrequentItem);
-      setTotalProfit(profitTotal);
-      setTransUncheck(transactionUnCheck);
-      setTotalQris(totalQris);
-      setTotalAdminLuar(totalNominTarikLuar);
-      setTotalAdminDalam(totalNominTarikDalam);
-      setTotalSisaFisik(sisaFisik <= 0 ? 0 : sisaFisik);
-      setTotalProfit(profitTotal);
-      setDataTarik(transactionTarik);
-      setIsData(false);
-      setDataTopup(transactionTopup);
-      setitemTerlaris(mostFrequentItem);
-      setDataTransaction(dataEmoney); // Simpan transaksi ke state
-      setTotalNominal(totalNominal); // Simpan total nominal ke state
-      setTotalNominalTarik(totalTarik); // Simpan total nominal tunai ke state
-      setTotalNominalTopup(totalTopup); // Simpan total nominal non-tunai ke state
+        console.log("Most Frequent Item:", mostFrequentItem);
+        setTotalProfit(profitTotal);
+        setTransUncheck(transactionUnCheck);
+        setTotalQris(totalQris);
+        setTotalAdminLuar(totalNominTarikLuar);
+        setTotalAdminDalam(totalNominTarikDalam);
+        setTotalSisaFisik(sisaFisik <= 0 ? 0 : sisaFisik);
+        setTotalProfit(profitTotal);
+        setDataTarik(transactionTarik);
+        setIsData(false);
+        setDataTopup(transactionTopup);
+        setitemTerlaris(mostFrequentItem);
+        setDataTransaction(dataEmoney); // Simpan transaksi ke state
+        setTotalNominal(totalNominal); // Simpan total nominal ke state
+        setTotalNominalTarik(totalTarik); // Simpan total nominal tunai ke state
+        setTotalNominalTopup(totalTopup); // Simpan total nominal non-tunai ke state
+      } else {
+        setIsData(false);
+      }
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -368,7 +376,11 @@ function TodayEmoney() {
       try {
         // Buat array promises untuk semua operasi updateDoc
         const updatePromises = data.map(async (transaction) => {
-          const transactionRef = doc(db, `transactions${cabang}`, transaction.id);
+          const transactionRef = doc(
+            db,
+            `transactions${cabang}`,
+            transaction.id
+          );
           return updateDoc(transactionRef, {
             isCheck: true,
             checker: nama,

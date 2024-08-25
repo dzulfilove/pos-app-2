@@ -62,8 +62,8 @@ function MasterUser() {
         ...doc.data(),
       }));
 
-      console.log(usersData);
-      setDataUser(usersData);
+      console.log(usersData, "user Daa");
+      setDataUser(categoriesArray);
       setIsData(false);
     } catch (error) {
       console.error(
@@ -127,7 +127,6 @@ function MasterUser() {
         showConfirmButton: false,
         timer: 1500,
       });
-      window.location.href = "/";
     } catch (error) {
       setIsLoad(false);
 

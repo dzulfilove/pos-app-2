@@ -101,14 +101,14 @@ function MainReport() {
             <>
               <Link
                 data-aos="fade-up"
-                data-aos-delay="350"
-                to="/transaction-other"
+                data-aos-delay="250"
+                to="/today-emoney"
                 className="btn-link w-[20rem] hover:text-slate-950"
               >
-                <GiProfit className="text-[30px] text-blue-500" />
+                <FaMoneyBillWave className="text-[30px] text-blue-500" />
 
-                <h3 className="text-sm font-medium mt2 text-blue-500 mt-2 hover:text-slate-950">
-                  Laporan Transaksi Lain-lain
+                <h3 className="text-sm font-medium mt-2 text-blue-500  hover:text-slate-950">
+                  Transaksi E-Money
                 </h3>
               </Link>
             </>
