@@ -323,20 +323,24 @@ function MasterUser() {
   const getObject = (arr, item) => {
     return arr.find((x) => x.value === item);
   };
+  const getObjectString = (arr, item) => {
+    const res = arr.find((x) => x.value === item);
+    return res.text;
+  };
   const optionPeran = [
     { value: "Super Admin", text: "Super Admin" },
     { value: "Admin", text: "Admin" },
   ];
   const optionCabang = [
-    { value: "", text: "Way Halim" },
-    { value: "2", text: "Sukarame" },
+    { value: "", text: "Way Dadi 1" },
+    { value: "2", text: "Way Dadi 2" },
   ];
   // Membuat listData tanpa menampilkan id
   const listData = dataUser.map((data) => [
     data.email,
     data.nama,
     data.peran,
-    data.cabang,
+    getObjectString(optionCabang, data.cabang),
     data, // Tambahkan objek lengkap di sini
   ]);
 

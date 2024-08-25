@@ -31,6 +31,7 @@ import Loader from "../../component/features/loader";
 import LoaderTable from "../../component/features/loader2";
 function MainTransaction() {
   const [isEdit, setIsEdit] = useState(false);
+  const [refresh, setRefresh] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
   const [dataDetail, setDataDetail] = useState({});
   const [isOpen, setIsOpen] = useState(false);
@@ -340,7 +341,10 @@ function MainTransaction() {
             refCategory: categoryRef,
             quantity: parseInt(1),
             price: parseInt(bayar),
-            payment: jenisPembayaran.value,
+            payment:
+              jenisTransaksi.text == "Topup"
+                ? "Admin Dalam"
+                : jenisPembayaran.value,
             adminFee: parseInt(adminFee),
             type: jenisTransaksi.value,
             date: tanggal,
@@ -364,7 +368,10 @@ function MainTransaction() {
           };
         }
         // Tambahkan data ke koleksi transactions
-        await transaction.set(doc(collection(db, `transactions${cabang}`)), dataSend);
+        await transaction.set(
+          doc(collection(db, `transactions${cabang}`)),
+          dataSend
+        );
 
         // Data yang akan ditambahkan ke historyInventory
         const dateInput = dayjs().format("DD/MM/YYYY");
@@ -404,14 +411,20 @@ function MainTransaction() {
         }
         console.log(dataItems);
       });
-
+      setJenisPembayaran(null);
+      setRefresh(false);
+      setSelectedBarang(null);
+      setJenisPembayaran(null);
+      setJenisTransaksi(null);
+      setBayar(0);
+      setHarga(0);
+      setAdminFee(0);
+      setJumlahBarang(0);
       setIsLoad(false);
+      setJenis("");
       getTransactions();
       Swal.fire("Success", "Transaction added successfully", "success");
-      setJenisPembayaran(null);
-      setSelectedBarang(null);
-      setHarga(0);
-      setJumlahBarang(0);
+
       setIsOpen(false);
     } catch (error) {
       setIsLoad(false);
@@ -545,7 +558,7 @@ function MainTransaction() {
   }
   const columns = [
     {
-      name: "itemName",
+      name: "data",
       label: "Barang",
       options: {
         filter: true,
@@ -558,7 +571,11 @@ function MainTransaction() {
               }}
               className="flex justify-start items-center gap-2 w-full"
             >
-              {value}
+              {value.category.nameCategory == "E-Money"
+                ? value.item.itemName == "Dana"
+                  ? value.type
+                  : `${value.type}, ${value.item.itemName}`
+                : value.item.itemName}
             </button>
           );
         },
@@ -661,7 +678,7 @@ function MainTransaction() {
       },
     },
     {
-      name: "itemName",
+      name: "data",
       label: "Barang",
       options: {
         filter: true,
@@ -674,7 +691,7 @@ function MainTransaction() {
               }}
               className="flex justify-start items-center gap-2 w-full"
             >
-              {value}
+              {value.type},{value.item.itemName}
             </button>
           );
         },
@@ -717,6 +734,10 @@ function MainTransaction() {
     { text: "Topup", value: "Topup" },
     { text: "Tarik Dana", value: "Tarik Dana" },
   ];
+
+  const getObject = (arr, item) => {
+    return arr.find((x) => x.value === item);
+  };
   console.log(dataDetail, "Detail data");
   return (
     <div>
@@ -936,8 +957,10 @@ function MainTransaction() {
                           setSelectedBarang(data);
                           setHarga(data.price);
                           setJenis(data.categoryName);
+                          setRefresh(true);
                         }}
                         options={dataBarang}
+                        refresh={refresh}
                         value={selectedBarang}
                         name={"Pilih Barang"}
                       />
@@ -946,7 +969,7 @@ function MainTransaction() {
 
                   {jenis == "E-Money" ? (
                     <>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Nominal</h4>
                         <input
                           type="number"
@@ -956,7 +979,7 @@ function MainTransaction() {
                             setHarga(e.target.value);
                           }}
                         />
-                      </div>
+                      </div> */}
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Bayar</h4>
                         <input
@@ -1002,8 +1025,10 @@ function MainTransaction() {
                           <DropdownSearch
                             change={(data) => {
                               setJenisPembayaran(data);
+                              setRefresh(true);
                             }}
                             options={optionPembayaran}
+                            refresh={refresh}
                             value={jenisPembayaran}
                             name={"Pembayaran"}
                           />
@@ -1035,30 +1060,51 @@ function MainTransaction() {
                         <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                           <DropdownSearch
                             change={(data) => {
+                              setRefresh(true);
                               setJenisTransaksi(data);
+                              if (data.text == "Topup") {
+                                setJenisPembayaran(
+                                  getObject(
+                                    optionPembayaranEMoney,
+                                    "Admin Dalam"
+                                  )
+                                );
+                              }
                             }}
                             options={jenisTrans}
                             value={jenisTransaksi}
+                            refresh={refresh}
                             name={"Transaksi"}
                           />
                         </div>
                       </div>
-
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">
-                          Jenis Pembayaran
-                        </h4>
-                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                          <DropdownSearch
-                            change={(data) => {
-                              setJenisPembayaran(data);
-                            }}
-                            options={optionPembayaranEMoney}
-                            value={jenisPembayaran}
-                            name={"Pembayaran"}
-                          />
-                        </div>
-                      </div>
+                      {jenisTransaksi && (
+                        <>
+                          {jenisTransaksi.text == "Topup" ? (
+                            <></>
+                          ) : (
+                            <>
+                              <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                <h4 className="font-medium text-xs">
+                                  Jenis Pembayaran
+                                </h4>
+                                <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                  <DropdownSearch
+                                    change={(data) => {
+                                      setRefresh(true);
+                                      setJenisPembayaran(data);
+                                    }}
+                                    options={optionPembayaranEMoney}
+                                    value={jenisPembayaran}
+                                    refresh={refresh}
+                                    name={"Pembayaran"}
+                                  />
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
                     </div>
                   </>
                 )}

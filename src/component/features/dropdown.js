@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 
-const DropdownSearch = ({ options, change, value, name }) => {
+const DropdownSearch = ({ options, change, value, name, refresh }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSet, setIsSet] = useState(false);
   const [selectedOption, setSelectedOption] = useState(
-    typeof value === "object" ? value : null
+    typeof value === "object" ? value : value == null ? null : null
   );
 
   const [showOptions, setShowOptions] = useState(false);
@@ -15,6 +15,9 @@ const DropdownSearch = ({ options, change, value, name }) => {
     if (typeof value === "object" && value !== null) {
       setSelectedOption(value);
       setIsSet(true);
+    }
+    if (refresh == false) {
+      setSelectedOption(null);
     }
     console.log(value, "nilai");
   }, [selectedOption]);
@@ -40,7 +43,11 @@ const DropdownSearch = ({ options, change, value, name }) => {
         className="  rounded p-2 font-normal cursor-pointer text-xs"
         onClick={() => setShowOptions(!showOptions)}
       >
-        {selectedOption ? selectedOption.text : `Pilih ${name}..`}
+        {refresh == true
+          ? selectedOption
+            ? selectedOption.text
+            : `Pilih ${name}..`
+          : `Pilih ${name}..`}
       </div>
       {showOptions && (
         <div className="absolute w-full glass-effect border border-blue-500 rounded mt-1 z-[99999] p-2">

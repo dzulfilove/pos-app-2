@@ -31,6 +31,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import Loader from "../../component/features/loader";
 import LoaderTable from "../../component/features/loader2";
+
 function TodayEmoney() {
   const [isCek, setIsCek] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
@@ -239,7 +240,7 @@ function TodayEmoney() {
         setTotalQris(totalQris);
         setTotalAdminLuar(totalNominTarikLuar);
         setTotalAdminDalam(totalNominTarikDalam);
-        setTotalSisaFisik(sisaFisik <= 0 ? 0 : sisaFisik);
+        setTotalSisaFisik(sisaFisik);
         setTotalProfit(profitTotal);
         setDataTarik(transactionTarik);
         setIsData(false);
