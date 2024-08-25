@@ -43,9 +43,12 @@ import MainHistory from "./pages/history/mainHistory";
 import HistoryCash from "./pages/history/historyCash";
 import HistoryStok from "./pages/history/historyStok";
 import OtherIncomeReport from "./pages/report/mainOtherIncome";
-
+import TodayEmoney from "./pages/report/mainTodayEmoney";
+import { FaUsers } from "react-icons/fa6";
+import MasterUser from "./pages/masterData/masterDataUser/masterUser";
 const App = () => {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn");
+  const peran = sessionStorage.getItem("peran");
   const isLamaran = sessionStorage.getItem("isLamaran");
   // const isLoggedIn = true;
   const menus = [
@@ -65,14 +68,38 @@ const App = () => {
       icon: IoStatsChartSharp,
       main: false,
     },
+
     {
       name: "Riwayat",
       link: "history",
       icon: MdOutlineHistory,
       main: false,
     },
+    {
+      name: "Data User",
+      link: "data-user",
+      icon: FaUsers,
+      main: false,
+    },
   ];
 
+  const menus2 = [
+    { name: "Dashboard", link: "", icon: MdOutlineDashboard, main: false },
+    { name: "Transaksi", link: "transaction", icon: FaJediOrder, main: false },
+    { name: "Barang", link: "barang", icon: PiShoppingCartBold, main: false },
+    {
+      name: "Inventory",
+      link: "inventory",
+      icon: MdOutlineInventory2,
+      main: false,
+    },
+    {
+      name: "Laporan",
+      link: "report",
+      icon: IoStatsChartSharp,
+      main: false,
+    },
+  ];
   const [open, setOpen] = useState(true);
   const [openKaryawan, setOpenKaryawan] = useState(true);
   const [openMasterData, setOpenMasterData] = useState(true);
@@ -89,9 +116,13 @@ const App = () => {
     sessionStorage.removeItem("isLoggedIn");
     sessionStorage.removeItem("userID");
     sessionStorage.removeItem("userEmail");
+    sessionStorage.removeItem("nama");
+    sessionStorage.removeItem("peran");
+    sessionStorage.removeItem("cabang");
     window.location.href = "/";
   };
 
+  const listMenu = peran == "Super Admin" ? menus : menus2;
   return (
     <>
       {isLoggedIn ? (
@@ -147,7 +178,7 @@ const App = () => {
                 <div className="flex flex-col gap-2 relative text-blue-100 ">
                   {/* {isLoggedIn ? (
                 <> */}
-                  {menus.map((menu) => (
+                  {listMenu.map((menu) => (
                     <div
                       className={`flex flex-col justify-start  gap-3 items-center ${
                         open ? "overflow-y-hidden" : ""
@@ -304,16 +335,25 @@ const App = () => {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/barang" element={<MainBarang />} />
                     <Route path="/report" element={<MainReport />} />
-                    <Route path="/history" element={<MainHistory />} />
-                    <Route path="/history-cash" element={<HistoryCash />} />
-                    <Route path="/history-stok" element={<HistoryStok />} />
-                    <Route
-                      path="/transaction-other"
-                      element={<OtherIncomeReport />}
-                    />
+
+                    {peran == "Super Admin" && (
+                      <>
+                        <Route path="/history" element={<MainHistory />} />
+                        <Route path="/history-cash" element={<HistoryCash />} />
+                        <Route path="/history-stok" element={<HistoryStok />} />
+                        <Route
+                          path="/transaction-other"
+                          element={<OtherIncomeReport />}
+                        />
+                        <Route path="/all-report" element={<PeriodeReport />} />
+                        <Route path="/data-user" element={<MasterUser />} />
+                      </>
+                    )}
+
                     <Route path="/transaction" element={<MainTransaction />} />
                     <Route path="/today-report" element={<TodayReport />} />
-                    <Route path="/all-report" element={<PeriodeReport />} />
+
+                    <Route path="/today-emoney" element={<TodayEmoney />} />
                     <Route path="/inventory" element={<MasterInventory />} />
                     <Route
                       path="/inventory-detail/:id"

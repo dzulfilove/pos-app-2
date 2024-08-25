@@ -53,6 +53,7 @@ function HistoryCash() {
   const [totalLebih, setTotalLebih] = useState(0);
 
   const nama = sessionStorage.getItem("nama");
+  const cabang = sessionStorage.getItem("cabang");
   const [isData, setIsData] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
 
@@ -62,7 +63,7 @@ function HistoryCash() {
     try {
       // Menggunakan `&&` untuk menggabungkan kondisi di `where`
       const historyQuery = query(
-        collection(db, "historyCheck"),
+        collection(db, `historyCheck${cabang}`),
         where("dateCheck", "==", tgl),
         where("type", "==", "Cash")
       );

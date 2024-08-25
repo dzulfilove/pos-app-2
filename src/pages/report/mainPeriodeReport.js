@@ -50,6 +50,8 @@ function PeriodeReport() {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const cabang = sessionStorage.getItem("cabang");
+
   const [totalProfit, setTotalProfit] = useState(0);
 
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
@@ -73,7 +75,7 @@ function PeriodeReport() {
     try {
       // Buat query dengan filter where untuk bulan dan tahun
       const transactionsQuery = query(
-        collection(db, "transactions"),
+        collection(db, `transactions${cabang}`),
         where("month", "==", month), // Ganti kondisi where untuk bulan
         where("year", "==", year) // Ganti kondisi where untuk tahun
       );
@@ -122,6 +124,9 @@ function PeriodeReport() {
             profit = total;
           } else {
             profit = total - data.quantity * itemData.buyPrice;
+          }
+          if (categoryData.nameCategory == "E-Money") {
+            profit = data.adminFee;
           }
           return {
             id: doc.id,

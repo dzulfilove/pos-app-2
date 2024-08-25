@@ -36,7 +36,9 @@ function MainTransaction() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [jumlahBarang, setJumlahBarang] = useState(0);
+  const [jenisTransaksi, setJenisTransaksi] = useState(null);
   const [harga, setHarga] = useState(0);
+  const [adminFee, setAdminFee] = useState(0);
   const [jenisPembayaran, setJenisPembayaran] = useState(null);
   const [indexDetail, setIndexDetail] = useState(0);
   const [dataBarang, setDataBarang] = useState([]);
@@ -44,6 +46,8 @@ function MainTransaction() {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const [bayar, setBayar] = useState(0);
+  const [jenis, setJenis] = useState("");
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const [totalNominal, setTotalNominal] = useState(0);
@@ -52,6 +56,8 @@ function MainTransaction() {
   const [itemTerlaris, setitemTerlaris] = useState({});
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
+  const cabang = sessionStorage.getItem("cabang");
+  const peran = sessionStorage.getItem("peran");
 
   useEffect(() => {
     fetchItems();
@@ -62,7 +68,7 @@ function MainTransaction() {
     try {
       // Buat query dengan filter where
       const transactionsQuery = query(
-        collection(db, "transactions"),
+        collection(db, `transactions${cabang}`),
         where("date", "==", tanggal)
       );
 
@@ -125,7 +131,7 @@ function MainTransaction() {
         .filter((transaction) => transaction.payment !== "Tunai")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      console.log("transactions", transactions);
+      console.log(`transactions${cabang}`, transactions);
       console.log("Total Nominal", totalNominal);
       console.log("Total Nominal Tunai", totalNominalTunai);
       console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
@@ -189,20 +195,34 @@ function MainTransaction() {
 
   const fetchItems = async () => {
     try {
+      // Fetch items collection
       const querySnapshot = await getDocs(collection(db, "items"));
       const categoriesArray = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
+      // Filter items that are not checked
       const dataItem = categoriesArray.filter((a) => !a.isCheck);
-      const dataOption = dataItem.map((a) => {
+
+      // Fetch categories for each item
+      const dataOptionPromises = dataItem.map(async (a) => {
+        // Fetch the category document using the reference
+        const categoryDoc = await getDoc(a.itemCategory);
+
+        // Combine item data with its category data
         return {
           value: a.id,
           text: a.itemName,
-          refCategory: a.itemCategory.id,
+          refCategory: categoryDoc.id,
+          categoryName: categoryDoc.data().nameCategory,
           price: a.sellPrice,
         };
       });
+
+      // Wait for all promises to resolve
+      const dataOption = await Promise.all(dataOptionPromises);
+
       console.log(dataOption, "opti");
       setDataBarang(dataOption);
     } catch (error) {
@@ -215,7 +235,7 @@ function MainTransaction() {
 
       // Buat query dengan filter where refItem == itemRef
       const inventoryQuery = query(
-        collection(db, "inventorys"),
+        collection(db, `inventorys${cabang}`),
         where("refItem", "==", itemRef)
       );
 
@@ -244,57 +264,107 @@ function MainTransaction() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // setIsLoad(true);
+    if (jenis == "E-Money") {
+      // Cek jika state kosong
+      if (
+        selectedBarang == null ||
+        jenisTransaksi == null ||
+        jenisPembayaran == null ||
+        bayar == 0 ||
+        adminFee == 0
+      ) {
+        let missingFields = [];
 
-    // Cek jika state kosong
-    if (
-      selectedBarang == null ||
-      jumlahBarang <= 0 ||
-      jenisPembayaran == null
-    ) {
-      let missingFields = [];
-      if (selectedBarang == null) missingFields.push("Barang");
-      if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
-      if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
-      setIsLoad(false);
-      Swal.fire(
-        "Error",
-        `${missingFields.join(" dan ")} tidak boleh kosong`,
-        "error"
-      );
-      return;
+        if (selectedBarang == null) missingFields.push("Barang");
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+        if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
+        if (bayar == null) missingFields.push("Jumlah Bayar");
+        if (adminFee == null) missingFields.push("Jumlah Biaya Admin");
+        setIsLoad(false);
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+
+        return;
+      }
+    } else {
+      if (
+        selectedBarang == null ||
+        jumlahBarang <= 0 ||
+        jenisPembayaran == null
+      ) {
+        let missingFields = [];
+
+        if (selectedBarang == null) missingFields.push("Barang");
+        if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+        setIsLoad(false);
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+
+        return;
+      }
     }
 
     try {
-      const itemRef = doc(db, "items", selectedBarang.value);
-
-      const dataItems = await getInventory(itemRef);
       await runTransaction(db, async (transaction) => {
-        console.log(dataItems, "data Items Invent");
-        // Jika data inventory tidak ditemukan
-        if (!dataItems) {
-          throw new Error("Inventory data not found.");
-        }
+        const itemRef = doc(db, "items", selectedBarang.value);
+        let dataItems = null;
+        let newStock = 0;
+        if (jenis !== "E-Money") {
+          dataItems = await getInventory(itemRef);
+          console.log(dataItems, "data Items Invent");
+          // Jika data inventory tidak ditemukan
+          if (!dataItems) {
+            throw new Error("Inventory data not found.");
+          }
 
-        // Cek apakah stok mencukupi
-        const newStock = parseInt(dataItems.stock) - parseInt(jumlahBarang);
-        if (newStock < 0) {
-          throw new Error("Stock tidak mencukupi.");
+          // Cek apakah stok mencukupi
+          newStock = parseInt(dataItems.stock) - parseInt(jumlahBarang);
+          if (newStock < 0) {
+            throw new Error("Stock tidak mencukupi.");
+          }
         }
-
         const categoryRef = doc(db, "category", selectedBarang.refCategory);
+        let dataSend = {};
+        const jam = dayjs().format("HH:mm");
 
+        if (jenis == "E-Money") {
+          dataSend = {
+            refItem: itemRef,
+            refCategory: categoryRef,
+            quantity: parseInt(1),
+            price: parseInt(bayar),
+            payment: jenisPembayaran.value,
+            adminFee: parseInt(adminFee),
+            type: jenisTransaksi.value,
+            date: tanggal,
+            month: bulan,
+            time: jam,
+            year: tahun,
+            isCheck: false,
+          };
+        } else {
+          dataSend = {
+            refItem: itemRef,
+            refCategory: categoryRef,
+            quantity: parseInt(jumlahBarang),
+            price: parseInt(harga),
+            payment: jenisPembayaran.value,
+            date: tanggal,
+            time: jam,
+            month: bulan,
+            year: tahun,
+            isCheck: false,
+          };
+        }
         // Tambahkan data ke koleksi transactions
-        await transaction.set(doc(collection(db, "transactions")), {
-          refItem: itemRef,
-          refCategory: categoryRef,
-          quantity: parseInt(jumlahBarang),
-          price: parseInt(harga),
-          payment: jenisPembayaran.value,
-          date: tanggal,
-          month: bulan,
-          year: tahun,
-          isCheck: false,
-        });
+        await transaction.set(doc(collection(db, `transactions${cabang}`)), dataSend);
 
         // Data yang akan ditambahkan ke historyInventory
         const dateInput = dayjs().format("DD/MM/YYYY");
@@ -319,17 +389,19 @@ function MainTransaction() {
           status: "Stok Keluar",
         };
 
-        // Tambahkan data ke historyInventory
-        await transaction.set(
-          doc(collection(db, "historyInventory")),
-          historyData
-        );
+        if (jenis != "E-Money") {
+          // Tambahkan data ke historyInventory
+          await transaction.set(
+            doc(collection(db, `historyInventory${cabang}`)),
+            historyData
+          );
 
-        // Update stok di inventory
-        transaction.update(doc(db, "inventorys", dataItems.id), {
-          stock: newStock,
-          dateUpdate: tanggal,
-        });
+          // Update stok di inventory
+          transaction.update(doc(db, `inventorys${cabang}`, dataItems.id), {
+            stock: newStock,
+            dateUpdate: tanggal,
+          });
+        }
         console.log(dataItems);
       });
 
@@ -378,7 +450,7 @@ function MainTransaction() {
             throw new Error("Inventory data not found.");
           }
 
-          const dataRef = doc(db, "transactions", data.id);
+          const dataRef = doc(db, `transactions${cabang}`, data.id);
 
           // Hapus dokumen dari Firestore (transactions)
           transaction.delete(dataRef);
@@ -406,15 +478,20 @@ function MainTransaction() {
             status: "Stok Masuk",
           };
 
-          // Tambahkan data ke historyInventory
-          transaction.set(doc(collection(db, "historyInventory")), historyData);
+          if (jenis != "E-Money") {
+            // Tambahkan data ke historyInventory
+            transaction.set(
+              doc(collection(db, `historyInventory${cabang}`)),
+              historyData
+            );
 
-          // Update stok di inventory
-          const newStock = parseInt(data.quantity) + dataItems.stock;
-          transaction.update(doc(db, "inventorys", dataItems.id), {
-            stock: newStock,
-            dateUpdate: tanggal,
-          });
+            // Update stok di inventory
+            const newStock = parseInt(data.quantity) + dataItems.stock;
+            transaction.update(doc(db, `inventorys${cabang}`, dataItems.id), {
+              stock: newStock,
+              dateUpdate: tanggal,
+            });
+          }
         });
 
         setIsLoad(false);
@@ -562,7 +639,61 @@ function MainTransaction() {
       },
     },
   ];
-
+  const columns2 = [
+    {
+      name: "data.time",
+      label: "Waktu",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button
+              onClick={() => {
+                handleDetailData(tableMeta.rowIndex);
+              }}
+              className="flex justify-start items-center gap-2 w-full"
+            >
+              {value} WIB
+            </button>
+          );
+        },
+      },
+    },
+    {
+      name: "itemName",
+      label: "Barang",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button
+              onClick={() => {
+                handleDetailData(tableMeta.rowIndex);
+              }}
+              className="flex justify-start items-center gap-2 w-full"
+            >
+              {value}
+            </button>
+          );
+        },
+      },
+    },
+    {
+      name: "harga",
+      label: "Harga Satuan",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+  ];
   const data = dataTransaction.map((a) => {
     return {
       itemName: a.item.itemName,
@@ -577,7 +708,15 @@ function MainTransaction() {
     { text: "QRIS", value: "QRIS" },
     { text: "Transfer", value: "Transfer" },
   ];
+  const optionPembayaranEMoney = [
+    { text: "Admin Dalam", value: "Admin Dalam" },
+    { text: "Admin Luar", value: "Admin Luar" },
+  ];
 
+  const jenisTrans = [
+    { text: "Topup", value: "Topup" },
+    { text: "Tarik Dana", value: "Tarik Dana" },
+  ];
   console.log(dataDetail, "Detail data");
   return (
     <div>
@@ -775,7 +914,11 @@ function MainTransaction() {
 
               <div
                 className={`w-full ${
-                  !isOpen ? "h-0 p-0" : "h-[11rem] p-2 mt-3"
+                  !isOpen
+                    ? "h-0 p-0"
+                    : jenis == "E-Money"
+                    ? "h-[15rem] p-2 mt-3"
+                    : "h-[11rem] p-2 mt-3"
                 } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
               >
                 <div
@@ -784,12 +927,15 @@ function MainTransaction() {
                   } justify-start items-center gap-4`}
                 >
                   <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Pilih Barang</h4>
+                    <h4 className="font-medium text-xs">
+                      Pilih Barang {jenis}
+                    </h4>
                     <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                       <DropdownSearch
                         change={(data) => {
                           setSelectedBarang(data);
                           setHarga(data.price);
+                          setJenis(data.categoryName);
                         }}
                         options={dataBarang}
                         value={selectedBarang}
@@ -797,43 +943,125 @@ function MainTransaction() {
                       />
                     </div>
                   </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Harga Barang</h4>
-                    <input
-                      type="text"
-                      readOnly
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={formatRupiah(harga)}
-                      onChange={(e) => {
-                        setHarga(e.target.value);
-                      }}
-                    />
-                  </div>
-                  <div className="w-[20%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Jumlah Barang</h4>
-                    <input
-                      type="number"
-                      className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      value={jumlahBarang}
-                      onChange={(e) => {
-                        setJumlahBarang(e.target.value);
-                      }}
-                    />
-                  </div>
-                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                    <h4 className="font-medium text-xs">Jenis Pembayaran</h4>
-                    <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                      <DropdownSearch
-                        change={(data) => {
-                          setJenisPembayaran(data);
-                        }}
-                        options={optionPembayaran}
-                        value={jenisPembayaran}
-                        name={"Pembayaran"}
-                      />
-                    </div>
-                  </div>
+
+                  {jenis == "E-Money" ? (
+                    <>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Nominal</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={harga}
+                          onChange={(e) => {
+                            setHarga(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Bayar</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={bayar}
+                          onChange={(e) => {
+                            setBayar(e.target.value);
+                          }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Nominal</h4>
+                        <input
+                          type="text"
+                          readOnly
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={formatRupiah(harga)}
+                          onChange={(e) => {
+                            setHarga(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="w-[20%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Jumlah Barang</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={jumlahBarang}
+                          onChange={(e) => {
+                            setJumlahBarang(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Jenis Pembayaran
+                        </h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          <DropdownSearch
+                            change={(data) => {
+                              setJenisPembayaran(data);
+                            }}
+                            options={optionPembayaran}
+                            value={jenisPembayaran}
+                            name={"Pembayaran"}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
+                {jenis == "E-Money" && (
+                  <>
+                    <div
+                      className={`w-full ${
+                        !isOpen ? "hidden" : "flex"
+                      } justify-start items-end gap-4 mt-3 pl-2`}
+                    >
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Biaya Admin</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={adminFee}
+                          onChange={(e) => {
+                            setAdminFee(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Jenis Transaksi</h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          <DropdownSearch
+                            change={(data) => {
+                              setJenisTransaksi(data);
+                            }}
+                            options={jenisTrans}
+                            value={jenisTransaksi}
+                            name={"Transaksi"}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Jenis Pembayaran
+                        </h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          <DropdownSearch
+                            change={(data) => {
+                              setJenisPembayaran(data);
+                            }}
+                            options={optionPembayaranEMoney}
+                            value={jenisPembayaran}
+                            name={"Pembayaran"}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div
                   className={`w-full ${
                     !isOpen ? "hidden" : "flex"
@@ -863,15 +1091,31 @@ function MainTransaction() {
                   </>
                 ) : (
                   <>
-                    <Paper style={{ height: 400, width: "100%" }}>
-                      <MUIDataTable
-                        columns={columns}
-                        data={data}
-                        options={{
-                          fontSize: 12, // adjust font size here
-                        }}
-                      />
-                    </Paper>
+                    {peran == "Super Admin" ? (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columns}
+                            data={data}
+                            options={{
+                              fontSize: 12, // adjust font size here
+                            }}
+                          />
+                        </Paper>
+                      </>
+                    ) : (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columns2}
+                            data={data}
+                            options={{
+                              fontSize: 12, // adjust font size here
+                            }}
+                          />
+                        </Paper>
+                      </>
+                    )}
                   </>
                 )}
               </div>

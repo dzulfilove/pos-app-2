@@ -31,6 +31,7 @@ function HistoryDetail({ params }) {
   const { id } = params;
   const idTanggal = params.id;
   const [dataHistory, setDataHistory] = useState([]);
+  const cabang = sessionStorage.getItem("cabang");
   const [isData, setIsData] = useState(true);
   const formatLink = (str) => {
     return str.replace(/-/g, "/");
@@ -48,7 +49,7 @@ function HistoryDetail({ params }) {
       // Ambil data historyInventory berdasarkan dateInput yang sesuai
       const querySnapshot = await getDocs(
         query(
-          collection(db, "historyInventory"),
+          collection(db, `historyInventory${cabang}`),
           where("dateInput", "==", formatLink(idTanggal))
         )
       );

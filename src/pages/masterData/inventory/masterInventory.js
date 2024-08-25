@@ -59,6 +59,7 @@ function MasterInventory() {
   );
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
+  const cabang = sessionStorage.getItem("cabang");
 
   const [keterangan, setKeterangan] = useState("");
   const [satuan, setSatuan] = useState("");
@@ -112,7 +113,9 @@ function MasterInventory() {
 
   const getInventory = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "inventorys"));
+      const querySnapshot = await getDocs(
+        collection(db, `inventorys${cabang}`)
+      );
       const items = await Promise.all(
         querySnapshot.docs.map(async (doc) => {
           const data = doc.data();
@@ -196,7 +199,7 @@ function MasterInventory() {
       // Ambil data historyInventory berdasarkan bulan dan tahun yang sesuai
       const querySnapshot = await getDocs(
         query(
-          collection(db, "historyInventory"),
+          collection(db, `historyInventory${cabang}`),
           where("month", "==", month),
           where("year", "==", year)
         )
@@ -380,7 +383,11 @@ function MasterInventory() {
 
           if (existingItem) {
             // Jika item sudah ada, lakukan update dengan menambahkan stok baru ke stok yang sudah ada
-            const itemInventoryRef = doc(db, "inventorys", existingItem.id);
+            const itemInventoryRef = doc(
+              db,
+              `inventorys${cabang}`,
+              existingItem.id
+            );
             const newStock = parseInt(existingItem.stock) + parseInt(data.stok);
 
             transaction.update(itemInventoryRef, {
@@ -393,7 +400,7 @@ function MasterInventory() {
             });
           } else {
             // Jika item belum ada, lakukan insert baru
-            const inventoryRef = doc(collection(db, "inventorys"));
+            const inventoryRef = doc(collection(db, `inventorys${cabang}`));
             transaction.set(inventoryRef, {
               refItem: itemRef,
               refCategory: categoryRef,
@@ -411,7 +418,9 @@ function MasterInventory() {
           const monthInput = dayjs().format("MMMM"); // Format bulan seperti "May"
           const yearInput = dayjs().format("YYYY"); // Format tahun
 
-          const historyInventoryRef = doc(collection(db, "historyInventory"));
+          const historyInventoryRef = doc(
+            collection(db, `historyInventory${cabang}`)
+          );
           transaction.set(historyInventoryRef, {
             refItem: itemRef,
             refCategory: categoryRef,

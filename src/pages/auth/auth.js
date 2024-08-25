@@ -114,6 +114,8 @@ class Auth extends Component {
       sessionStorage.setItem("isLoggedIn", true);
       sessionStorage.setItem("userEmail", email);
       sessionStorage.setItem("nama", userData.nama);
+      sessionStorage.setItem("peran", userData.peran);
+      sessionStorage.setItem("cabang", userData.cabang);
 
       Swal.fire({
         icon: "success",
@@ -301,7 +303,7 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                     </button>
-                    <button
+                    {/* <button
                       data-aos="fade-down"
                       data-aos-delay="550"
                       className="button-login w-full font-bold"
@@ -314,7 +316,7 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                       <span></span>
-                    </button>
+                    </button> */}
                   </>
                 )}
               </div>

@@ -29,6 +29,8 @@ function Dashboard() {
   const [totalNominalNonTunai, setTotalNominalNonTunai] = useState(0);
   const [itemTerlaris, setItemTerlaris] = useState([]);
   const [dataBulan, setDataBulan] = useState([]);
+  const cabang = sessionStorage.getItem("cabang");
+
   useEffect(() => {
     getTransactions(bulan, tahun);
     AOS.init({ duration: 700 });
@@ -38,7 +40,7 @@ function Dashboard() {
     try {
       // Buat query dengan filter where untuk tahun
       const transactionsQuery = query(
-        collection(db, "transactions"),
+        collection(db, `transactions${cabang}`),
         where("year", "==", year)
       );
 

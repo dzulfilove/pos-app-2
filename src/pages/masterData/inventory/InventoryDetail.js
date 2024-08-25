@@ -59,6 +59,8 @@ function InventoryDetail({ params }) {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const cabang = sessionStorage.getItem("cabang");
+
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const allTabs = [
@@ -83,7 +85,7 @@ function InventoryDetail({ params }) {
       // Definisikan ID kategori yang ingin dicari
       // Buat query untuk mengambil data inventory berdasarkan refCategory
       const inventoryQuery = query(
-        collection(db, "inventorys"),
+        collection(db, `inventorys${cabang}`),
         where("refCategory", "==", doc(db, "category", idCategory)) // Menggunakan referensi kategori
       );
 
@@ -234,9 +236,10 @@ function InventoryDetail({ params }) {
 
         // Hitung harga berdasarkan gap dan harga jual item
         const price = parseInt(gap) * parseInt(item.item.sellPrice);
+        const jam = dayjs().format("HH:mm");
 
         // Tambahkan data ke koleksi transactions (Piutang)
-        transaction.set(doc(collection(db, "transactions")), {
+        transaction.set(doc(collection(db, `transactions${cabang}`)), {
           refItem: itemRef,
           refCategory: categoryRef,
           quantity: parseInt(1),
@@ -247,13 +250,14 @@ function InventoryDetail({ params }) {
           month: bulan,
           year: tahun,
           type: "Stock",
+          time: jam,
           isCheck: false,
           isBayar: false,
           user: nama,
         });
 
         // Tambahkan data ke koleksi transactions (Transfer)
-        transaction.set(doc(collection(db, "transactions")), {
+        transaction.set(doc(collection(db, `transactions${cabang}`)), {
           refItem: itemRef2,
           refCategory: categoryRef2,
           quantity: parseInt(gap),
@@ -261,6 +265,7 @@ function InventoryDetail({ params }) {
           payment: "Transfer",
           date: tanggal,
           month: bulan,
+          time: jam,
           year: tahun,
           isCheck: false,
         });
@@ -290,10 +295,13 @@ function InventoryDetail({ params }) {
         };
 
         // Tambahkan data ke historyInventory
-        transaction.set(doc(collection(db, "historyInventory")), historyData);
+        transaction.set(
+          doc(collection(db, `historyInventory${cabang}`)),
+          historyData
+        );
 
         // Update stok di inventory
-        transaction.update(doc(db, "inventorys", item.id), {
+        transaction.update(doc(db, `inventorys${cabang}`, item.id), {
           stock: newStock,
           dateUpdate: tanggal,
         });
@@ -339,10 +347,13 @@ function InventoryDetail({ params }) {
         };
 
         // Tambahkan data ke historyInventory
-        transaction.set(doc(collection(db, "historyInventory")), historyData);
+        transaction.set(
+          doc(collection(db, `historyInventory${cabang}`)),
+          historyData
+        );
 
         // Update stok di inventory
-        transaction.update(doc(db, "inventorys", item.id), {
+        transaction.update(doc(db, `inventorys${cabang}`, item.id), {
           stock: newStock,
           dateUpdate: tanggal,
         });
@@ -358,7 +369,7 @@ function InventoryDetail({ params }) {
     try {
       const gap = Math.abs(parseInt(totalStok) - parseInt(stok));
       const timeInput = dayjs().format("HH:mm");
-      await addDoc(collection(db, "historyCheck"), {
+      await addDoc(collection(db, `historyCheck${cabang}`), {
         totalSystemStock: parseInt(totalStok),
         totalGap: parseInt(gap),
         totalActuallyStock: parseInt(stok),

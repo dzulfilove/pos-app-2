@@ -9,8 +9,6 @@ import { GiReceiveMoney } from "react-icons/gi";
 import DropdownSearch from "../../component/features/dropdown";
 import { FaRegSave } from "react-icons/fa";
 import { FaArrowTrendUp } from "react-icons/fa6";
-import { IoSearch } from "react-icons/io5";
-
 import {
   addDoc,
   collection,
@@ -33,62 +31,53 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import Loader from "../../component/features/loader";
 import LoaderTable from "../../component/features/loader2";
-import "dayjs/locale/id";
-
-import { DatePicker, Space } from "antd";
-const dateFormatList = ["DD/MM/YYYY", "DD/MM/YY", "DD-MM-YYYY", "DD-MM-YY"];
-
-function OtherIncomeReport() {
+function TodayEmoney() {
   const [isCek, setIsCek] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
-  const [dataDetail, setDataDetail] = useState(null);
+  const [dataDetail, setDataDetail] = useState({});
   const [isOpen, setIsOpen] = useState(false);
-  const cabang = sessionStorage.getItem("cabang");
 
   const [nominalTransaksi, setNominalTransaksi] = useState(0);
   const [selisih, setSelisih] = useState("");
   const [jenisPembayaran, setJenisPembayaran] = useState(null);
   const [indexDetail, setIndexDetail] = useState(0);
-  const [bulan, setBulan] = useState(dayjs().format("MMMM"));
-  const [tahun, setTahun] = useState(dayjs().format("YYYY"));
+
   const [dataTransaction, setDataTransaction] = useState([]);
   const [transUncheck, setTransUncheck] = useState([]);
-  const [dataPiutang, setDataPiutang] = useState([]);
-  const [dataOther, setDataOther] = useState([]);
+  const [dataTarik, setDataTarik] = useState([]);
+  const [dataTopup, setDataTopup] = useState([]);
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
-  const [tanggalAwal, setTanggalAwal] = useState(
-    dayjs().locale("id").format("DD/MM/YYYY")
-  );
-  const [tanggalAkhir, setTanggalAkhir] = useState(
-    dayjs().locale("id").format("DD/MM/YYYY")
-  );
-
+  const [bulan, setBulan] = useState(dayjs().format("MMMM"));
+  const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const [totalNominal, setTotalNominal] = useState(0);
+  const [totalAdminLuar, setTotalAdminLuar] = useState(0);
+  const [totalAdminDalam, setTotalAdminDalam] = useState(0);
   const [totalProfit, setTotalProfit] = useState(0);
-  const [totalNominalPiutang, setTotalNominalPiutang] = useState(0);
+  const [totalSisaFisik, setTotalSisaFisik] = useState(0);
+  const [totalNominalTarik, setTotalNominalTarik] = useState(0);
   const [totalQris, setTotalQris] = useState(0);
   const [totalTransfer, setTotalTransfer] = useState(0);
-  const [totalNominalLain, setTotalNominalLain] = useState(0);
+  const [totalNominalTopup, setTotalNominalTopup] = useState(0);
   const [itemTerlaris, setitemTerlaris] = useState({});
   const [activeTabIndex, setActiveTabIndex] = useState("tab1");
   const [selectedItems, setSelectedItems] = useState([]);
   const nama = sessionStorage.getItem("nama");
   const [isData, setIsData] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
+  const cabang = sessionStorage.getItem("cabang");
 
   useEffect(() => {
-    getTransactions(bulan, tahun);
+    getTransactions();
   }, []);
 
-  const getTransactions = async (month, year) => {
+  const getTransactions = async () => {
     try {
       // Buat query dengan filter where
       const transactionsQuery = query(
         collection(db, `transactions${cabang}`),
-        where("month", "==", month), // Ganti kondisi where untuk bulan
-        where("year", "==", year) // Ganti kondisi where untuk tahun
+        where("date", "==", tanggal)
       );
 
       const querySnapshot = await getDocs(transactionsQuery);
@@ -98,13 +87,13 @@ function OtherIncomeReport() {
         setTransUncheck([]);
         setTotalQris(0);
         setTotalTransfer(0);
-        setDataPiutang([]);
-        setDataOther([]);
+        setDataTarik([]);
+        setDataTopup([]);
         setitemTerlaris({});
         setDataTransaction([]);
         setTotalNominal(0);
-        setTotalNominalPiutang(0);
-        setTotalNominalLain(0);
+        setTotalNominalTarik(0);
+        setTotalNominalTopup(0);
         setIsData(false);
         return [];
       }
@@ -124,6 +113,7 @@ function OtherIncomeReport() {
 
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
+
           let profit = 0;
 
           if (
@@ -148,30 +138,70 @@ function OtherIncomeReport() {
         })
       );
 
-      const otherData = transactions.filter(
-        (a) =>
-          a.itemId == "GBwAvYWhBOpnvkUBDCV6" ||
-          a.itemId == "zYIsvQcu1HFFYBsfnCF7"
+      const dataEmoney = transactions.filter(
+        (a) => a.category.nameCategory == "E-Money"
       );
+      const transactionTarik = dataEmoney.filter((a) => a.type == "Tarik Dana");
+      const transactionTopup = dataEmoney.filter((a) => a.type == "Topup");
+      const transactionUnCheck = dataEmoney.filter(
+        (a) => a.isCheck == false || !a.isCheck
+      );
+
+      const profitTotal = dataEmoney
+        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .reduce((acc, transaction) => acc + transaction.adminFee, 0);
       // Menghitung total dari semua transaksi
-      const totalNominal = otherData
+      const totalNominal = dataEmoney
         .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const totalPiutang = otherData
-        .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
       // Menghitung total untuk payment "Tunai"
-      const totalNominalLain = otherData
-        .filter((transaction) => transaction.itemId != "GBwAvYWhBOpnvkUBDCV6")
+      const totalTarik = dataEmoney
+        .filter(
+          (transaction) =>
+            transaction.type === "Tarik Dana" &&
+            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      console.log(`transactions${cabang}`, otherData);
-      console.log("Total Nominal", totalNominal);
+      const totalNominTarikLuar = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Luar")
+        .reduce((acc, transaction) => acc + transaction.price, 0);
+      const totalNominTarikDalam = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Dalam")
+        .reduce((acc, transaction) => acc + transaction.price, 0);
+      const totalTarikLuar = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Luar")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee) * 2),
+          0
+        );
 
+      const totalTarikDalam = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Dalam")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee)),
+          0
+        );
+      // Menghitung total untuk payment selain "Tunai"
+      const totalTopup = dataEmoney
+        .filter(
+          (transaction) =>
+            transaction.type == "Topup" &&
+            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+        )
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const sisaFisik =
+        parseInt(totalTopup) -
+        parseInt(totalTarikLuar) -
+        parseInt(totalTarikDalam);
       // Kelompokkan data berdasarkan refItem
-      const groupedByItem = otherData.reduce((acc, transaction) => {
+      const groupedByItem = dataEmoney.reduce((acc, transaction) => {
         const itemId = transaction.itemId;
         if (!acc[itemId]) {
           acc[itemId] = {
@@ -198,28 +228,22 @@ function OtherIncomeReport() {
         }
       );
 
-      const transactionPiutang = otherData.filter(
-        (a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6"
-      );
-      const transactionOther = otherData.filter(
-        (a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6"
-      );
-      const transactionUnCheck = otherData.filter(
-        (a) => a.isCheck == false || !a.isCheck
-      );
-
       console.log("Most Frequent Item:", mostFrequentItem);
+      setTotalProfit(profitTotal);
       setTransUncheck(transactionUnCheck);
       setTotalQris(totalQris);
-
-      setDataPiutang(transactionPiutang);
+      setTotalAdminLuar(totalNominTarikLuar);
+      setTotalAdminDalam(totalNominTarikDalam);
+      setTotalSisaFisik(sisaFisik <= 0 ? 0 : sisaFisik);
+      setTotalProfit(profitTotal);
+      setDataTarik(transactionTarik);
       setIsData(false);
-      setDataOther(transactionOther);
+      setDataTopup(transactionTopup);
       setitemTerlaris(mostFrequentItem);
-      setDataTransaction(otherData); // Simpan transaksi ke state
+      setDataTransaction(dataEmoney); // Simpan transaksi ke state
       setTotalNominal(totalNominal); // Simpan total nominal ke state
-      setTotalNominalPiutang(totalPiutang); // Simpan total nominal tunai ke state
-      setTotalNominalLain(totalNominalLain); // Simpan total nominal non-tunai ke state
+      setTotalNominalTarik(totalTarik); // Simpan total nominal tunai ke state
+      setTotalNominalTopup(totalTopup); // Simpan total nominal non-tunai ke state
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -254,17 +278,6 @@ function OtherIncomeReport() {
     }
   };
 
-  const handleDetailData = (data) => {
-    if (indexDetail === data.id && isDetail) {
-      setIsDetail(false);
-    } else {
-      setIsDetail(true);
-    }
-
-    setIndexDetail(data.id);
-    setIsOpen(false);
-    setDataDetail(data);
-  };
   const handleDelete = async (data) => {
     const confirmDelete = await Swal.fire({
       title: "Konfirmasi Hapus",
@@ -294,47 +307,7 @@ function OtherIncomeReport() {
           // Hapus dokumen dari Firestore (transactions)
           transaction.delete(dataRef);
 
-          // Periksa apakah itemId sesuai dengan pengecualian
-          if (
-            data.itemId !== "GBwAvYWhBOpnvkUBDCV6" &&
-            data.itemId !== "zYIsvQcu1HFFYBsfnCF7"
-          ) {
-            // Data yang akan ditambahkan ke historyInventory
-            const dateInput = dayjs().format("DD/MM/YYYY");
-            const timeInput = dayjs().format("HH:mm");
-            const monthInput = dayjs().format("MMMM");
-            const yearInput = dayjs().format("YYYY");
-
-            const historyData = {
-              refItem: itemRef,
-              refCategory: categoryRef,
-              stock: parseInt(data.quantity),
-              dateUpdate: tanggal,
-              info: `Penghapusan Data Transaksi ${
-                data.item.itemName
-              } Sejumlah ${data.quantity} dengan Total Harga ${formatRupiah(
-                parseInt(data.quantity) * parseInt(data.price)
-              )} Oleh ${nama}`,
-              dateInput: dateInput,
-              timeInput: timeInput,
-              month: monthInput,
-              year: yearInput,
-              status: "Stok Masuk",
-            };
-
-            // Tambahkan data ke historyInventory
-            transaction.set(
-              doc(collection(db, `historyInventory${cabang}`)),
-              historyData
-            );
-
-            // Update stok di inventory
-            const newStock = parseInt(data.quantity) + dataItems.stock;
-            transaction.update(doc(db, `inventorys${cabang}`, dataItems.id), {
-              stock: newStock,
-              dateUpdate: tanggal,
-            });
-          }
+          // Tambahkan data ke historyInventory
         });
 
         setIsLoad(false);
@@ -368,20 +341,6 @@ function OtherIncomeReport() {
       setSelectedItems(
         selectedItems.filter((selectedItem) => selectedItem.id !== item.id)
       );
-    }
-  };
-  const handleChangeDate = (name, date) => {
-    const dayjsDate = dayjs(date);
-
-    if (!dayjsDate.isValid()) {
-      return;
-    }
-    if (name == "tanggalAwal") {
-      const formattedDate = dayjsDate.format("DD/MM/YYYY");
-      setTanggalAwal(formattedDate);
-    } else {
-      const formattedDate = dayjsDate.format("DD/MM/YYYY");
-      setTanggalAkhir(formattedDate);
     }
   };
 
@@ -462,52 +421,39 @@ function OtherIncomeReport() {
     // Membalik urutan kembali dan menambahkan prefix "Rp"
     return "Rp " + rupiah.split("").reverse().join("");
   }
-  const formattedDate = (value) => {
-    const formattedDate = dayjs(value, "DD/MM/YYYY").format("D MMMM YYYY");
-    return formattedDate;
-  };
   const columns = [
     {
-      name: "date",
-      label: "Tanggal",
+      name: "data",
+      label: "Transaksi",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value}
+              {value.item.itemName}{" "}
+              {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
             </button>
           );
         },
       },
     },
     {
-      name: "itemName",
-      label: "Barang",
+      name: "adminfee",
+      label: "Admin",
       options: {
         filter: true,
         sort: true,
-        customBodyRender: (value, tableMeta, updateValue) => {
-          return (
-            <button className="flex justify-start items-center gap-2 w-full">
-              {value}
-            </button>
-          );
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
         },
       },
     },
     {
-      name: "user",
-      label: "Pengecek",
-      options: {
-        filter: true,
-        sort: true,
-      },
-    },
-    {
-      name: "total",
-      label: "Total",
+      name: "harga",
+      label: "Harga",
       options: {
         filter: true,
         sort: true,
@@ -520,16 +466,17 @@ function OtherIncomeReport() {
     },
 
     {
-      name: "type",
-      label: "Dari",
+      name: "payment",
+      label: "Pembayaran",
       options: {
         filter: true,
         sort: true,
-        customBodyRender: (value) => {
-          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
-
-          const string = `Cek ${value}`;
-          return string; // Kembalikan tanggal dalam format yang diinginkan
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button className="flex justify-start items-center gap-2 w-full">
+              {value}
+            </button>
+          );
         },
       },
     },
@@ -542,7 +489,7 @@ function OtherIncomeReport() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <div className="flex justify-start gap-4 items-center">
-              {value.isBayar == true ? (
+              {value.isCheck == true ? (
                 <>
                   <label className="container">
                     <input type="checkbox" checked={true} />
@@ -562,19 +509,19 @@ function OtherIncomeReport() {
                     </span>
                     <span className="BG bg-red-500"></span>
                   </button>
-                  <div className="flex justify-start gap-4 items-center">
-                    <button
-                      className="Btn-see text-white"
-                      onClick={() => {
-                        handleDetailData(value); // Kirim objek lengkap
-                      }}
-                    >
-                      <span className="svgContainer">
-                        <IoEyeSharp className="text-xl " />
-                      </span>
-                      <span className="BG bg-blue-600"></span>
-                    </button>
-                  </div>
+                  {/* <div className="flex justify-start gap-4 items-center">
+                <button
+                  className="Btn-see text-white"
+                  onClick={() => {
+                    handleDetailData(value); // Kirim objek lengkap
+                  }}
+                >
+                  <span className="svgContainer">
+                    <IoEyeSharp className="text-xl " />
+                  </span>
+                  <span className="BG bg-blue-600"></span>
+                </button>
+              </div> */}
                 </>
               )}
             </div>
@@ -584,60 +531,197 @@ function OtherIncomeReport() {
     },
   ];
 
-  const columnsOther = [
+  const columnsAll = [
     {
-      name: "date",
-      label: "Tanggal",
+      name: "data",
+      label: "Transaksi",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value}
+              {value.item.itemName}{" "}
+              {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
             </button>
           );
-        },
-      },
-    },
-    {
-      name: "itemName",
-      label: "Barang",
-      options: {
-        filter: true,
-        sort: true,
-        customBodyRender: (value, tableMeta, updateValue) => {
-          return (
-            <button className="flex justify-start items-center gap-2 w-full">
-              {value}
-            </button>
-          );
-        },
-      },
-    },
-    {
-      name: "user",
-      label: "Pengecek",
-      options: {
-        filter: true,
-        sort: true,
-        customBodyRender: (value) => {
-          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
-          return value; // Kembalikan tanggal dalam format yang diinginkan
         },
       },
     },
 
     {
-      name: "total",
-      label: "Total",
+      name: "adminfee",
+      label: "Admin",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value) => {
           // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
-          const totalprice = formatRupiah(value);
-          return totalprice; // Kembalikan tanggal dalam format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+    {
+      name: "harga",
+      label: "Harga",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+
+    {
+      name: "type",
+      label: "Jenis",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button className="flex justify-start items-center gap-2 w-full">
+              {value}
+            </button>
+          );
+        },
+      },
+    },
+
+    {
+      name: "data",
+      label: "Petugas",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          return (
+            <div className="flex justify-start gap-4 items-center">
+              {value.checker ? (
+                <>
+                  <div className="flex p-2 rounded-md justify-center items-center bg-teal-100 text-teal-700 capitalize">
+                    {value.checker}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex p-2 rounded-md justify-center items-center bg-yellow-100 text-yellow-700">
+                    Belum
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        },
+      },
+    },
+    {
+      name: "data",
+      label: "Aksi",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          return (
+            <div className="flex justify-start gap-4 items-center">
+              {value.isCheck == true ? (
+                <>
+                  <label className="container">
+                    <input type="checkbox" checked={true} />
+                    <div className="checkmark"></div>
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="container">
+                    <input
+                      type="checkbox"
+                      onChange={() => handleCheck(value)}
+                      checked={selectedItems.some(
+                        (selectedItem) => selectedItem.id === value.id
+                      )}
+                    />
+                    <div className="checkmark"></div>
+                  </label>
+                  <button
+                    className="Btn-see text-white"
+                    onClick={() => {
+                      handleDelete(value); // Kirim objek lengkap
+                    }}
+                  >
+                    <span className="svgContainer">
+                      <MdDelete className="text-xl " />
+                    </span>
+                    <span className="BG bg-red-500"></span>
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        },
+      },
+    },
+  ];
+  const columnsTopup = [
+    {
+      name: "data",
+      label: "Transaksi",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button className="flex justify-start items-center gap-2 w-full">
+              {value.item.itemName}{" "}
+              {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
+            </button>
+          );
+        },
+      },
+    },
+    {
+      name: "adminfee",
+      label: "Admin",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+    {
+      name: "harga",
+      label: "Harga",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+
+    {
+      name: "payment",
+      label: "Pembayaran",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button className="flex justify-start items-center gap-2 w-full">
+              {value}
+            </button>
+          );
         },
       },
     },
@@ -650,18 +734,27 @@ function OtherIncomeReport() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <div className="flex justify-start gap-4 items-center">
-              <button
-                className="Btn-see text-white"
-                onClick={() => {
-                  handleDelete(value); // Kirim objek lengkap
-                }}
-              >
-                <span className="svgContainer">
-                  <MdDelete className="text-xl " />
-                </span>
-                <span className="BG bg-red-500"></span>
-              </button>
-              <div className="flex justify-start gap-4 items-center">
+              {value.isCheck == true ? (
+                <>
+                  <label className="container">
+                    <input type="checkbox" checked={true} />
+                    <div className="checkmark"></div>
+                  </label>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="Btn-see text-white"
+                    onClick={() => {
+                      handleDelete(value); // Kirim objek lengkap
+                    }}
+                  >
+                    <span className="svgContainer">
+                      <MdDelete className="text-xl " />
+                    </span>
+                    <span className="BG bg-red-500"></span>
+                  </button>
+                  {/* <div className="flex justify-start gap-4 items-center">
                 <button
                   className="Btn-see text-white"
                   onClick={() => {
@@ -673,7 +766,9 @@ function OtherIncomeReport() {
                   </span>
                   <span className="BG bg-blue-600"></span>
                 </button>
-              </div>
+              </div> */}
+                </>
+              )}
             </div>
           );
         },
@@ -681,22 +776,37 @@ function OtherIncomeReport() {
     },
   ];
 
-  const dataPi = dataPiutang.map((a) => {
+  const dataAll = dataTransaction.map((a) => {
     return {
-      date: a.date,
       itemName: a.item.itemName,
-      user: a.user,
-      total: a.total,
+      jumlah: a.quantity,
+      harga: a.price,
+      payment: a.payment,
+      adminfee: a.adminFee,
       type: a.type,
       data: a,
     };
   });
-  const dataOth = dataOther.map((a) => {
+  const dataCash = dataTarik.map((a) => {
     return {
-      date: a.date,
       itemName: a.item.itemName,
-      user: a.user,
-      total: a.total,
+      jumlah: a.quantity,
+      harga: a.price,
+      payment: a.payment,
+      adminfee: a.adminFee,
+      type: a.type,
+      data: a,
+    };
+  });
+
+  const dataNonCash = dataTopup.map((a) => {
+    return {
+      itemName: a.item.itemName,
+      jumlah: a.quantity,
+      harga: a.price,
+      payment: a.payment,
+      adminfee: a.adminFee,
+      type: a.type,
       data: a,
     };
   });
@@ -704,11 +814,15 @@ function OtherIncomeReport() {
   const allTabs = [
     {
       id: "tab1",
-      name: "Piutang",
+      name: "Semua Transaksi",
     },
     {
       id: "tab2",
-      name: "Pendapatan Lain-lain",
+      name: "Transaksi Tarik",
+    },
+    {
+      id: "tab3",
+      name: "Transaksi Topup",
     },
   ];
 
@@ -735,14 +849,14 @@ function OtherIncomeReport() {
                 className="w-full flex justify-center items-center   bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
               >
                 <h3 className="text-white text-base font-normal">
-                  Laporan Transaksi Lain-lain
+                  Laporan Transaksi E-Money Hari Ini
                 </h3>
               </div>
-              <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
+              <div className="w-full flex justify-start gap-6 items-center mt-10 h-full">
                 <div
                   data-aos="fade-up"
                   data-aos-delay="250"
-                  className="cookieCard w-[50%]"
+                  className="cookieCard w-[33%]"
                 >
                   <div className="cookieDescription">
                     <h3 className="text-xl font-medium">
@@ -750,7 +864,7 @@ function OtherIncomeReport() {
                     </h3>
                   </div>
                   <h3 className="text-xs font-normal text-white w-full">
-                    Total Transaksi
+                    Total Transaksi Hari Ini
                   </h3>
                   <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white  rounded-full">
                     <FaLuggageCart className="text-blue-700 text-[2rem]" />
@@ -759,18 +873,43 @@ function OtherIncomeReport() {
                 <div
                   data-aos="fade-up"
                   data-aos-delay="350"
-                  className="w-[50%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+                  className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
                 >
                   <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
                     <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
                       <div className="w-full flex justify-start gap-4 items-center">
                         <h3 className="text-xl font-medium">
-                          {formatRupiah(totalNominalLain + totalNominalPiutang)}
+                          {formatRupiah(totalProfit)}
                         </h3>
                       </div>
                       <div className="w-full flex justify-start gap-4 items-center">
                         <h3 className="text-xs font-normal">
-                          Total Nominal Transaksi
+                          Nominal Profit Hari Ini
+                        </h3>
+                      </div>
+                    </div>
+                    <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
+                      <div className=" w-[4rem] h-[4rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                        <GiReceiveMoney className="text-blue-600 text-[2.2rem]" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="350"
+                  className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+                >
+                  <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                    <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                      <div className="w-full flex justify-start gap-4 items-center">
+                        <h3 className="text-xl font-medium">
+                          {formatRupiah(totalSisaFisik)}
+                        </h3>
+                      </div>
+                      <div className="w-full flex justify-start gap-4 items-center">
+                        <h3 className="text-xs font-normal">
+                          Nominal Sisa Fisik
                         </h3>
                       </div>
                     </div>
@@ -783,44 +922,69 @@ function OtherIncomeReport() {
                 </div>
               </div>
 
-              <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
+              {/* tutup */}
+
+              <div className="w-full flex justify-between items-center   rounded-md mt-5 gap-6 mb-5">
                 <div
                   data-aos="fade-up"
                   data-aos-delay="450"
-                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                  className="w-[33%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
                 >
                   <div className="w-full flex justify-between items-start ">
-                    <h3 className="text-base font-medium">Piutang</h3>
+                    <h3 className="text-base font-medium">Tarik E-Money</h3>
                     <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
                       <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
                     </div>
                   </div>
                   <div className="w-full flex flex-col justify-between items-start gap-1">
                     <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominalPiutang)}
+                      {formatRupiah(totalNominalTarik)}
                     </h3>
-                    <h3 className="text-xs font-medium">Transaksi Piutang</h3>
+                    <h3 className="text-xs font-medium">
+                      Transaksi Tarik E-Money
+                    </h3>
                   </div>
                 </div>
 
                 <div
                   data-aos="fade-up"
                   data-aos-delay="550"
-                  className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                  className="w-[33%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
                 >
                   <div className="w-full flex justify-between items-start ">
-                    <h3 className="text-base font-medium">Pendapatan Lain</h3>
+                    <h3 className="text-base font-medium">Topup E-Money</h3>
                     <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
                       <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
                     </div>
                   </div>
                   <div className="w-full flex flex-col justify-between items-start gap-1">
                     <h3 className="text-xl font-medium">
-                      {formatRupiah(totalNominalLain)}
+                      {formatRupiah(totalNominalTopup)}
                     </h3>
 
                     <h3 className="text-xs font-medium">
-                      Transaksi Pendapatan Lain
+                      Transaksi Topup E-Money
+                    </h3>
+                  </div>
+                </div>
+
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="650"
+                  className="w-[33%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                >
+                  <div className="w-full flex justify-between items-start ">
+                    <h3 className="text-base font-medium">Nominal Transaksi</h3>
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                      <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
+                    </div>
+                  </div>
+                  <div className="w-full flex flex-col justify-between items-start gap-1">
+                    <h3 className="text-xl font-medium">
+                      {formatRupiah(totalNominal)}
+                    </h3>
+                    <h3 className="text-xs font-medium">
+                      Total Nominal Semua Transaksi
                     </h3>
                   </div>
                 </div>
@@ -829,111 +993,21 @@ function OtherIncomeReport() {
               <div
                 data-aos="fade-up"
                 data-aos-delay="750"
-                className="w-[100%] flex justify-start items-center gap-6 bg-white rounded-xl p-4 mb-5"
+                className="w-full flex justify-end items-center  p-2 rounded-md"
               >
-                <div className="flex justify-start gap-4 items-center">
-                  <p className="text-sm font-normal">Pilih Bulan</p>
-                  <Space direction="vertical" size={12}>
-                    <DatePicker
-                      defaultValue={dayjs(bulan, "MMMM")}
-                      format={["MMMM"]}
-                      picker="month"
-                      onChange={(date) => {
-                        setBulan(date.format("MMMM"));
-                        // getHistoryInventory(date.format("MMMM"), tahun);
-                      }}
-                      className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                    />
-                  </Space>
-                </div>
-                <div className="flex justify-start gap-4 items-center">
-                  <p className="text-sm font-normal">Pilih Tahun</p>
-                  <Space direction="vertical" size={12}>
-                    <DatePicker
-                      defaultValue={dayjs(tahun, "YYYY")}
-                      format={["YYYY"]}
-                      picker="year"
-                      onChange={(date) => {
-                        setTahun(date.format("YYYY"));
-                      }}
-                      className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                    />
-                  </Space>
-                </div>
-                <button
-                  onClick={() => {
-                    getTransactions(bulan, tahun);
-                  }}
-                  type="button"
-                  className="bg-blue-500 text-center w-[10rem] rounded-2xl h-10 relative text-black text-xs font-medium group"
-                >
-                  <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
-                    <IoSearch className="text-[18px] text-blue-700 hover:text-blue-700" />
-                  </div>
-                  <p className="translate-x-2 text-[0.65rem] text-white">
-                    Cari Data
-                  </p>
-                </button>
-              </div>
-
-              <div
-                className={`w-full ${
-                  !isDetail ? "h-0 p-0" : "h-[auto]  p-6 mt-3  mb-5"
-                } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
-              >
-                <div
-                  className={`w-full  ${
-                    !isDetail ? "hidden" : "flex flex-col "
-                  } justify-start items-start gap-4`}
-                >
-                  <h5 className="text-base font-medium ">Nama Barang</h5>
-                  <p className="text-xs font-normal ">
-                    {dataDetail != null ? dataDetail.item.itemName : ""}
-                  </p>
-                  <div className=" w-full flex justify-start gap-6">
-                    <div className=" flex flex-col justify-center items-start gap-2">
-                      <h5 className="text-base font-medium ">
-                        Tanggal Transaksi
-                      </h5>
-                      <p className="text-xs font-normal ">
-                        {dataDetail != null
-                          ? formattedDate(dataDetail.date)
-                          : ""}
-                      </p>
+                <div>
+                  <button
+                    onClick={handleUpdate}
+                    type="button"
+                    class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                  >
+                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
+                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
                     </div>
-                    <div className=" flex flex-col justify-center items-start gap-2">
-                      <h5 className="text-base font-medium ">Nama Pengecek</h5>
-                      <p className="text-xs font-normal ">
-                        {dataDetail != null ? dataDetail.user : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className=" w-full flex justify-start gap-6">
-                    <div className=" flex flex-col justify-center items-start gap-2">
-                      <h5 className="text-base font-medium ">Total</h5>
-                      <p className="text-xs font-normal ">
-                        {dataDetail != null
-                          ? formatRupiah(dataDetail.total)
-                          : ""}
-                      </p>
-                    </div>
-                    <div className=" flex flex-col justify-center items-start gap-2">
-                      <h5 className="text-base font-medium ">Asal</h5>
-                      <p className="text-xs font-normal ">
-                        Selisih{" "}
-                        {dataDetail != null
-                          ? dataDetail.type
-                            ? dataDetail.type
-                            : "Cash"
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-
-                  <h5 className="text-base font-medium ">Keterangan</h5>
-                  <p className="text-xs font-normal capitalize">
-                    {dataDetail != null ? dataDetail.info : ""}
-                  </p>
+                    <p class="translate-x-2 text-xs text-white">
+                      Ceklis Transaksi
+                    </p>
+                  </button>
                 </div>
               </div>
               <TabBar data={allTabs} onTabChange={handleTabChange} />
@@ -952,8 +1026,8 @@ function OtherIncomeReport() {
                       <>
                         <Paper style={{ height: 400, width: "100%" }}>
                           <MUIDataTable
-                            columns={columns}
-                            data={dataPi}
+                            columns={columnsAll}
+                            data={dataAll}
                             options={{
                               fontSize: 12, // adjust font size here
                             }}
@@ -971,7 +1045,7 @@ function OtherIncomeReport() {
                 </>
               )}
 
-              {activeTabIndex == "tab2" && (
+              {activeTabIndex == "tab3" && (
                 <>
                   <div
                     // data-aos="fade-up"
@@ -985,8 +1059,8 @@ function OtherIncomeReport() {
                       <>
                         <Paper style={{ height: 400, width: "100%" }}>
                           <MUIDataTable
-                            columns={columnsOther}
-                            data={dataOth}
+                            columns={columnsTopup}
+                            data={dataNonCash}
                             options={{
                               fontSize: 12, // adjust font size here
                             }}
@@ -996,6 +1070,50 @@ function OtherIncomeReport() {
                               50,
                               { value: -1, label: "All" },
                             ]}
+                          />
+                        </Paper>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+              {activeTabIndex == "tab2" && (
+                <>
+                  <div
+                    // data-aos="fade-up"
+                    className="w-full p-2 flex justify-start gap-6 items-center mt-5"
+                  >
+                    <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                      <h3 className="text-base font-medium">
+                        {formatRupiah(totalAdminDalam)}
+                      </h3>
+                      <p className="text-xs font-normal">
+                        Total Nominal Admin Dalam
+                      </p>
+                    </div>
+                    <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                      <h3 className="text-base font-medium">
+                        {formatRupiah(totalAdminLuar)}
+                      </h3>
+                      <p className="text-xs font-normal">
+                        Total Nominal Admin Luar
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-full flex justify-center  items-center mt-5 h-full mb-40">
+                    {isData ? (
+                      <>
+                        <LoaderTable />
+                      </>
+                    ) : (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columns}
+                            data={dataCash}
+                            options={{
+                              fontSize: 12, // adjust font size here
+                            }}
                           />
                         </Paper>
                       </>
@@ -1013,4 +1131,4 @@ function OtherIncomeReport() {
   );
 }
 
-export default OtherIncomeReport;
+export default TodayEmoney;

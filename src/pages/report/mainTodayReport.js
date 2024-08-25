@@ -63,6 +63,8 @@ function TodayReport() {
   const nama = sessionStorage.getItem("nama");
   const [isData, setIsData] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
+  const cabang = sessionStorage.getItem("cabang");
+  const peran = sessionStorage.getItem("peran");
 
   useEffect(() => {
     getTransactions();
@@ -72,7 +74,7 @@ function TodayReport() {
     try {
       // Buat query dengan filter where
       const transactionsQuery = query(
-        collection(db, "transactions"),
+        collection(db, `transactions${cabang}`),
         where("date", "==", tanggal)
       );
 
@@ -132,21 +134,23 @@ function TodayReport() {
           };
         })
       );
-
+      const dataFull = transactions.filter(
+        (a) => a.category.nameCategory !== "E-Money"
+      );
       // Menghitung total dari semua transaksi
-      const totalNominal = transactions
+      const totalNominal = dataFull
         .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const totalPiutang = transactions
+      const totalPiutang = dataFull
         .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const profitTotal = transactions
+      const profitTotal = dataFull
         .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
         .reduce((acc, transaction) => acc + transaction.profit, 0);
       // Menghitung total untuk payment "Tunai"
-      const totalNominalTunai = transactions
+      const totalNominalTunai = dataFull
         .filter(
           (transaction) =>
             transaction.payment === "Tunai" &&
@@ -155,7 +159,7 @@ function TodayReport() {
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Menghitung total untuk payment selain "Tunai"
-      const totalNominalNonTunai = transactions
+      const totalNominalNonTunai = dataFull
         .filter(
           (transaction) =>
             transaction.payment !== "Tunai" &&
@@ -163,13 +167,13 @@ function TodayReport() {
         )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      console.log("transactions", transactions);
+      console.log(`dataFull${cabang}`, dataFull);
       console.log("Total Nominal", totalNominal);
       console.log("Total Nominal Tunai", totalNominalTunai);
       console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
 
       // Kelompokkan data berdasarkan refItem
-      const groupedByItem = transactions.reduce((acc, transaction) => {
+      const groupedByItem = dataFull.reduce((acc, transaction) => {
         const itemId = transaction.itemId;
         if (!acc[itemId]) {
           acc[itemId] = {
@@ -196,11 +200,9 @@ function TodayReport() {
         }
       );
 
-      const transactionTunai = transactions.filter((a) => a.payment == "Tunai");
-      const transactionNonTunai = transactions.filter(
-        (a) => a.payment != "Tunai"
-      );
-      const transactionUnCheck = transactions.filter(
+      const transactionTunai = dataFull.filter((a) => a.payment == "Tunai");
+      const transactionNonTunai = dataFull.filter((a) => a.payment != "Tunai");
+      const transactionUnCheck = dataFull.filter(
         (a) => a.isCheck == false || !a.isCheck
       );
 
@@ -222,7 +224,7 @@ function TodayReport() {
       setIsData(false);
       setDataNonTunai(transactionNonTunai);
       setitemTerlaris(mostFrequentItem);
-      setDataTransaction(transactions); // Simpan transaksi ke state
+      setDataTransaction(dataFull); // Simpan transaksi ke state
       setTotalNominal(totalNominal); // Simpan total nominal ke state
       setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
       setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
@@ -239,7 +241,7 @@ function TodayReport() {
   const getInventory = async (itemRef) => {
     try {
       const inventoryQuery = query(
-        collection(db, "inventorys"),
+        collection(db, `inventorys${cabang}`),
         where("refItem", "==", itemRef)
       );
 
@@ -284,7 +286,7 @@ function TodayReport() {
             throw new Error("Inventory data not found.");
           }
 
-          const dataRef = doc(db, "transactions", data.id);
+          const dataRef = doc(db, `transactions${cabang}`, data.id);
 
           // Hapus dokumen dari Firestore (transactions)
           transaction.delete(dataRef);
@@ -319,13 +321,13 @@ function TodayReport() {
 
             // Tambahkan data ke historyInventory
             transaction.set(
-              doc(collection(db, "historyInventory")),
+              doc(collection(db, `historyInventory${cabang}`)),
               historyData
             );
 
             // Update stok di inventory
             const newStock = parseInt(data.quantity) + dataItems.stock;
-            transaction.update(doc(db, "inventorys", dataItems.id), {
+            transaction.update(doc(db, `inventorys${cabang}`, dataItems.id), {
               stock: newStock,
               dateUpdate: tanggal,
             });
@@ -390,7 +392,11 @@ function TodayReport() {
       try {
         // Buat array promises untuk semua operasi updateDoc
         const updatePromises = data.map(async (transaction) => {
-          const transactionRef = doc(db, "transactions", transaction.id);
+          const transactionRef = doc(
+            db,
+            `transactions${cabang}`,
+            transaction.id
+          );
           return updateDoc(transactionRef, {
             isCheck: true,
             checker: nama,
@@ -447,7 +453,7 @@ function TodayReport() {
   const handleHistory = async (status, info) => {
     try {
       const timeInput = dayjs().format("HH:mm");
-      await addDoc(collection(db, "historyCheck"), {
+      await addDoc(collection(db, `historyCheck${cabang}`), {
         totalSystemCash: totalNominal,
         totalGap: parseInt(status),
         totalActuallyCash: parseInt(nominalTransaksi),
@@ -474,7 +480,7 @@ function TodayReport() {
       const itemRef = doc(db, "items", "zYIsvQcu1HFFYBsfnCF7");
       const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
 
-      await addDoc(collection(db, "transactions"), {
+      await addDoc(collection(db, `transactions${cabang}`), {
         refItem: itemRef,
         refCategory: categoryRef,
         quantity: parseInt(1),
@@ -485,6 +491,7 @@ function TodayReport() {
         month: bulan,
         year: tahun,
         isCheck: false,
+        time: timeInput,
         user: nama,
       });
       console.log("berhasil");
@@ -502,7 +509,7 @@ function TodayReport() {
       const itemRef = doc(db, "items", "GBwAvYWhBOpnvkUBDCV6");
       const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
 
-      await addDoc(collection(db, "transactions"), {
+      await addDoc(collection(db, `transactions${cabang}`), {
         refItem: itemRef,
         refCategory: categoryRef,
         quantity: parseInt(1),
@@ -512,6 +519,7 @@ function TodayReport() {
         date: tanggal,
         month: bulan,
         year: tahun,
+        time: timeInput,
         type: "Cash",
         isCheck: false,
         isBayar: false,
@@ -1023,75 +1031,78 @@ function TodayReport() {
 
               {/* tutup */}
 
-              {isCek == true && (
-                <>
-                  <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
-                    <div
-                      data-aos="fade-up"
-                      data-aos-delay="450"
-                      className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-                    >
-                      <div className="w-full flex justify-between items-start ">
-                        <h3 className="text-base font-medium">Tunai</h3>
-                        <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                          <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+              {isCek == true ||
+                (peran == "Super Admin" && (
+                  <>
+                    <div className="w-full flex justify-between items-center  p-2 rounded-md mt-5 gap-4 mb-5">
+                      <div
+                        data-aos="fade-up"
+                        data-aos-delay="450"
+                        className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                      >
+                        <div className="w-full flex justify-between items-start ">
+                          <h3 className="text-base font-medium">Tunai</h3>
+                          <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                            <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                          </div>
+                        </div>
+                        <div className="w-full flex flex-col justify-between items-start gap-1">
+                          <h3 className="text-xl font-medium">
+                            {formatRupiah(totalNominalTunai)}
+                          </h3>
+                          <h3 className="text-xs font-medium">
+                            Transaksi Tunai
+                          </h3>
                         </div>
                       </div>
-                      <div className="w-full flex flex-col justify-between items-start gap-1">
-                        <h3 className="text-xl font-medium">
-                          {formatRupiah(totalNominalTunai)}
-                        </h3>
-                        <h3 className="text-xs font-medium">Transaksi Tunai</h3>
-                      </div>
-                    </div>
 
-                    <div
-                      data-aos="fade-up"
-                      data-aos-delay="550"
-                      className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-                    >
-                      <div className="w-full flex justify-between items-start ">
-                        <h3 className="text-base font-medium">Non Tunai</h3>
-                        <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                          <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                      <div
+                        data-aos="fade-up"
+                        data-aos-delay="550"
+                        className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                      >
+                        <div className="w-full flex justify-between items-start ">
+                          <h3 className="text-base font-medium">Non Tunai</h3>
+                          <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                            <GiReceiveMoney className="text-blue-600 text-[2.3rem]" />
+                          </div>
+                        </div>
+                        <div className="w-full flex flex-col justify-between items-start gap-1">
+                          <h3 className="text-xl font-medium">
+                            {formatRupiah(totalNominalNonTunai)}
+                          </h3>
+
+                          <h3 className="text-xs font-medium">
+                            Transaksi Non Tunai
+                          </h3>
                         </div>
                       </div>
-                      <div className="w-full flex flex-col justify-between items-start gap-1">
-                        <h3 className="text-xl font-medium">
-                          {formatRupiah(totalNominalNonTunai)}
-                        </h3>
 
-                        <h3 className="text-xs font-medium">
-                          Transaksi Non Tunai
-                        </h3>
-                      </div>
-                    </div>
-
-                    <div
-                      data-aos="fade-up"
-                      data-aos-delay="650"
-                      className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
-                    >
-                      <div className="w-full flex justify-between items-start ">
-                        <h3 className="text-base font-medium">
-                          Nominal Transaksi
-                        </h3>
-                        <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
-                          <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
+                      <div
+                        data-aos="fade-up"
+                        data-aos-delay="650"
+                        className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
+                      >
+                        <div className="w-full flex justify-between items-start ">
+                          <h3 className="text-base font-medium">
+                            Nominal Transaksi
+                          </h3>
+                          <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
+                            <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
+                          </div>
+                        </div>
+                        <div className="w-full flex flex-col justify-between items-start gap-1">
+                          <h3 className="text-xl font-medium">
+                            {formatRupiah(totalNominal)}
+                          </h3>
+                          <h3 className="text-xs font-medium">
+                            Total Nominal Semua Transaksi
+                          </h3>
                         </div>
                       </div>
-                      <div className="w-full flex flex-col justify-between items-start gap-1">
-                        <h3 className="text-xl font-medium">
-                          {formatRupiah(totalNominal)}
-                        </h3>
-                        <h3 className="text-xs font-medium">
-                          Total Nominal Semua Transaksi
-                        </h3>
-                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                ))}
 
               <div
                 data-aos="fade-up"
@@ -1141,141 +1152,142 @@ function TodayReport() {
                   E-Money Saja
                 </div>
               </div>
-              {isCek == true && (
-                <>
-                  <div
-                    data-aos="fade-up"
-                    data-aos-delay="750"
-                    className="w-full flex justify-end items-center  p-2 rounded-md"
-                  >
-                    <div>
-                      <button
-                        onClick={handleUpdate}
-                        type="button"
-                        class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
-                      >
-                        <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
-                          <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
-                        </div>
-                        <p class="translate-x-2 text-xs text-white">
-                          Ceklis Transaksi
-                        </p>
-                      </button>
+              {isCek == true ||
+                (peran == "Super Admin" && (
+                  <>
+                    <div
+                      data-aos="fade-up"
+                      data-aos-delay="750"
+                      className="w-full flex justify-end items-center  p-2 rounded-md"
+                    >
+                      <div>
+                        <button
+                          onClick={handleUpdate}
+                          type="button"
+                          class="bg-blue-500 text-center w-[14rem] rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                        >
+                          <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[214px] z-10 duration-500">
+                            <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                          </div>
+                          <p class="translate-x-2 text-xs text-white">
+                            Ceklis Transaksi
+                          </p>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <TabBar data={allTabs} onTabChange={handleTabChange} />
+                    <TabBar data={allTabs} onTabChange={handleTabChange} />
 
-                  {activeTabIndex == "tab1" && (
-                    <>
-                      <div
-                        // data-aos="fade-up"
-                        className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-                      >
-                        {isData ? (
-                          <>
-                            <LoaderTable />
-                          </>
-                        ) : (
-                          <>
-                            <Paper style={{ height: 400, width: "100%" }}>
-                              <MUIDataTable
-                                columns={columnsAll}
-                                data={dataAll}
-                                options={{
-                                  fontSize: 12, // adjust font size here
-                                }}
-                                pagination
-                                rowsPerPageOptions={[
-                                  10,
-                                  50,
-                                  { value: -1, label: "All" },
-                                ]}
-                              />
-                            </Paper>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
+                    {activeTabIndex == "tab1" && (
+                      <>
+                        <div
+                          // data-aos="fade-up"
+                          className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                        >
+                          {isData ? (
+                            <>
+                              <LoaderTable />
+                            </>
+                          ) : (
+                            <>
+                              <Paper style={{ height: 400, width: "100%" }}>
+                                <MUIDataTable
+                                  columns={columnsAll}
+                                  data={dataAll}
+                                  options={{
+                                    fontSize: 12, // adjust font size here
+                                  }}
+                                  pagination
+                                  rowsPerPageOptions={[
+                                    10,
+                                    50,
+                                    { value: -1, label: "All" },
+                                  ]}
+                                />
+                              </Paper>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
 
-                  {activeTabIndex == "tab2" && (
-                    <>
-                      <div
-                        // data-aos="fade-up"
-                        className="w-full flex justify-center  items-center mt-5 h-full mb-28"
-                      >
-                        {isData ? (
-                          <>
-                            <LoaderTable />
-                          </>
-                        ) : (
-                          <>
-                            <Paper style={{ height: 400, width: "100%" }}>
-                              <MUIDataTable
-                                columns={columns}
-                                data={dataCash}
-                                options={{
-                                  fontSize: 12, // adjust font size here
-                                }}
-                                pagination
-                                rowsPerPageOptions={[
-                                  10,
-                                  50,
-                                  { value: -1, label: "All" },
-                                ]}
-                              />
-                            </Paper>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  {activeTabIndex == "tab3" && (
-                    <>
-                      <div
-                        // data-aos="fade-up"
-                        className="w-full p-2 flex justify-start gap-6 items-center mt-5"
-                      >
-                        <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
-                          <h3 className="text-base font-medium">
-                            {formatRupiah(totalTransfer)}
-                          </h3>
-                          <p className="text-xs font-normal">
-                            Total Nominal Transaksi Transfer
-                          </p>
+                    {activeTabIndex == "tab2" && (
+                      <>
+                        <div
+                          // data-aos="fade-up"
+                          className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                        >
+                          {isData ? (
+                            <>
+                              <LoaderTable />
+                            </>
+                          ) : (
+                            <>
+                              <Paper style={{ height: 400, width: "100%" }}>
+                                <MUIDataTable
+                                  columns={columns}
+                                  data={dataCash}
+                                  options={{
+                                    fontSize: 12, // adjust font size here
+                                  }}
+                                  pagination
+                                  rowsPerPageOptions={[
+                                    10,
+                                    50,
+                                    { value: -1, label: "All" },
+                                  ]}
+                                />
+                              </Paper>
+                            </>
+                          )}
                         </div>
-                        <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
-                          <h3 className="text-base font-medium">
-                            {formatRupiah(totalQris)}
-                          </h3>
-                          <p className="text-xs font-normal">
-                            Total Nominal Transaksi QRIS
-                          </p>
+                      </>
+                    )}
+                    {activeTabIndex == "tab3" && (
+                      <>
+                        <div
+                          // data-aos="fade-up"
+                          className="w-full p-2 flex justify-start gap-6 items-center mt-5"
+                        >
+                          <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                            <h3 className="text-base font-medium">
+                              {formatRupiah(totalTransfer)}
+                            </h3>
+                            <p className="text-xs font-normal">
+                              Total Nominal Transaksi Transfer
+                            </p>
+                          </div>
+                          <div className="flex justify-start items-start p-4 bg-blue-600 shadow-lg pr-16 text-white rounded-xl flex-col gap-2">
+                            <h3 className="text-base font-medium">
+                              {formatRupiah(totalQris)}
+                            </h3>
+                            <p className="text-xs font-normal">
+                              Total Nominal Transaksi QRIS
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="w-full flex justify-center  items-center mt-5 h-full mb-40">
-                        {isData ? (
-                          <>
-                            <LoaderTable />
-                          </>
-                        ) : (
-                          <>
-                            <Paper style={{ height: 400, width: "100%" }}>
-                              <MUIDataTable
-                                columns={columnsNonCash}
-                                data={dataNonCash}
-                                options={{
-                                  fontSize: 12, // adjust font size here
-                                }}
-                              />
-                            </Paper>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
+                        <div className="w-full flex justify-center  items-center mt-5 h-full mb-40">
+                          {isData ? (
+                            <>
+                              <LoaderTable />
+                            </>
+                          ) : (
+                            <>
+                              <Paper style={{ height: 400, width: "100%" }}>
+                                <MUIDataTable
+                                  columns={columnsNonCash}
+                                  data={dataNonCash}
+                                  options={{
+                                    fontSize: 12, // adjust font size here
+                                  }}
+                                />
+                              </Paper>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ))}
               {/* end tutup */}
             </div>
           </>
