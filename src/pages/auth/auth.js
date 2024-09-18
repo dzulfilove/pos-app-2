@@ -3,6 +3,8 @@ import "../../styles/card.css";
 import { auth } from "../../config/database";
 import {
   createUserWithEmailAndPassword,
+  getAuth,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import Swal from "sweetalert2";
@@ -139,6 +141,31 @@ class Auth extends Component {
     }
   };
 
+  handleForgetPass = async (e) => {
+    e.preventDefault();
+    const auth = getAuth();
+
+    try {
+      await sendPasswordResetEmail(auth, this.state.email);
+
+      Swal.fire({
+        icon: "success",
+        title: "Peringatan",
+        text: "Email reset password telah dikirim. Silahkan cek inbox Anda.",
+        showConfirmButton: true,
+      });
+      console.log(null);
+      this.setState({ isDaftar: false });
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Kirim Password gagal. " + error.message,
+        showConfirmButton: true,
+      });
+    }
+  };
+
   handleSignUp = async (e) => {
     e.preventDefault();
     const { email, nama, password } = this.state; // Ambil email, password, dan peran dari state
@@ -225,7 +252,7 @@ class Auth extends Component {
               <h1 className="text-xl font-semibold">Masuk Akun</h1>
             </div>
             <form className="w-full text-sm">
-              {this.state.isDaftar && (
+              {/* {this.state.isDaftar && (
                 <>
                   <div
                     data-aos="fade-down"
@@ -245,7 +272,7 @@ class Auth extends Component {
                     />
                   </div>
                 </>
-              )}
+              )} */}
               <div
                 data-aos="fade-down"
                 data-aos-delay="350"
@@ -259,22 +286,30 @@ class Auth extends Component {
                   onChange={this.handleEmailChange}
                 />
               </div>
-              <div data-aos="fade-down" data-aos-delay="450" className="mb-6">
-                <label className="block text-gray-400 mb-2">Password</label>
-                <input
-                  type="password"
-                  className="w-full px-4 py-2 h-14 rounded-xl bg-gray-800 text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Masukkan Passoword Anda"
-                  onChange={(e) => {
-                    this.setState({ password: e.target.value });
-                  }}
-                />
-              </div>
+              {!this.state.isDaftar && (
+                <>
+                  <div
+                    data-aos="fade-down"
+                    data-aos-delay="450"
+                    className="mb-6"
+                  >
+                    <label className="block text-gray-400 mb-2">Password</label>
+                    <input
+                      type="password"
+                      className="w-full px-4 py-2 h-14 rounded-xl bg-gray-800 text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Masukkan Passoword Anda"
+                      onChange={(e) => {
+                        this.setState({ password: e.target.value });
+                      }}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex w-full items-center justify-start gap-6">
                 {this.state.isDaftar ? (
                   <>
-                    <button
+                    {/* <button
                       data-aos="fade-down"
                       data-aos-delay="550"
                       className="button-login w-full font-bold"
@@ -287,7 +322,7 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                       <span></span>
-                    </button>
+                    </button> */}
                   </>
                 ) : (
                   <>
@@ -303,7 +338,7 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                     </button>
-                    <button
+                    {/* <button
                       data-aos="fade-down"
                       data-aos-delay="550"
                       className="button-login w-full font-bold"
@@ -316,22 +351,46 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                       <span></span>
-                    </button>
+                    </button> */}
                   </>
                 )}
               </div>
-
+              {!this.state.isDaftar && (
+                <>
+                  <button
+                    data-aos="fade-down"
+                    data-aos-delay="550"
+                    className="button-login w-full font-bold mt-3"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      this.setState({ isDaftar: true });
+                    }}
+                  >
+                    Lupa Password
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </button>
+                </>
+              )}
               {this.state.isDaftar && (
                 <>
-                  <div
-                    onClick={() => {
-                      this.setState({ isDaftar: false, isLogin: true });
+                  <button
+                    data-aos="fade-down"
+                    data-aos-delay="550"
+                    className="button-login w-full font-bold mt-3"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      this.handleForgetPass(e);
                     }}
-                    className="flex w-[15rem] text-white items-center justify-start gap-6 p-3 rounded-xl mt-5"
                   >
-                    <FaArrowLeft className="text-base" />
-                    Masuk
-                  </div>
+                    Kirim Email
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </button>
                 </>
               )}
             </form>
