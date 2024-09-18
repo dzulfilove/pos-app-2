@@ -119,6 +119,7 @@ function MasterUser() {
         peran: peran.value,
         cabang: cabang.value,
       });
+      setIsLoad(false);
 
       Swal.fire({
         icon: "success",
