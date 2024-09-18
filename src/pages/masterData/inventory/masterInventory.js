@@ -121,14 +121,28 @@ function MasterInventory() {
         querySnapshot.docs.map(async (doc) => {
           const data = doc.data();
 
+          // Cek apakah refItem dan refCategory ada
+          if (!data.refItem || !data.refCategory) {
+            console.warn("Missing refItem or refCategory in document:", doc.id);
+            return null; // Atau return default value jika perlu
+          }
+
           // Fetch data item berdasarkan refItem
           const itemRef = data.refItem;
           const itemDoc = await getDoc(itemRef);
+          if (!itemDoc.exists()) {
+            console.warn("Item document does not exist:", itemRef.id);
+            return null;
+          }
           const itemData = itemDoc.data();
 
           // Fetch data category berdasarkan refCategory
           const categoryRef = data.refCategory;
           const categoryDoc = await getDoc(categoryRef);
+          if (!categoryDoc.exists()) {
+            console.warn("Category document does not exist:", categoryRef.id);
+            return null;
+          }
           const categoryData = categoryDoc.data();
 
           return {
@@ -142,8 +156,11 @@ function MasterInventory() {
         })
       );
 
+      // Hapus nilai null dari items
+      const filteredItems = items.filter((item) => item !== null);
+
       // Mengelompokkan data inventory berdasarkan kategori
-      const groupedData = items.reduce((acc, item) => {
+      const groupedData = filteredItems.reduce((acc, item) => {
         const categoryId = item.categoryId;
         if (!acc[categoryId]) {
           acc[categoryId] = {
@@ -171,22 +188,23 @@ function MasterInventory() {
 
       // Konversi hasil pengelompokan menjadi array
       const groupedArray = Object.values(groupedData);
-      const totalStok = items.reduce((total, item) => {
+      const totalStok = filteredItems.reduce((total, item) => {
         return total + (item.stock || 0);
       }, 0);
 
       setTotalStok(totalStok);
       console.log("Grouped Items", groupedArray);
-      setDataStok(items);
+      setDataStok(filteredItems);
       setDataDisplay(groupedArray);
       setIsData1(false);
     } catch (e) {
       Swal.fire({
         title: "Error!",
-        text: "Gagal mendapatkan data: " + e.message,
+        text: "Gagal mendapatkan data inventory: " + e.message,
         icon: "error",
         confirmButtonText: "OK",
       });
+      console.log(e);
       return [];
     }
   };
@@ -267,7 +285,7 @@ function MasterInventory() {
     } catch (e) {
       Swal.fire({
         title: "Error!",
-        text: "Gagal mendapatkan data: " + e.message,
+        text: "Gagal mendapatkan data history: " + e.message,
         icon: "error",
         confirmButtonText: "OK",
       });
@@ -451,7 +469,11 @@ function MasterInventory() {
     } catch (e) {
       setIsLoad(false);
 
-      Swal.fire("Error!", "Gagal menambahkan data: " + e.message, "error");
+      Swal.fire(
+        "Error!",
+        "Gagal menambahkan data handleadd: " + e.message,
+        "error"
+      );
     }
   };
 
