@@ -658,7 +658,7 @@ function MainTransaction() {
   ];
   const columns2 = [
     {
-      name: "data.time",
+      name: "data",
       label: "Waktu",
       options: {
         filter: true,
@@ -671,7 +671,7 @@ function MainTransaction() {
               }}
               className="flex justify-start items-center gap-2 w-full"
             >
-              {value} WIB
+              {value.time} WIB
             </button>
           );
         },
@@ -691,7 +691,7 @@ function MainTransaction() {
               }}
               className="flex justify-start items-center gap-2 w-full"
             >
-              {value.type},{value.item.itemName}
+              {value.type} {value.item.itemName}
             </button>
           );
         },

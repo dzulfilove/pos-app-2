@@ -303,7 +303,7 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                     </button>
-                    {/* <button
+                    <button
                       data-aos="fade-down"
                       data-aos-delay="550"
                       className="button-login w-full font-bold"
@@ -316,7 +316,7 @@ class Auth extends Component {
                       <span></span>
                       <span></span>
                       <span></span>
-                    </button> */}
+                    </button>
                   </>
                 )}
               </div>

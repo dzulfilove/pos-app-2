@@ -769,7 +769,7 @@ function InventoryDetail({ params }) {
                 </div>
 
                 <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Jumlah Stok</h4>
+                  <h4 className="font-medium text-xs">Jumlah Stok Fisik</h4>
                   <input
                     type="number"
                     value={stok}
@@ -788,7 +788,7 @@ function InventoryDetail({ params }) {
                     <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
                   </div>
                   <p className="translate-x-2 text-[0.65rem] text-white">
-                    Tambah Data
+                    List Data
                   </p>
                 </button>
               </div>

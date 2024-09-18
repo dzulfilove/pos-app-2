@@ -41,6 +41,7 @@ const dateFormatList = ["DD/MM/YYYY", "DD/MM/YY", "DD-MM-YYYY", "DD-MM-YY"];
 
 function MasterInventory() {
   const [isOpen, setIsOpen] = useState(false);
+  const [refresh, setRefresh] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
   const [dataDetail, setDataDetail] = useState({});
   const [indexDetail, setIndexDetail] = useState(0);
@@ -437,7 +438,7 @@ function MasterInventory() {
         }
       });
       setIsLoad(false);
-
+      setRefresh(false);
       setBarang({});
       setStok(0);
       setTanggal(dayjs().locale("id").format("DD/MM/YYYY"));
@@ -1243,8 +1244,10 @@ function MasterInventory() {
                         <DropdownSearch
                           change={(data) => {
                             setBarang(data);
+                            setRefresh(true);
                           }}
                           options={dataItems}
+                          refresh={refresh}
                           value={barang}
                           name={"Barang"}
                         />

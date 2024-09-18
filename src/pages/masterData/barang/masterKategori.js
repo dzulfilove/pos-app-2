@@ -46,6 +46,8 @@ function MasterKategori() {
 
       if (categoryQuerySnapshot.empty) {
         console.log("Tidak ada kategori yang ditemukan.");
+      setIsData(false);
+
         return;
       }
 
