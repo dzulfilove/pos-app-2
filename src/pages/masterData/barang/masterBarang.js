@@ -422,7 +422,10 @@ function MasterBarang() {
           </>
         ) : (
           <>
-            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+            <div
+              ref={targetRef}
+              className="w-full h-full flex flex-col justify-start items-center pb-25"
+            >
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"
@@ -520,7 +523,6 @@ function MasterBarang() {
               </div>
 
               <div
-                ref={targetRef}
                 className={`w-full ${
                   !isOpen ? "h-0 p-0" : "h-[15rem]  p-2 mt-3  "
                 } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
