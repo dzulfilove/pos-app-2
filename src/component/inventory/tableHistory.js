@@ -92,7 +92,7 @@ const TableHistory = (props) => {
   return (
     <div
       data-aos="fade-up"
-      className="w-full flex justify-center items-center mt-5 h-[32rem]  mb-28"
+      className="w-full flex justify-center items-start mt-5 h-[32rem]  mb-28"
     >
       <Paper style={{ height: 400, width: "100%" }}>
         <MUIDataTable

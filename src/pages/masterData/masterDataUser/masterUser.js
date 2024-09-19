@@ -551,7 +551,7 @@ function MasterUser() {
             <div
               data-aos="fade-up"
               data-aos-delay="450"
-              className="w-full flex justify-center items-center mt-5 h-[35rem] mb-28"
+              className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
             >
               {isData ? (
                 <>

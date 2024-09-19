@@ -168,7 +168,7 @@ function HistoryDetail({ params }) {
         </div>
         <div
           data-aos="fade-up"
-          className="w-full flex justify-center items-center h-full "
+          className="w-full flex justify-center items-start h-[35rem] "
         >
           {isData ? (
             <>
