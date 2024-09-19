@@ -322,7 +322,14 @@ function MainTransaction() {
           console.log(dataItems, "data Items Invent");
           // Jika data inventory tidak ditemukan
           if (!dataItems) {
-            throw new Error("Inventory data not found.");
+            Swal.fire(
+              "Gagal",
+              "Stok Barang " +
+                selectedBarang.text +
+                " Tidak Ada, Tambahkan Stok Dulu",
+              "warning"
+            );
+            return [];
           }
 
           // Cek apakah stok mencukupi
@@ -410,22 +417,23 @@ function MainTransaction() {
           });
         }
         console.log(dataItems);
-      });
-      setJenisPembayaran(null);
-      setRefresh(false);
-      setSelectedBarang(null);
-      setJenisPembayaran(null);
-      setJenisTransaksi(null);
-      setBayar(0);
-      setHarga(0);
-      setAdminFee(0);
-      setJumlahBarang(0);
-      setIsLoad(false);
-      setJenis("");
-      getTransactions();
-      Swal.fire("Success", "Transaction added successfully", "success");
+        Swal.fire("Success", "Transaction added successfully", "success");
 
-      setIsOpen(false);
+        setJenisPembayaran(null);
+        setRefresh(false);
+        setSelectedBarang(null);
+        setJenisPembayaran(null);
+        setJenisTransaksi(null);
+        setBayar(0);
+        setHarga(0);
+        setAdminFee(0);
+        setJumlahBarang(0);
+        setIsLoad(false);
+        setJenis("");
+        getTransactions();
+
+        setIsOpen(false);
+      });
     } catch (error) {
       setIsLoad(false);
       if (error.message === "Stock tidak mencukupi.") {

@@ -52,7 +52,7 @@ function MasterUser() {
       const querySnapshot = await getDocs(collection(db, "users"));
 
       if (querySnapshot.empty) {
-        console.log("Tidak ada kategori yang ditemukan.");
+        console.log("Tidak ada User yang ditemukan.");
         return;
       }
 
@@ -169,7 +169,7 @@ function MasterUser() {
       peran,
     };
     try {
-      // Buat referensi ke dokumen kategori yang ingin diperbarui
+      // Buat referensi ke dokumen User yang ingin diperbarui
       const categoryRef = doc(db, "users", indexDetail);
 
       // Perbarui data di Firestore
@@ -184,7 +184,7 @@ function MasterUser() {
       // Tampilkan alert sukses
       Swal.fire({
         title: "Sukses!",
-        text: "Data kategori berhasil diperbarui.",
+        text: "Data User berhasil diperbarui.",
         icon: "success",
         confirmButtonText: "OK",
       });
@@ -194,7 +194,7 @@ function MasterUser() {
       // Tampilkan alert error
       Swal.fire({
         title: "Error!",
-        text: "Terjadi kesalahan saat memperbarui data kategori.",
+        text: "Terjadi kesalahan saat memperbarui data User.",
         icon: "error",
         confirmButtonText: "OK",
       });
@@ -203,16 +203,16 @@ function MasterUser() {
   const deleteCategory = async (categoryId) => {
     const confirmDelete = await Swal.fire({
       title: "Konfirmasi Hapus",
-      text: "Anda yakin ingin menghapus kategori ini?",
+      text: "Anda yakin ingin menghapus User ini?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
     });
-
+    console.log(categoryId);
     if (confirmDelete.isConfirmed) {
       try {
-        // Buat referensi ke dokumen kategori yang ingin dihapus
+        // Buat referensi ke dokumen User yang ingin dihapus
         const categoryRef = doc(db, "users", categoryId.id);
 
         // Hapus dokumen dari Firestore
@@ -221,7 +221,7 @@ function MasterUser() {
         // Tampilkan alert sukses
         Swal.fire({
           title: "Sukses!",
-          text: "Kategori berhasil dihapus.",
+          text: "User berhasil dihapus.",
           icon: "success",
           confirmButtonText: "OK",
         });
@@ -231,7 +231,7 @@ function MasterUser() {
         // Tampilkan alert error
         Swal.fire({
           title: "Error!",
-          text: "Terjadi kesalahan saat menghapus kategori.",
+          text: "Terjadi kesalahan saat menghapus User.",
           icon: "error",
           confirmButtonText: "OK",
         });
@@ -279,7 +279,8 @@ function MasterUser() {
       },
     },
     {
-      name: "Aksi",
+      name: "data",
+      label: "Aksi",
       options: {
         filter: true,
         sort: true,
@@ -289,7 +290,7 @@ function MasterUser() {
               <button
                 className="Btn-see text-white"
                 onClick={() => {
-                  updateClick(tableMeta.rowData[3]); // Kirim objek lengkap
+                  updateClick(value); // Kirim objek lengkap
                 }}
               >
                 <span className="svgContainer">
@@ -300,7 +301,7 @@ function MasterUser() {
               <button
                 className="Btn-see text-white"
                 onClick={() => {
-                  deleteCategory(tableMeta.rowData[3]); // Kirim objek lengkap
+                  deleteCategory(value); // Kirim objek lengkap
                 }}
               >
                 <span className="svgContainer">
@@ -505,7 +506,7 @@ function MasterUser() {
                       }}
                       options={optionCabang}
                       value={cabang}
-                      name={"Kategori Barang"}
+                      name={"User Barang"}
                     />
                   </div>
                 </div>
