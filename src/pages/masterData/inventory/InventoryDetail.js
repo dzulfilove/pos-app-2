@@ -761,7 +761,7 @@ function InventoryDetail({ params }) {
                       change={(data) => {
                         setBarang(data);
                       }}
-                      refresh={false}
+                      refresh={true}
                       options={dataOption}
                       value={barang}
                       name={"Barang"}
@@ -924,7 +924,7 @@ function InventoryDetail({ params }) {
 
             {activeTabIndex == "tab1" && (
               <>
-                <div className="w-full flex justify-center items-center mt-5 h-full mb-28">
+                <div className="w-full flex justify-center items-center mt-5 h-[32rem]  mb-28">
                   {isData ? (
                     <>
                       <LoaderTable />
@@ -947,7 +947,7 @@ function InventoryDetail({ params }) {
             )}
             {activeTabIndex == "tab2" && (
               <>
-                <div className="w-full flex justify-center items-center mt-5 h-full mb-28">
+                <div className="w-full flex justify-center items-center mt-5 h-[32rem] mb-28">
                   <Paper style={{ height: 400, width: "100%" }}>
                     <MUIDataTable
                       columns={columnsCheck}

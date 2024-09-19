@@ -129,7 +129,7 @@ const App = () => {
         <>
           <Router>
             <section
-              className={` flex w-full gap-6 bg-slate-100 h-full p-0 mb-16`}
+              className={` flex w-full gap-6 bg-slate-100 h-full p-0 mb-20`}
             >
               <div
                 className={`bg-blue-700 min-h-screen pl-8 z-[999] ${
@@ -329,8 +329,8 @@ const App = () => {
                   </div>
                 </div>
               </div>
-              <div className=" mt-8 text-gray-900 font-semibold w-full flex flex-col justify-start items-center bg-blue-50 px-6 overflow-y-scroll mb-36">
-                <div className="h-[100vh] w-[100%]  p-0 pb-12 m-0">
+              <div className=" mt-8  text-gray-900 font-semibold w-full flex flex-col justify-start items-center bg-blue-50 px-6 overflow-y-scroll mb-44">
+                <div className="h-[100vh] w-[100%]  p-0 pb-32 m-0  ">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/barang" element={<MainBarang />} />

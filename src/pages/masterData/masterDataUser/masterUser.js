@@ -120,7 +120,7 @@ function MasterUser() {
         cabang: cabang.value,
       });
       setIsLoad(false);
-
+      getAllUser();
       Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -165,8 +165,8 @@ function MasterUser() {
     const data = {
       nama,
       email,
-      cabang,
-      peran,
+      cabang: cabang.value,
+      peran: peran.value,
     };
     try {
       // Buat referensi ke dokumen User yang ingin diperbarui
@@ -493,7 +493,7 @@ function MasterUser() {
                       }}
                       options={optionPeran}
                       value={peran}
-                      refresh={false}
+                      refresh={true}
                       name={"Peran User"}
                     />
                   </div>
@@ -506,7 +506,7 @@ function MasterUser() {
                         setCabang(data);
                       }}
                       options={optionCabang}
-                      refresh={false}
+                      refresh={true}
                       value={cabang}
                       name={"User Barang"}
                     />
@@ -551,7 +551,7 @@ function MasterUser() {
             <div
               data-aos="fade-up"
               data-aos-delay="450"
-              className="w-full flex justify-center items-center mt-5 h-full mb-28"
+              className="w-full flex justify-center items-center mt-5 h-[35rem] mb-28"
             >
               {isData ? (
                 <>

@@ -116,7 +116,7 @@ const TableDetailHistory = (props) => {
   };
 
   return (
-    <div className="w-full flex justify-center items-center mt-5 h-full mb-28">
+    <div className="w-full flex justify-center items-center mt-5 h-[32rem]  mb-28">
       <Paper style={{ height: 400, width: "100%" }}>
         <MUIDataTable
           columns={columns}

@@ -1419,7 +1419,7 @@ function MasterInventory() {
               <>
                 <div
                   data-aos="fade-up"
-                  className="w-full flex justify-center items-center mt-5 h-full mb-28"
+                  className="w-full flex justify-center items-center mt-5 h-[32rem]  mb-28"
                 >
                   {isData1 ? (
                     <>

@@ -589,7 +589,7 @@ function MasterBarang() {
                         change={(data) => {
                           setKategoriBarang(data);
                         }}
-                        refresh={false}
+                        refresh={true}
                         options={dataCategory}
                         value={kategoriBarang}
                         name={"Kategori Barang"}
@@ -672,7 +672,7 @@ function MasterBarang() {
               <div
                 data-aos="fade-up"
                 data-aos-delay="350"
-                className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                className="w-full flex justify-center  items-center mt-5 h-[32rem] mb-28"
               >
                 {isData ? (
                   <>

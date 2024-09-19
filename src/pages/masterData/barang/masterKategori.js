@@ -46,7 +46,7 @@ function MasterKategori() {
 
       if (categoryQuerySnapshot.empty) {
         console.log("Tidak ada kategori yang ditemukan.");
-      setIsData(false);
+        setIsData(false);
 
         return;
       }
@@ -467,7 +467,7 @@ function MasterKategori() {
             <div
               data-aos="fade-up"
               data-aos-delay="450"
-              className="w-full flex justify-center items-center mt-5 h-full mb-28"
+              className="w-full flex justify-center items-center mt-5 h-[32rem]  mb-28"
             >
               {isData ? (
                 <>

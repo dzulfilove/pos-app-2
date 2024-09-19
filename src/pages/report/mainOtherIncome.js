@@ -923,7 +923,7 @@ function OtherIncomeReport() {
                 <>
                   <div
                     // data-aos="fade-up"
-                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                    className="w-full flex justify-center  items-center mt-5 h-[35rem] mb-28"
                   >
                     {isData ? (
                       <>
@@ -956,7 +956,7 @@ function OtherIncomeReport() {
                 <>
                   <div
                     // data-aos="fade-up"
-                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                    className="w-full flex justify-center  items-center mt-5 h-[35rem] mb-28"
                   >
                     {isData ? (
                       <>

@@ -1029,7 +1029,7 @@ function TodayEmoney() {
                 <>
                   <div
                     // data-aos="fade-up"
-                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                    className="w-full flex justify-center  items-center mt-5 h-[35rem] mb-28"
                   >
                     {isData ? (
                       <>
@@ -1062,7 +1062,7 @@ function TodayEmoney() {
                 <>
                   <div
                     // data-aos="fade-up"
-                    className="w-full flex justify-center  items-center mt-5 h-full mb-28"
+                    className="w-full flex justify-center  items-center mt-5 h-[35rem] mb-28"
                   >
                     {isData ? (
                       <>
@@ -1113,7 +1113,7 @@ function TodayEmoney() {
                       </p>
                     </div>
                   </div>
-                  <div className="w-full flex justify-center  items-center mt-5 h-full mb-40">
+                  <div className="w-full flex justify-center  items-center mt-5 h-[35rem] mb-40">
                     {isData ? (
                       <>
                         <LoaderTable />
