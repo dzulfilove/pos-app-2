@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../../component/masterBarang/table";
 import MUIDataTable from "mui-datatables";
 import "../../../styles/card.css";
@@ -44,7 +44,7 @@ function MasterBarang() {
   const [dataBarang, setDataBarang] = useState([]);
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
-
+  const targetRef = useRef(null);
   useEffect(() => {
     fetchCategories();
     getItems();
@@ -82,8 +82,16 @@ function MasterBarang() {
           };
         })
       );
-      console.log("baang", items);
-      setDataBarang(items);
+
+      // Sorting data berdasarkan itemName
+      const sortedItems = items.sort((a, b) => {
+        if (a.itemName < b.itemName) return -1;
+        if (a.itemName > b.itemName) return 1;
+        return 0;
+      });
+
+      console.log("baang", sortedItems);
+      setDataBarang(sortedItems);
       setIsData(false);
     } catch (e) {
       Swal.fire({
@@ -95,6 +103,7 @@ function MasterBarang() {
       return [];
     }
   };
+
   const handleDetailData = (data) => {
     if (indexDetail === data.id && isDetail) {
       setIsDetail(false);
@@ -244,6 +253,9 @@ function MasterBarang() {
       });
     }
   };
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const deleteItem = async (item) => {
     const confirmDelete = await Swal.fire({
       title: "Konfirmasi Hapus",
@@ -357,6 +369,7 @@ function MasterBarang() {
                 className="Btn-see text-white"
                 onClick={() => {
                   updateClick(value); // Kirim objek lengkap
+                  scrollToTarget();
                 }}
               >
                 <span className="svgContainer">
@@ -507,6 +520,7 @@ function MasterBarang() {
               </div>
 
               <div
+                ref={targetRef}
                 className={`w-full ${
                   !isOpen ? "h-0 p-0" : "h-[15rem]  p-2 mt-3  "
                 } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
@@ -573,6 +587,7 @@ function MasterBarang() {
                         change={(data) => {
                           setKategoriBarang(data);
                         }}
+                        refresh={false}
                         options={dataCategory}
                         value={kategoriBarang}
                         name={"Kategori Barang"}

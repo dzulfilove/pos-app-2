@@ -493,6 +493,7 @@ function MasterUser() {
                       }}
                       options={optionPeran}
                       value={peran}
+                      refresh={false}
                       name={"Peran User"}
                     />
                   </div>
@@ -505,6 +506,7 @@ function MasterUser() {
                         setCabang(data);
                       }}
                       options={optionCabang}
+                      refresh={false}
                       value={cabang}
                       name={"User Barang"}
                     />

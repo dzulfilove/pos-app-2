@@ -761,6 +761,7 @@ function InventoryDetail({ params }) {
                       change={(data) => {
                         setBarang(data);
                       }}
+                      refresh={false}
                       options={dataOption}
                       value={barang}
                       name={"Barang"}
