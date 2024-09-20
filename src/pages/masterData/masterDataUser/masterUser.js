@@ -26,6 +26,7 @@ import Loader from "../../../component/features/loader";
 import LoaderTable from "../../../component/features/loader2";
 import DropdownSearch from "../../../component/features/dropdown";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import firebase from "firebase/compat/app";
 function MasterUser() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -209,7 +210,9 @@ function MasterUser() {
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
     });
+
     console.log(categoryId);
+
     if (confirmDelete.isConfirmed) {
       try {
         // Buat referensi ke dokumen User yang ingin dihapus
@@ -217,6 +220,12 @@ function MasterUser() {
 
         // Hapus dokumen dari Firestore
         await deleteDoc(categoryRef);
+
+        // Hapus akun dari Firebase Authentication
+        const user = firebase.auth().currentUser; // Ambil user yang sedang login
+        if (user) {
+          await user.delete(); // Hapus akun pengguna
+        }
 
         // Tampilkan alert sukses
         Swal.fire({
@@ -238,6 +247,7 @@ function MasterUser() {
       }
     }
   };
+
   const columns = [
     {
       name: "Nama",
