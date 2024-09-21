@@ -730,7 +730,7 @@ function InventoryDetail({ params }) {
             {dataStok.length > 0 ? dataStok[0].categoryName : ""}
           </h3>
         </div>
-        {isCheck == false && (
+        {isCheck == false && peran !== "Super Admin" && (
           <>
             <div
               data-aos="fade-up"
@@ -858,110 +858,111 @@ function InventoryDetail({ params }) {
             </div>
           </>
         )}
-        {isCheck == true && (
-          <>
-            <div
-              data-aos="fade-up"
-              data-aos-delay="550"
-              className="w-full flex justify-end gap-4 mt-5 items-center p-2 rounded-md"
-            >
-              <button
-                onClick={() => {
-                  if (isDetail) {
-                    setIsDetail(false);
-                  }
-                  setIsOpen(!isOpen);
-                  setIsCheck(false);
-                }}
-                type="button"
-                className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xs font-medium group"
+        {isCheck == true ||
+          (peran == "Super Admin" && (
+            <>
+              <div
+                data-aos="fade-up"
+                data-aos-delay="550"
+                className="w-full flex justify-end gap-4 mt-5 items-center p-2 rounded-md"
               >
-                <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
-                  <IoAddCircleOutline className="text-[18px] text-blue-700 hover:text-blue-700" />
-                </div>
-                <p className="translate-x-2 text-[0.65rem] text-white">
-                  Check Data
-                </p>
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    if (isDetail) {
+                      setIsDetail(false);
+                    }
+                    setIsOpen(!isOpen);
+                    setIsCheck(false);
+                  }}
+                  type="button"
+                  className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xs font-medium group"
+                >
+                  <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
+                    <IoAddCircleOutline className="text-[18px] text-blue-700 hover:text-blue-700" />
+                  </div>
+                  <p className="translate-x-2 text-[0.65rem] text-white">
+                    Check Data
+                  </p>
+                </button>
+              </div>
 
-            <TabBar
-              data-aos="fade-up"
-              data-aos-delay="450"
-              data={allTabs}
-              onTabChange={handleTabChange}
-              index={indexTab}
-            />
-            <div
-              className={`w-full ${
-                !isDetail ? "h-0 p-0" : "h-auto p-6 mt-5"
-              } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
-            >
+              <TabBar
+                data-aos="fade-up"
+                data-aos-delay="450"
+                data={allTabs}
+                onTabChange={handleTabChange}
+                index={indexTab}
+              />
               <div
                 className={`w-full ${
-                  !isDetail ? "hidden" : "flex flex-col"
-                } justify-start items-start gap-4`}
+                  !isDetail ? "h-0 p-0" : "h-auto p-6 mt-5"
+                } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
               >
-                <h5 className="text-xl font-medium text-blue-600">
-                  Detail Info
-                </h5>
-                <h5 className="text-base font-medium">Barang</h5>
-                <p className="text-xs font-normal">{dataDetail.item}</p>
-                <h5 className="text-base font-medium">Jumlah Stok</h5>
-                <p className="text-xs font-normal">
-                  {dataDetail.stok} {dataDetail.unit}
-                </p>
-                <h5 className="text-base font-medium">Tanggal Update</h5>
-                <p className="text-xs font-normal">
-                  {formatTanggal(dataDetail.dateUpdate)}
-                </p>
-                <h5 className="text-base font-medium">Tanggal Expired</h5>
-                <p className="text-xs font-normal">
-                  {formatTanggal(dataDetail.dateExp)}
-                </p>
+                <div
+                  className={`w-full ${
+                    !isDetail ? "hidden" : "flex flex-col"
+                  } justify-start items-start gap-4`}
+                >
+                  <h5 className="text-xl font-medium text-blue-600">
+                    Detail Info
+                  </h5>
+                  <h5 className="text-base font-medium">Barang</h5>
+                  <p className="text-xs font-normal">{dataDetail.item}</p>
+                  <h5 className="text-base font-medium">Jumlah Stok</h5>
+                  <p className="text-xs font-normal">
+                    {dataDetail.stok} {dataDetail.unit}
+                  </p>
+                  <h5 className="text-base font-medium">Tanggal Update</h5>
+                  <p className="text-xs font-normal">
+                    {formatTanggal(dataDetail.dateUpdate)}
+                  </p>
+                  <h5 className="text-base font-medium">Tanggal Expired</h5>
+                  <p className="text-xs font-normal">
+                    {formatTanggal(dataDetail.dateExp)}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {activeTabIndex == "tab1" && (
-              <>
-                <div className="w-full flex justify-center items-start mt-5 h-[35rem]  mb-28">
-                  {isData ? (
-                    <>
-                      <LoaderTable />
-                    </>
-                  ) : (
-                    <>
-                      <Paper style={{ height: 400, width: "100%" }}>
-                        <MUIDataTable
-                          columns={columns}
-                          data={data}
-                          options={{
-                            fontSize: 12,
-                          }}
-                        />
-                      </Paper>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-            {activeTabIndex == "tab2" && (
-              <>
-                <div className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28">
-                  <Paper style={{ height: 400, width: "100%" }}>
-                    <MUIDataTable
-                      columns={columnsCheck}
-                      data={dataCheck}
-                      options={{
-                        fontSize: 12,
-                      }}
-                    />
-                  </Paper>
-                </div>
-              </>
-            )}
-          </>
-        )}
+              {activeTabIndex == "tab1" && (
+                <>
+                  <div className="w-full flex justify-center items-start mt-5 h-[35rem]  mb-28">
+                    {isData ? (
+                      <>
+                        <LoaderTable />
+                      </>
+                    ) : (
+                      <>
+                        <Paper style={{ height: 400, width: "100%" }}>
+                          <MUIDataTable
+                            columns={columns}
+                            data={data}
+                            options={{
+                              fontSize: 12,
+                            }}
+                          />
+                        </Paper>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+              {activeTabIndex == "tab2" && (
+                <>
+                  <div className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28">
+                    <Paper style={{ height: 400, width: "100%" }}>
+                      <MUIDataTable
+                        columns={columnsCheck}
+                        data={dataCheck}
+                        options={{
+                          fontSize: 12,
+                        }}
+                      />
+                    </Paper>
+                  </div>
+                </>
+              )}
+            </>
+          ))}
       </div>
     </div>
   );
