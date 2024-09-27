@@ -330,7 +330,7 @@ const App = () => {
                 </div>
               </div>
               <div className=" mt-8  text-gray-900 font-semibold w-full flex flex-col justify-start items-center bg-blue-50 px-6 overflow-y-scroll mb-44">
-                <div className="h-[100vh] w-[100%]  p-0 pb-32 m-0  ">
+                <div className="h-[100vh] w-[100%] pt-6  p-0 pb-32 m-0  ">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/barang" element={<MainBarang />} />

@@ -43,6 +43,8 @@ function MasterUser() {
   const [dataUser, setDataUser] = useState([]);
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
+  const [refresh, setRefresh] = useState(true);
+  const [akses, setAkses] = useState({});
 
   useEffect(() => {
     getAllUser();
@@ -119,9 +121,11 @@ function MasterUser() {
         nama,
         peran: peran.value,
         cabang: cabang.value,
+        isAccess: true,
       });
       setIsLoad(false);
       getAllUser();
+      setRefresh(false);
       Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -153,14 +157,17 @@ function MasterUser() {
   const updateClick = (data) => {
     const selPeran = getObject(optionPeran, data.peran);
     const selcabang = getObject(optionCabang, data.cabang);
+    const selAkses = getObject(optionAkses, data.isAccess);
+    console.log(selPeran, selAkses, selcabang);
     setIsEdit(true);
     setIsOpen(true);
     setIsAdd(false);
     setIndexDetail(data.id);
     setNama(data.nama);
     setEmail(data.email);
-    setPeran(selPeran[0]);
-    setCabang(selcabang[0]);
+    setPeran(selPeran);
+    setCabang(selcabang);
+    setAkses(selAkses);
   };
   const handleUpdate = async () => {
     const data = {
@@ -168,6 +175,7 @@ function MasterUser() {
       email,
       cabang: cabang.value,
       peran: peran.value,
+      isAccess: akses.value,
     };
     try {
       // Buat referensi ke dokumen User yang ingin diperbarui
@@ -182,6 +190,8 @@ function MasterUser() {
       setIsOpen(false);
       setIsEdit(false);
       setIsAdd(true);
+      setRefresh(false);
+
       // Tampilkan alert sukses
       Swal.fire({
         title: "Sukses!",
@@ -250,14 +260,57 @@ function MasterUser() {
 
   const columns = [
     {
-      name: "Nama",
+      name: "data",
+      label: "Nama",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
-            <button className="flex justify-start items-center gap-2 w-full">
-              {value}
+            <button
+              className={`flex justify-start items-center gap-2 w-full p-2 ${
+                value.isAccess == false ? "bg-blue-100" : ""
+              }`}
+            >
+              {value.nama}
+            </button>
+          );
+        },
+      },
+    },
+    {
+      name: "data",
+      label: "Email",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button
+              className={`flex justify-start items-center gap-2 w-full p-2 ${
+                value.isAccess == false ? "bg-blue-100" : ""
+              }`}
+            >
+              {value.email}
+            </button>
+          );
+        },
+      },
+    },
+    {
+      name: "data",
+      label: "Peran",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button
+              className={`flex justify-start items-center gap-2 w-full p-2 ${
+                value.isAccess == false ? "bg-blue-100" : ""
+              }`}
+            >
+              {value.peran}
             </button>
           );
         },
@@ -265,29 +318,25 @@ function MasterUser() {
     },
 
     {
-      name: "email",
-      label: "Email",
-      options: {
-        filter: true,
-        sort: true,
-      },
-    },
-    {
-      name: "peran",
-      label: "Peran",
-      options: {
-        filter: true,
-        sort: true,
-      },
-    },
-    {
-      name: "cabang",
+      name: "data",
       label: "Cabang",
       options: {
         filter: true,
         sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button
+              className={`flex justify-start items-center gap-2 w-full p-2 ${
+                value.isAccess == false ? "bg-blue-100" : ""
+              }`}
+            >
+              {getObjectString(optionCabang, value.cabang)}
+            </button>
+          );
+        },
       },
     },
+
     {
       name: "data",
       label: "Aksi",
@@ -349,13 +398,23 @@ function MasterUser() {
   ];
   // Membuat listData tanpa menampilkan id
   const listData = dataUser.map((data) => [
-    data.email,
-    data.nama,
-    data.peran,
-    getObjectString(optionCabang, data.cabang),
+    data,
+    data,
+    data,
+    data,
     data, // Tambahkan objek lengkap di sini
   ]);
 
+  const optionAkses = [
+    {
+      value: true,
+      text: "Boleh Akses",
+    },
+    {
+      value: false,
+      text: "Tidak Boleh Akses",
+    },
+  ];
   console.log(dataDetail, "Detail data");
   return (
     <div>
@@ -479,16 +538,39 @@ function MasterUser() {
                     className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                   />
                 </div>
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Password</h4>
-                  <input
-                    type="text"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-              </div>{" "}
+                {!isEdit ? (
+                  <>
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Password</h4>
+                      <input
+                        type="text"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                      <h4 className="font-medium text-xs">Boleh Akses ?</h4>
+                      <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                        <DropdownSearch
+                          change={(data) => {
+                            setAkses(data);
+                            setRefresh(true);
+                          }}
+                          options={optionAkses}
+                          value={akses}
+                          refresh={refresh}
+                          name={"Akses Sistem"}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <div
                 className={`w-full ${
                   !isOpen ? "hidden" : "flex"
@@ -500,10 +582,11 @@ function MasterUser() {
                     <DropdownSearch
                       change={(data) => {
                         setPeran(data);
+                        setRefresh(true);
                       }}
                       options={optionPeran}
                       value={peran}
-                      refresh={true}
+                      refresh={refresh}
                       name={"Peran User"}
                     />
                   </div>
@@ -514,11 +597,12 @@ function MasterUser() {
                     <DropdownSearch
                       change={(data) => {
                         setCabang(data);
+                        setRefresh(true);
                       }}
                       options={optionCabang}
-                      refresh={true}
+                      refresh={refresh}
                       value={cabang}
-                      name={"User Barang"}
+                      name={"Cabang"}
                     />
                   </div>
                 </div>

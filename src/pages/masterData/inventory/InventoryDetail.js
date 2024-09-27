@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MUIDataTable from "mui-datatables";
 import "../../../styles/card.css";
 import "../../../styles/button.css";
@@ -13,16 +13,18 @@ import { FaRegAddressCard } from "react-icons/fa6";
 import TableHistory from "../../../component/inventory/tableHistory";
 import { FaArrowTrendDown } from "react-icons/fa6";
 import { MdDelete } from "react-icons/md";
-
+import { RiPencilFill } from "react-icons/ri";
 import withRouter from "../../../component/features/withRouter";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
   runTransaction,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { db } from "../../../config/database";
@@ -36,12 +38,22 @@ import "aos/dist/aos.css";
 import LoaderTable from "../../../component/features/loader2";
 import DropdownSearch from "../../../component/features/dropdown";
 import { TabBar } from "../../../component/features/tabBar";
+import Loader from "../../../component/features/loader";
+import "dayjs/locale/id";
+import { DatePicker, Space } from "antd";
+
+const dateFormatList = ["DD/MM/YYYY", "DD/MM/YY", "DD-MM-YYYY", "DD-MM-YY"];
+
 function InventoryDetail({ params }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [isLoad, setIsLoad] = useState(false);
   const [isCheck, setIsCheck] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
   const [dataDetail, setDataDetail] = useState({});
   const [indexDetail, setIndexDetail] = useState(0);
+  const [refresh, setRefresh] = useState(false);
+
   const [form, setForm] = useState("");
   const { id } = params;
   const idCategory = params.id;
@@ -52,6 +64,8 @@ function InventoryDetail({ params }) {
   const [dataCheck, setDataCheck] = useState([]);
   const [isData, setIsData] = useState(true);
   const [barang, setBarang] = useState(null);
+  const [satuan, setSatuan] = useState("");
+  const [kategoriBarang, setKategoriBarang] = useState({});
   const [stok, setStok] = useState(0);
   const [activeTabIndex, setActiveTabIndex] = useState("tab1");
   const [indexTab, setIndexTab] = useState(0);
@@ -59,8 +73,12 @@ function InventoryDetail({ params }) {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const [tanggalExp, setTanggalExp] = useState(
+    dayjs().locale("id").format("DD/MM/YYYY")
+  );
   const cabang = sessionStorage.getItem("cabang");
   const peran = sessionStorage.getItem("peran");
+  const targetRef = useRef(null);
 
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
@@ -125,6 +143,12 @@ function InventoryDetail({ params }) {
         (item) => item.stock < item.item.minStock
       ).length;
 
+      // Sorting data berdasarkan itemName
+      const sortedItems = items.sort((a, b) => {
+        if (a.item.itemName < b.item.itemName) return -1;
+        if (a.item.itemName > b.item.itemName) return 1;
+        return 0;
+      });
       setTotalStok(totalStock);
       setTotalItemMin(countBelowMinStock);
       console.log("Items", items);
@@ -136,10 +160,10 @@ function InventoryDetail({ params }) {
       setIsData(false);
 
       // Simpan data yang diambil ke state
-      setDataStok(items);
+      setDataStok(sortedItems);
     } catch (e) {
       setIsData(false);
-
+      console.log(e);
       Swal.fire({
         title: "Error!",
         text: "Gagal mendapatkan data: " + e.message,
@@ -156,10 +180,64 @@ function InventoryDetail({ params }) {
     } else {
       setIsDetail(true);
     }
-
+    scrollToTarget();
     setIndexDetail(data.id);
     setIsOpen(false);
     setDataDetail(data);
+  };
+
+  const updateClick = (data) => {
+    setIsEdit(true);
+    setIsOpen(false);
+    isDetail(false);
+    setIndexDetail(data.id);
+    setDataDetail(data);
+    setSatuan(data.unit);
+    setStok(data.stok);
+    setTanggal(data.dateUpdate);
+    setTanggalExp(data.dateExp);
+  };
+  const handleUpdate = async () => {
+    setIsLoad(true);
+
+    const data = {
+      unit: satuan,
+      dateExp: tanggalExp,
+      dateUpdate: tanggal,
+      stock: stok,
+    };
+    try {
+      // Buat referensi ke dokumen kategori yang ingin diperbarui
+      const itemsRef = doc(db, `inventorys${cabang}`, indexDetail);
+
+      // Perbarui data di Firestore
+      await updateDoc(itemsRef, data);
+      setSatuan("");
+      setStok(0);
+
+      setIsOpen(false);
+      setIsEdit(false);
+      // Tampilkan alert sukses
+      setIsLoad(false);
+      await getInventory();
+      Swal.fire({
+        title: "Sukses!",
+        text: "Data kategori berhasil diperbarui.",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
+    } catch (error) {
+      setIsLoad(false);
+
+      console.error("Error updating category:", error.message);
+      // Tampilkan alert error
+      Swal.fire({
+        title: "Error!",
+        text: "Terjadi kesalahan saat memperbarui data kategori.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
   const handleCheck = async () => {
     setIsCheck(true);
@@ -445,6 +523,23 @@ function InventoryDetail({ params }) {
     // Membalik urutan kembali dan menambahkan prefix "Rp"
     return "Rp " + rupiah.split("").reverse().join("");
   }
+  const handleChangeDate = (name, date) => {
+    const dayjsDate = dayjs(date);
+
+    if (!dayjsDate.isValid()) {
+      return;
+    }
+    if (name == "tanggalExp") {
+      const formattedDate = dayjsDate.format("DD/MM/YYYY");
+      setTanggalExp(formattedDate);
+    } else {
+      const formattedDate = dayjsDate.format("DD/MM/YYYY");
+      setTanggal(formattedDate);
+    }
+  };
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const columns = [
     {
       name: "item",
@@ -534,6 +629,29 @@ function InventoryDetail({ params }) {
                   <IoEyeSharp className="text-xl " />
                 </span>
                 <span className="BG bg-blue-600"></span>
+              </button>
+              <button
+                className="Btn-see text-white"
+                onClick={() => {
+                  updateClick(value); // Kirim objek lengkap
+                  scrollToTarget();
+                }}
+              >
+                <span className="svgContainer">
+                  <RiPencilFill className="text-xl " />
+                </span>
+                <span className="BG bg-emerald-500"></span>
+              </button>
+              <button
+                className="Btn-see text-white"
+                onClick={() => {
+                  deleteItem(value); // Kirim objek lengkap
+                }}
+              >
+                <span className="svgContainer">
+                  <MdDelete className="text-xl " />
+                </span>
+                <span className="BG bg-red-500"></span>
               </button>
             </div>
           );
@@ -646,324 +764,494 @@ function InventoryDetail({ params }) {
       idItem: a.itemId,
     };
   });
+
+  const deleteItem = async (item) => {
+    const confirmDelete = await Swal.fire({
+      title: "Konfirmasi Hapus",
+      text: "Anda yakin ingin menghapus Barang ini?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
+    });
+
+    if (confirmDelete.isConfirmed) {
+      setIsLoad(true);
+
+      try {
+        // Buat referensi ke dokumen kategori yang ingin dihapus
+        const itemRef = doc(db, `inventorys${cabang}`, item.id);
+
+        // Hapus dokumen dari Firestore
+        await deleteDoc(itemRef);
+        setIsLoad(false);
+
+        // Tampilkan alert sukses
+        Swal.fire({
+          title: "Sukses!",
+          text: "Barang berhasil dihapus.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+        getInventory();
+      } catch (error) {
+        setIsLoad(false);
+
+        console.error("Error deleting category:", error.message);
+        // Tampilkan alert error
+        Swal.fire({
+          title: "Error!",
+          text: "Terjadi kesalahan saat menghapus kategori.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+      }
+    }
+  };
   console.log(dataDetail, "Detail data");
   return (
     <div>
-      <div className="w-full h-full flex flex-col justify-start items-center pb-44">
-        <div
-          data-aos="slide-down"
-          data-aos-delay="50"
-          className="w-full flex justify-start items-center bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
-        >
-          <h3 className="text-white text-base font-normal">Stok Kategori</h3>
-        </div>
-        <div className="w-full flex justify-start gap-5 items-center mt-10 h-full">
-          <div
-            data-aos="fade-up"
-            data-aos-delay="250"
-            className="cookieCard w-[40%] p-6"
-          >
-            <div className="cookieDescription">
-              <h3 className="text-xl font-medium">{totalStok} Stok</h3>
-            </div>
-            <h3 className="text-xs font-normal text-white w-full">
-              Total Jumlah Stok
+      {isLoad ? (
+        <>
+          <div className="w-full h-[100vh] flex flex-col justify-center items-center">
+            <Loader />
+            <h3 className="text-base text-blue-600 mt-5">
+              Tunggu Bentar Yaa..
             </h3>
-            <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
-              <FaLuggageCart className="text-blue-600 text-[2rem]" />
-            </div>
           </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="350"
-            className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
-          >
-            <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
-              <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xl font-medium">{totalItemMin} Barang</h3>
-                </div>
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xs font-normal">
-                    Jumlah Barang Dengan Stok Menipis
-                  </h3>
-                </div>
-              </div>
-              <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
-                <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
-                  <BiArchive className="text-blue-600 text-[1rem]" />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            data-aos="fade-up"
-            data-aos-delay="450"
-            className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
-          >
-            <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
-              <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xl font-medium">
-                    {dataStok.length} Barang
-                  </h3>
-                </div>
-                <div className="w-full flex justify-start gap-4 items-center">
-                  <h3 className="text-xs font-normal">Total Semua Barang</h3>
-                </div>
-              </div>
-              <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
-                <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
-                  <BiArchive className="text-blue-600 text-[1rem]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-aos="fade-up"
-          data-aos-delay="550"
-          className="bg-white shadow-md w-full p-6 rounded-xl flex justify-start items-center mt-5 mb-5 "
-        >
-          <h3 className="text-base text-blue-600 font-medium">
-            {dataStok.length > 0 ? dataStok[0].categoryName : ""}
-          </h3>
-        </div>
-        {isCheck == false && peran !== "Super Admin" && (
-          <>
+        </>
+      ) : (
+        <>
+          <div className="w-full h-full flex flex-col justify-start items-center pb-44">
             <div
-              data-aos="fade-up"
-              data-aos-delay="400"
-              className={`w-full ${
-                isCheck ? "h-0 p-0" : "h-auto p-4  mt-3"
-              } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md mb-5`}
+              data-aos="slide-down"
+              data-aos-delay="50"
+              className="w-full flex justify-start items-center bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
             >
-              <div
-                className={`w-full ${
-                  isCheck ? "hidden" : "flex"
-                } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
-              >
-                <h4 className="text-base font-medium">
-                  Check Data Stok Barang
-                </h4>
-              </div>
-
-              <div
-                className={`w-full ${
-                  isCheck ? "hidden" : "flex"
-                } justify-start items-end gap-4 pl-8 pr-14 mt-5`}
-              >
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Pilih Barang</h4>
-                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                    <DropdownSearch
-                      change={(data) => {
-                        setBarang(data);
-                      }}
-                      refresh={true}
-                      options={dataOption}
-                      value={barang}
-                      name={"Barang"}
-                    />
-                  </div>
-                </div>
-
-                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Jumlah Stok Fisik</h4>
-                  <input
-                    type="number"
-                    value={stok}
-                    onChange={(e) => {
-                      setStok(e.target.value);
-                    }}
-                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={addNewForm}
-                  className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative mb-2 text-black text-xl font-semibold group"
-                >
-                  <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                    <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
-                  </div>
-                  <p className="translate-x-2 text-[0.65rem] text-white">
-                    List Data
-                  </p>
-                </button>
-              </div>
-
-              {/* {addNewForm.length > 0 && (
-                <> */}
-              <div className="w-full mt-5 flex justify-center items-center px-6">
-                <div className="w-[60%]  flex justify-between items-center p-2 rounded-md bg-blue-600 text-white text-xs font-medium">
-                  <div className="w-[33%] flex justify-center items-center">
-                    Barang
-                  </div>
-                  <div className="w-[33%] flex justify-center items-center">
-                    Stok
-                  </div>
-                  <div className="w-[33%] flex justify-center items-center">
-                    Aksi
-                  </div>
-                </div>
-              </div>
-              <div className="w-full flex justify-center items-center px-6">
-                <div className="w-[60%] mt-2 shadow-md border border-blue-500 flex flex-col justify-center items-center rounded-md text-xs font-medium">
-                  {additionalForms.map((form, index) => (
-                    <>
-                      <div className="w-full mt-2 flex justify-between items-center p-2 rounded-md  text-xs font-medium">
-                        <div className="w-[45%] flex justify-center items-center">
-                          {form.barang.text}
-                        </div>
-                        <div className="w-[45%] flex justify-center items-center">
-                          {form.stok}
-                        </div>
-                        <div className="w-[45%] flex justify-center items-center">
-                          <button
-                            className="bg-red-500 flex justify-center items-center p-2 rounded-md text-white"
-                            onClick={() => removeForm(form)}
-                          >
-                            <MdDelete className="text-xl " />
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  ))}
-                </div>
-              </div>
-              {/* </>
-              )} */}
-              <div
-                className={`w-full ${
-                  isCheck ? "hidden" : "flex"
-                } justify-start items-center gap-4`}
-              >
-                <div className="text-xs flex flex-col justify-end items-start p-2 mb-2 gap-4 pt-8 ">
-                  <button
-                    type="button"
-                    onClick={handleCheck}
-                    className="bg-blue-500 text-center w-48 rounded-2xl h-10 mb-2 relative text-black text-xl font-semibold group"
-                  >
-                    <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
-                      <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
-                    </div>
-                    <p className="translate-x-2 text-[0.65rem] text-white">
-                      Check Data
-                    </p>
-                  </button>
-                </div>
-              </div>
+              <h3 className="text-white text-base font-normal">
+                Stok Kategori
+              </h3>
             </div>
-          </>
-        )}
-        {isCheck == true ||
-          (peran == "Super Admin" && (
-            <>
+            <div className="w-full flex justify-start gap-5 items-center mt-10 h-full">
               <div
                 data-aos="fade-up"
-                data-aos-delay="550"
-                className="w-full flex justify-end gap-4 mt-5 items-center p-2 rounded-md"
+                data-aos-delay="250"
+                className="cookieCard w-[40%] p-6"
               >
-                <button
-                  onClick={() => {
-                    if (isDetail) {
-                      setIsDetail(false);
-                    }
-                    setIsOpen(!isOpen);
-                    setIsCheck(false);
-                  }}
-                  type="button"
-                  className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xs font-medium group"
-                >
-                  <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
-                    <IoAddCircleOutline className="text-[18px] text-blue-700 hover:text-blue-700" />
-                  </div>
-                  <p className="translate-x-2 text-[0.65rem] text-white">
-                    Check Data
-                  </p>
-                </button>
+                <div className="cookieDescription">
+                  <h3 className="text-xl font-medium">{totalStok} Stok</h3>
+                </div>
+                <h3 className="text-xs font-normal text-white w-full">
+                  Total Jumlah Stok
+                </h3>
+                <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full">
+                  <FaLuggageCart className="text-blue-600 text-[2rem]" />
+                </div>
               </div>
-
-              <TabBar
+              <div
+                data-aos="fade-up"
+                data-aos-delay="350"
+                className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+              >
+                <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                  <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xl font-medium">
+                        {totalItemMin} Barang
+                      </h3>
+                    </div>
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xs font-normal">
+                        Jumlah Barang Dengan Stok Menipis
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                      <BiArchive className="text-blue-600 text-[1rem]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
                 data-aos="fade-up"
                 data-aos-delay="450"
-                data={allTabs}
-                onTabChange={handleTabChange}
-                index={indexTab}
-              />
-              <div
-                className={`w-full ${
-                  !isDetail ? "h-0 p-0" : "h-auto p-6 mt-5"
-                } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
+                className="w-[33%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
               >
-                <div
-                  className={`w-full ${
-                    !isDetail ? "hidden" : "flex flex-col"
-                  } justify-start items-start gap-4`}
-                >
-                  <h5 className="text-xl font-medium text-blue-600">
-                    Detail Info
-                  </h5>
-                  <h5 className="text-base font-medium">Barang</h5>
-                  <p className="text-xs font-normal">{dataDetail.item}</p>
-                  <h5 className="text-base font-medium">Jumlah Stok</h5>
-                  <p className="text-xs font-normal">
-                    {dataDetail.stok} {dataDetail.unit}
-                  </p>
-                  <h5 className="text-base font-medium">Tanggal Update</h5>
-                  <p className="text-xs font-normal">
-                    {formatTanggal(dataDetail.dateUpdate)}
-                  </p>
-                  <h5 className="text-base font-medium">Tanggal Expired</h5>
-                  <p className="text-xs font-normal">
-                    {formatTanggal(dataDetail.dateExp)}
-                  </p>
+                <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                  <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xl font-medium">
+                        {dataStok.length} Barang
+                      </h3>
+                    </div>
+                    <div className="w-full flex justify-start gap-4 items-center">
+                      <h3 className="text-xs font-normal">
+                        Total Semua Barang
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="w-[20%] flex flex-col justify-start gap-4 items-end">
+                    <div className=" w-[2.5rem] h-[2.5rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                      <BiArchive className="text-blue-600 text-[1rem]" />
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {activeTabIndex == "tab1" && (
+            <div
+              data-aos="fade-up"
+              data-aos-delay="550"
+              className="bg-white shadow-md w-full p-6 rounded-xl flex justify-start items-center mt-5 mb-5 "
+            >
+              <h3 className="text-base text-blue-600 font-medium">
+                {dataStok.length > 0 ? dataStok[0].categoryName : ""}
+              </h3>
+            </div>
+            {isCheck == false && peran !== "Super Admin" && (
+              <>
+                <div
+                  data-aos="fade-up"
+                  data-aos-delay="400"
+                  className={`w-full ${
+                    isCheck ? "h-0 p-0" : "h-auto p-4  mt-3"
+                  } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md mb-5`}
+                >
+                  <div
+                    className={`w-full ${
+                      isCheck ? "hidden" : "flex"
+                    } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
+                  >
+                    <h4 className="text-base font-medium">
+                      Check Data Stok Barang
+                    </h4>
+                  </div>
+
+                  <div
+                    className={`w-full ${
+                      isCheck ? "hidden" : "flex"
+                    } justify-start items-end gap-4 pl-8 pr-14 mt-5`}
+                  >
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Pilih Barang</h4>
+                      <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                        <DropdownSearch
+                          change={(data) => {
+                            setBarang(data);
+                          }}
+                          refresh={true}
+                          options={dataOption}
+                          value={barang}
+                          name={"Barang"}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      <h4 className="font-medium text-xs">Jumlah Stok Fisik</h4>
+                      <input
+                        type="number"
+                        value={stok}
+                        onChange={(e) => {
+                          setStok(e.target.value);
+                        }}
+                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addNewForm}
+                      className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative mb-2 text-black text-xl font-semibold group"
+                    >
+                      <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                        <PiShoppingCartBold className="text-[16px] text-blue-700 hover:text-blue-700" />
+                      </div>
+                      <p className="translate-x-2 text-[0.65rem] text-white">
+                        List Data
+                      </p>
+                    </button>
+                  </div>
+
+                  {/* {addNewForm.length > 0 && (
+                <> */}
+                  <div className="w-full mt-5 flex justify-center items-center px-6">
+                    <div className="w-[60%]  flex justify-between items-center p-2 rounded-md bg-blue-600 text-white text-xs font-medium">
+                      <div className="w-[33%] flex justify-center items-center">
+                        Barang
+                      </div>
+                      <div className="w-[33%] flex justify-center items-center">
+                        Stok
+                      </div>
+                      <div className="w-[33%] flex justify-center items-center">
+                        Aksi
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full flex justify-center items-center px-6">
+                    <div className="w-[60%] mt-2 shadow-md border border-blue-500 flex flex-col justify-center items-center rounded-md text-xs font-medium">
+                      {additionalForms.map((form, index) => (
+                        <>
+                          <div className="w-full mt-2 flex justify-between items-center p-2 rounded-md  text-xs font-medium">
+                            <div className="w-[45%] flex justify-center items-center">
+                              {form.barang.text}
+                            </div>
+                            <div className="w-[45%] flex justify-center items-center">
+                              {form.stok}
+                            </div>
+                            <div className="w-[45%] flex justify-center items-center">
+                              <button
+                                className="bg-red-500 flex justify-center items-center p-2 rounded-md text-white"
+                                onClick={() => removeForm(form)}
+                              >
+                                <MdDelete className="text-xl " />
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ))}
+                    </div>
+                  </div>
+                  {/* </>
+              )} */}
+                  <div
+                    className={`w-full ${
+                      isCheck ? "hidden" : "flex"
+                    } justify-start items-center gap-4`}
+                  >
+                    <div className="text-xs flex flex-col justify-end items-start p-2 mb-2 gap-4 pt-8 ">
+                      <button
+                        type="button"
+                        onClick={handleCheck}
+                        className="bg-blue-500 text-center w-48 rounded-2xl h-10 mb-2 relative text-black text-xl font-semibold group"
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-[0.65rem] text-white">
+                          Check Data
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            {isCheck == true ||
+              (peran == "Super Admin" && (
                 <>
-                  <div className="w-full flex justify-center items-start mt-5 h-[35rem]  mb-28">
-                    {isData ? (
-                      <>
-                        <LoaderTable />
-                      </>
-                    ) : (
-                      <>
+                  <div
+                    data-aos="fade-up"
+                    data-aos-delay="550"
+                    className="w-full flex justify-end gap-4 mt-5 items-center p-2 rounded-md"
+                  >
+                    <button
+                      onClick={() => {
+                        if (isDetail) {
+                          setIsDetail(false);
+                        }
+                        setIsOpen(!isOpen);
+                        setIsCheck(false);
+                      }}
+                      type="button"
+                      className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xs font-medium group"
+                    >
+                      <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[95%] z-10 duration-500">
+                        <IoAddCircleOutline className="text-[18px] text-blue-700 hover:text-blue-700" />
+                      </div>
+                      <p className="translate-x-2 text-[0.65rem] text-white">
+                        Check Data
+                      </p>
+                    </button>
+                  </div>
+
+                  <TabBar
+                    data-aos="fade-up"
+                    data-aos-delay="450"
+                    data={allTabs}
+                    onTabChange={handleTabChange}
+                    index={indexTab}
+                  />
+                  <div
+                    ref={targetRef}
+                    className={`w-full ${
+                      !isDetail ? "h-0 p-0" : "h-auto p-6 mt-5"
+                    } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
+                  >
+                    <div
+                      className={`w-full ${
+                        !isDetail ? "hidden" : "flex flex-col"
+                      } justify-start items-start gap-4`}
+                    >
+                      <h5 className="text-xl font-medium text-blue-600">
+                        Detail Info
+                      </h5>
+                      <h5 className="text-base font-medium">Barang</h5>
+                      <p className="text-xs font-normal">{dataDetail.item}</p>
+                      <h5 className="text-base font-medium">Jumlah Stok</h5>
+                      <p className="text-xs font-normal">
+                        {dataDetail.stok} {dataDetail.unit}
+                      </p>
+                      <h5 className="text-base font-medium">Tanggal Update</h5>
+                      <p className="text-xs font-normal">
+                        {formatTanggal(dataDetail.dateUpdate)}
+                      </p>
+                      <h5 className="text-base font-medium">Tanggal Expired</h5>
+                      <p className="text-xs font-normal">
+                        {formatTanggal(dataDetail.dateExp)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`w-full ${
+                      !isEdit ? "h-0 p-0" : "h-auto p-4  mt-3"
+                    } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
+                  >
+                    <div
+                      className={`w-full ${
+                        !isEdit ? "hidden" : "flex"
+                      } justify-start items-center gap-4 w-full border-b p-2 border-b-blue-600`}
+                    >
+                      <h4 className="text-base font-medium">
+                        Update Data Stok Barang
+                      </h4>
+                    </div>
+
+                    <div
+                      className={`w-full ${
+                        !isEdit ? "hidden" : "flex"
+                      } justify-start items-center gap-4 pl-8 pr-14 mt-5`}
+                    >
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Barang</h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          {dataDetail.item}
+                        </div>
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Satuan</h4>
+                        <input
+                          type="text"
+                          value={satuan}
+                          onChange={(e) => {
+                            setSatuan(e.target.value);
+                          }}
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Jumlah Stok</h4>
+                        <input
+                          type="number"
+                          value={stok}
+                          onChange={(e) => {
+                            setStok(e.target.value);
+                          }}
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      className={`w-full ${
+                        !isEdit ? "hidden" : "flex"
+                      } justify-start items-end gap-4 pl-8 pr-14`}
+                    >
+                      <div className="w-[32%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Tanggal </h4>
+
+                        <Space direction="vertical" size={12}>
+                          <DatePicker
+                            defaultValue={dayjs(tanggal, dateFormatList[0])}
+                            format={dateFormatList}
+                            onChange={(date) => {
+                              handleChangeDate("tanggal", date);
+                            }}
+                            className="w-[12rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          />
+                        </Space>
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Tanggal Exp. </h4>
+
+                        <Space direction="vertical" size={12}>
+                          <DatePicker
+                            defaultValue={dayjs(tanggalExp, dateFormatList[0])}
+                            format={dateFormatList}
+                            onChange={(date) => {
+                              handleChangeDate("tanggalExp", date);
+                            }}
+                            className="w-[12rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          />
+                        </Space>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`w-full ${
+                        !isEdit ? "hidden" : "flex"
+                      } justify-start items-center gap-4`}
+                    >
+                      <div className="text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
+                        <button
+                          type="button"
+                          onClick={handleUpdate}
+                          className="bg-blue-500 text-center w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                        >
+                          <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                            <FaRegSave className="text-[16px] text-blue-700 hover:text-blue-700" />
+                          </div>
+                          <p className="translate-x-2 text-[0.65rem] text-white">
+                            Update Data
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {activeTabIndex == "tab1" && (
+                    <>
+                      <div className="w-full flex justify-center items-start mt-5 h-[35rem]  mb-28">
+                        {isData ? (
+                          <>
+                            <LoaderTable />
+                          </>
+                        ) : (
+                          <>
+                            <Paper style={{ height: 400, width: "100%" }}>
+                              <MUIDataTable
+                                columns={columns}
+                                data={data}
+                                options={{
+                                  fontSize: 12,
+                                }}
+                              />
+                            </Paper>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {activeTabIndex == "tab2" && (
+                    <>
+                      <div className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28">
                         <Paper style={{ height: 400, width: "100%" }}>
                           <MUIDataTable
-                            columns={columns}
-                            data={data}
+                            columns={columnsCheck}
+                            data={dataCheck}
                             options={{
                               fontSize: 12,
                             }}
                           />
                         </Paper>
-                      </>
-                    )}
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </>
-              )}
-              {activeTabIndex == "tab2" && (
-                <>
-                  <div className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28">
-                    <Paper style={{ height: 400, width: "100%" }}>
-                      <MUIDataTable
-                        columns={columnsCheck}
-                        data={dataCheck}
-                        options={{
-                          fontSize: 12,
-                        }}
-                      />
-                    </Paper>
-                  </div>
-                </>
-              )}
-            </>
-          ))}
-      </div>
+              ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

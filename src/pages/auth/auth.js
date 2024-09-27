@@ -98,6 +98,15 @@ class Auth extends Component {
         return;
       }
 
+      if (userData.isAccess == false) {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: "Email tidak Memiliki Akses. Silakan Hubungi Super Admin.",
+          showConfirmButton: true,
+        });
+        return;
+      }
       const peran = userData.peran;
       await signInWithEmailAndPassword(auth, email, password);
 

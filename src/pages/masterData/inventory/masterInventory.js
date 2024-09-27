@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MUIDataTable from "mui-datatables";
 import "../../../styles/card.css";
 import "../../../styles/button.css";
@@ -55,6 +55,8 @@ function MasterInventory() {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+  const targetRef = useRef(null);
+
   const [tanggalExp, setTanggalExp] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
@@ -85,6 +87,9 @@ function MasterInventory() {
   ];
   const handleTabChange = (index) => {
     setActiveTabIndex(`tab${index + 1}`);
+  };
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
   };
   useEffect(() => {
     fetchItems();
@@ -427,7 +432,7 @@ function MasterInventory() {
               stock: parseInt(data.stok), // Pastikan stok sudah dalam tipe number
               dateUpdate: data.tanggal,
               dateExp: data.tanggalExp,
-              // info: data.keterangan,
+              // info: data.keterangan,85
             });
           }
 
@@ -1418,7 +1423,7 @@ function MasterInventory() {
             {activeTabIndex == "tab1" ? (
               <>
                 <div
-                  data-aos="fade-up"
+                  // data-aos="fade-up"
                   className="w-full flex justify-center items-start mt-5 h-[32rem]  mb-28"
                 >
                   {isData1 ? (
@@ -1428,7 +1433,7 @@ function MasterInventory() {
                   ) : (
                     <>
                       <Paper
-                        data-aos="fade-up"
+                        // data-aos="fade-up"
                         style={{ height: 400, width: "100%" }}
                       >
                         <MUIDataTable
@@ -1449,7 +1454,7 @@ function MasterInventory() {
               <>
                 <div className="w-full flex flex-col justify-start items-center h-full mt-5">
                   <div
-                    data-aos="fade-up"
+                    // data-aos="fade-up"
                     className="w-full rounded-xl p-4 flex justify-between items-center bg-white shadow-md"
                   >
                     <h3 className="text-base font-medium">
