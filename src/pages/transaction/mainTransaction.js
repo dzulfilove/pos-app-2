@@ -1136,7 +1136,7 @@ function MainTransaction() {
                 </div>
               </div>
               <div
-                data-aos="fade-up"
+                // data-aos="fade-up"
                 className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
               >
                 {isData ? (
