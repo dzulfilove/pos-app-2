@@ -187,6 +187,7 @@ function InventoryDetail({ params }) {
   };
 
   const updateClick = (data) => {
+    scrollToTarget();
     setIsEdit(true);
     setIsOpen(false);
     setIsDetail(false);

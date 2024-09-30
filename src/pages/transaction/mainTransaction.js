@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../component/transaction/table";
 import MUIDataTable from "mui-datatables";
 import "../../styles/card.css";
@@ -9,6 +9,8 @@ import { GiReceiveMoney } from "react-icons/gi";
 import DropdownSearch from "../../component/features/dropdown";
 import { FaRegSave } from "react-icons/fa";
 import { FaArrowTrendUp } from "react-icons/fa6";
+import { RiPencilFill } from "react-icons/ri";
+
 import {
   addDoc,
   collection,
@@ -18,6 +20,7 @@ import {
   getDocs,
   query,
   runTransaction,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { db } from "../../config/database";
@@ -55,10 +58,12 @@ function MainTransaction() {
   const [totalNominalTunai, setTotalNominalTunai] = useState(0);
   const [totalNominalNonTunai, setTotalNominalNonTunai] = useState(0);
   const [itemTerlaris, setitemTerlaris] = useState({});
+  const [dataEdit, setDataEdit] = useState({});
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
   const cabang = sessionStorage.getItem("cabang");
   const peran = sessionStorage.getItem("peran");
+  const targetRef = useRef(null);
 
   useEffect(() => {
     fetchItems();
@@ -193,7 +198,9 @@ function MainTransaction() {
       return [];
     }
   };
-
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const fetchItems = async () => {
     try {
       // Fetch items collection
@@ -430,9 +437,9 @@ function MainTransaction() {
         setJumlahBarang(0);
         setIsLoad(false);
         setJenis("");
-        getTransactions();
 
         setIsOpen(false);
+        getTransactions();
       });
     } catch (error) {
       setIsLoad(false);
@@ -533,6 +540,215 @@ function MainTransaction() {
           icon: "error",
           confirmButtonText: "OK",
         });
+      }
+    }
+  };
+
+  const updateClick = (data) => {
+    scrollToTarget();
+
+    console.log(data);
+    setIsEdit(true);
+    setJumlahBarang(data.quantity);
+    setHarga(data.price);
+    if (data.category.categoryName == "E-Money") {
+      const pay = getObject(optionPembayaran, data.payment);
+      const trans = getObject(jenisTrans, data.type);
+      setJenisPembayaran(pay);
+      setBayar(data.price);
+      setAdminFee(data.adminFee);
+      setJenisTransaksi(trans);
+      setJenis(data.category.categoryName);
+    } else {
+      const pay = getObject(optionPembayaran, data.payment);
+      setJenisPembayaran(pay);
+      setBayar(data.price);
+      setJenis(data.category.categoryName);
+    }
+
+    setDataEdit(data);
+  };
+  const handleUpdate = async () => {
+    setIsLoad(true);
+
+    // Cek kondisi input berdasarkan jenis transaksi
+    if (jenis === "E-Money") {
+      if (
+        jenisTransaksi == null ||
+        jenisPembayaran == null ||
+        bayar === 0 ||
+        adminFee === 0
+      ) {
+        let missingFields = [];
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+        if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
+        if (bayar === 0) missingFields.push("Jumlah Bayar");
+        if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+
+        setIsLoad(false);
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+        return;
+      }
+    } else {
+      if (jumlahBarang <= 0 || jenisPembayaran == null) {
+        let missingFields = [];
+        if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+
+        setIsLoad(false);
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+        return;
+      }
+    }
+
+    try {
+      // Gunakan runTransaction untuk operasi yang melibatkan stok dan transaksi
+      await runTransaction(db, async (transaction) => {
+        const transRef = doc(db, `transactions${cabang}`, dataEdit.id);
+        console.log("transfer", transRef);
+        const itemRef = doc(db, "items", dataEdit.itemId);
+
+        // Variabel yang akan digunakan untuk perhitungan stok
+        let dataItems = null;
+        let newStock = 0;
+        let ket = "";
+        let stokUbah = 0;
+
+        // Logika perubahan stok jika bukan E-Money
+        if (jenis !== "E-Money") {
+          dataItems = await getInventory(itemRef);
+          console.log(dataItems, "data Items Invent");
+          // Jika data inventory tidak ditemukan
+          if (!dataItems) {
+            Swal.fire(
+              "Gagal",
+              "Stok Barang " +
+                selectedBarang.text +
+                " Tidak Ada, Tambahkan Stok Dulu",
+              "warning"
+            );
+            return [];
+          }
+
+          // Hitung stok perubahan berdasarkan quantity sebelumnya
+          if (dataEdit.quantity > parseInt(jumlahBarang)) {
+            ket = "Ditambah";
+            stokUbah = parseInt(dataEdit.quantity) - parseInt(jumlahBarang);
+            newStock = parseInt(dataItems.stock) + stokUbah;
+          } else {
+            ket = "Dikurangi";
+            stokUbah = parseInt(jumlahBarang) - parseInt(dataEdit.quantity);
+            newStock = parseInt(dataItems.stock) - stokUbah;
+          }
+
+          // Cek apakah stok mencukupi
+          if (newStock < 0) {
+            throw new Error("Stock tidak mencukupi.");
+          }
+        }
+
+        const jam = dayjs().format("HH:mm");
+        let dataSend = {};
+
+        // Buat data yang akan dikirim ke transaksi berdasarkan jenis
+        if (jenis === "E-Money") {
+          dataSend = {
+            quantity: 1,
+            price: parseInt(bayar),
+            payment:
+              jenisTransaksi.text === "Topup"
+                ? "Admin Dalam"
+                : jenisPembayaran.value,
+            adminFee: parseInt(adminFee),
+            type: jenisTransaksi.value,
+            time: jam,
+          };
+        } else {
+          dataSend = {
+            quantity: parseInt(jumlahBarang),
+            price: parseInt(harga),
+            payment: jenisPembayaran.value,
+            time: jam,
+          };
+        }
+
+        // Update dokumen transaksi
+        await transaction.update(transRef, dataSend);
+
+        // Tambahkan ke history inventory jika bukan E-Money
+        if (jenis !== "E-Money") {
+          const categoryRef = doc(db, "category", dataEdit.categoryId);
+          const dateInput = dayjs().format("DD/MM/YYYY");
+          const timeInput = dayjs().format("HH:mm");
+          const monthInput = dayjs().format("MMMM");
+          const yearInput = dayjs().format("YYYY");
+
+          const historyData = {
+            refItem: itemRef,
+            refCategory: categoryRef,
+            stock: parseInt(jumlahBarang),
+            dateUpdate: tanggal,
+            info: `Update Penjualan ${
+              dataEdit.item.itemName
+            } ${ket} Sejumlah ${stokUbah} dengan Total Harga ${formatRupiah(
+              stokUbah * parseInt(dataEdit.price)
+            )}`,
+            dateInput: dateInput,
+            timeInput: timeInput,
+            month: monthInput,
+            year: yearInput,
+            status: "Stok Keluar",
+          };
+
+          // Tambahkan data ke history inventory
+          await transaction.set(
+            doc(collection(db, `historyInventory${cabang}`)),
+            historyData
+          );
+
+          // Update stok di inventory
+          await transaction.update(
+            doc(db, `inventorys${cabang}`, dataItems.id),
+            {
+              stock: newStock,
+              dateUpdate: tanggal,
+            }
+          );
+        }
+      });
+
+      Swal.fire("Success", "Transaction added successfully", "success");
+
+      // Reset state setelah transaksi sukses
+      setJenisPembayaran(null);
+      setRefresh(false);
+      setSelectedBarang(null);
+      setJenisPembayaran(null);
+      setJenisTransaksi(null);
+      setBayar(0);
+      setHarga(0);
+      setAdminFee(0);
+      setJumlahBarang(0);
+      setIsLoad(false);
+      setJenis("");
+      getTransactions();
+
+      setIsOpen(false);
+    } catch (error) {
+      setIsLoad(false);
+      if (error.message === "Stock tidak mencukupi.") {
+        Swal.fire("Error", "Stock tidak mencukupi", "error");
+      } else {
+        console.error("Error adding transaction: ", error);
+        Swal.fire("Error", "Failed to add transaction", "error");
       }
     }
   };
@@ -645,19 +861,18 @@ function MainTransaction() {
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>
-              {/* <div className="flex justify-start gap-4 items-center">
-                <button
-                  className="Btn-see text-white"
-                  onClick={() => {
-                    handleDetailData(value); // Kirim objek lengkap
-                  }}
-                >
-                  <span className="svgContainer">
-                    <IoEyeSharp className="text-xl " />
-                  </span>
-                  <span className="BG bg-blue-600"></span>
-                </button>
-              </div> */}
+              <button
+                className="Btn-see text-white"
+                onClick={() => {
+                  updateClick(value); // Kirim objek lengkap
+                  scrollToTarget();
+                }}
+              >
+                <span className="svgContainer">
+                  <RiPencilFill className="text-xl " />
+                </span>
+                <span className="BG bg-emerald-500"></span>
+              </button>
             </div>
           );
         },
@@ -762,7 +977,10 @@ function MainTransaction() {
           </>
         ) : (
           <>
-            <div className="w-full h-full flex flex-col justify-start items-center pb-28">
+            <div
+              ref={targetRef}
+              className="w-full h-full flex flex-col justify-start items-center pb-28"
+            >
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"
@@ -901,45 +1119,6 @@ function MainTransaction() {
                   </button>
                 </div>
               </div>
-              {/* <div
-            className={`w-full ${
-              !isDetail ? "h-0 p-0" : "h-[auto]  p-6 mt-3  "
-            } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md `}
-          >
-            <div
-              className={`w-full  ${
-                !isDetail ? "hidden" : "flex flex-col "
-              } justify-start items-start gap-4`}
-            >
-              <h5 className="text-base font-medium ">Nama Barang</h5>
-              <p className="text-xs font-normal ">{dataDetail.item.itemName}</p>
-              <h5 className="text-base font-medium ">Kategori Barang</h5>
-              <p className="text-xs font-normal ">
-                {dataDetail.category.nameCategory}
-              </p>
-              <h5 className="text-base font-medium ">Harga Beli Barang</h5>
-              <p className="text-xs font-normal ">
-                {formatRupiah(dataDetail.item.buyPrice)}
-              </p>
-              <h5 className="text-base font-medium ">Harga Jual Barang</h5>
-              <p className="text-xs font-normal ">
-                {formatRupiah(dataDetail.item.sellPrice)}
-              </p>
-
-              <div className="flex justify-start gap-6 items-center w-full pl-6">
-                <div className="text-xs font-normal w-[15%]">Stok Saat Ini</div>
-                <p className="text-xs font-normal ">: 5 Buah</p>
-              </div>
-              <div className="flex justify-start gap-6 items-center w-full pl-6">
-                <div className="text-xs font-normal w-[15%]">Stok Minimum</div>
-                <p className="text-xs font-normal ">: 5 Buah</p>
-              </div>
-              <div className="flex justify-start gap-6 items-center w-full pl-6">
-                <div className="text-xs font-normal w-[15%]">Stok Maksimum</div>
-                <p className="text-xs font-normal ">: 5 Buah</p>
-              </div>
-            </div>
-          </div> */}
 
               <div
                 className={`w-full ${
@@ -1135,6 +1314,184 @@ function MainTransaction() {
                   </button>
                 </div>
               </div>
+              {isEdit && (
+                <>
+                  <div
+                    className={`w-full ${
+                      !isEdit
+                        ? "h-0 p-0"
+                        : jenis == "E-Money"
+                        ? "h-[15rem] p-2 mt-3"
+                        : "h-[11rem] p-2 mt-3"
+                    } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
+                  >
+                    <div
+                      className={`w-full ${
+                        !isEdit ? "hidden" : "flex"
+                      } justify-start items-center gap-4`}
+                    >
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Barang</h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          {dataEdit.item.itemName}
+                        </div>
+                      </div>
+
+                      {jenis == "E-Money" ? (
+                        <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Bayar</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={bayar}
+                              onChange={(e) => {
+                                setBayar(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Nominal</h4>
+                            <input
+                              type="text"
+                              readOnly
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={formatRupiah(harga)}
+                              onChange={(e) => {
+                                setHarga(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div className="w-[20%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Jumlah Barang
+                            </h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={jumlahBarang}
+                              onChange={(e) => {
+                                setJumlahBarang(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Jenis Pembayaran
+                            </h4>
+                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                              <DropdownSearch
+                                change={(data) => {
+                                  setJenisPembayaran(data);
+                                  setRefresh(true);
+                                }}
+                                options={optionPembayaran}
+                                refresh={refresh}
+                                value={jenisPembayaran}
+                                name={"Pembayaran"}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    {jenis == "E-Money" && (
+                      <>
+                        <div
+                          className={`w-full ${
+                            !isEdit ? "hidden" : "flex"
+                          } justify-start items-end gap-4 mt-3 pl-2`}
+                        >
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Biaya Admin</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={adminFee}
+                              onChange={(e) => {
+                                setAdminFee(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Jenis Transaksi
+                            </h4>
+                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                              <DropdownSearch
+                                change={(data) => {
+                                  setRefresh(true);
+                                  setJenisTransaksi(data);
+                                  if (data.text == "Topup") {
+                                    setJenisPembayaran(
+                                      getObject(
+                                        optionPembayaranEMoney,
+                                        "Admin Dalam"
+                                      )
+                                    );
+                                  }
+                                }}
+                                options={jenisTrans}
+                                value={jenisTransaksi}
+                                refresh={refresh}
+                                name={"Transaksi"}
+                              />
+                            </div>
+                          </div>
+                          {jenisTransaksi && (
+                            <>
+                              {jenisTransaksi.text == "Topup" ? (
+                                <></>
+                              ) : (
+                                <>
+                                  <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                    <h4 className="font-medium text-xs">
+                                      Jenis Pembayaran
+                                    </h4>
+                                    <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                      <DropdownSearch
+                                        change={(data) => {
+                                          setRefresh(true);
+                                          setJenisPembayaran(data);
+                                        }}
+                                        options={optionPembayaranEMoney}
+                                        value={jenisPembayaran}
+                                        refresh={refresh}
+                                        name={"Pembayaran"}
+                                      />
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    <div
+                      className={`w-full ${
+                        !isEdit ? "hidden" : "flex"
+                      } justify-start items-end gap-4 mt-3 pl-2`}
+                    >
+                      <button
+                        type="button"
+                        className="bg-blue-500 text-center mb-2 w-48 rounded-2xl h-10 relative text-black text-xl font-semibold group"
+                        onClick={handleUpdate}
+                      >
+                        <div className="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                          <FaRegSave className="text-[20px] text-blue-700 hover:text-blue-700" />
+                        </div>
+                        <p className="translate-x-2 text-xs text-white">
+                          Update Data
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
               <div
                 // data-aos="fade-up"
                 className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
