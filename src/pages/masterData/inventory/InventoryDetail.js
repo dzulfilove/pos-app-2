@@ -189,7 +189,7 @@ function InventoryDetail({ params }) {
   const updateClick = (data) => {
     setIsEdit(true);
     setIsOpen(false);
-    isDetail(false);
+    setIsDetail(false);
     setIndexDetail(data.id);
     setDataDetail(data);
     setSatuan(data.unit);
