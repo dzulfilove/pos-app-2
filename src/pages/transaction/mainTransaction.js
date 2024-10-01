@@ -438,8 +438,8 @@ function MainTransaction() {
       setJumlahBarang(0);
       setIsLoad(false);
       setJenis("");
-
       setIsOpen(false);
+      // baru
     } catch (error) {
       setIsLoad(false);
       if (error.message === "Stock tidak mencukupi.") {
