@@ -20,6 +20,7 @@ import {
   getDocs,
   query,
   runTransaction,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -272,29 +273,27 @@ function MainTransaction() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     // setIsLoad(true);
-    if (jenis == "E-Money") {
-      // Cek jika state kosong
+    if (jenis === "E-Money") {
       if (
         selectedBarang == null ||
         jenisTransaksi == null ||
         jenisPembayaran == null ||
-        bayar == 0 ||
-        adminFee == 0
+        bayar === 0 ||
+        adminFee === 0
       ) {
         let missingFields = [];
 
         if (selectedBarang == null) missingFields.push("Barang");
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
         if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
-        if (bayar == null) missingFields.push("Jumlah Bayar");
-        if (adminFee == null) missingFields.push("Jumlah Biaya Admin");
-        setIsLoad(false);
+        if (bayar === 0) missingFields.push("Jumlah Bayar");
+        if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+
         Swal.fire(
           "Error",
           `${missingFields.join(" dan ")} tidak boleh kosong`,
           "error"
         );
-
         return;
       }
     } else {
@@ -308,139 +307,139 @@ function MainTransaction() {
         if (selectedBarang == null) missingFields.push("Barang");
         if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
-        setIsLoad(false);
+
         Swal.fire(
           "Error",
           `${missingFields.join(" dan ")} tidak boleh kosong`,
           "error"
         );
-
         return;
       }
     }
 
     try {
-      await runTransaction(db, async (transaction) => {
-        const itemRef = doc(db, "items", selectedBarang.value);
-        let dataItems = null;
-        let newStock = 0;
-        if (jenis !== "E-Money") {
-          dataItems = await getInventory(itemRef);
-          console.log(dataItems, "data Items Invent");
-          // Jika data inventory tidak ditemukan
-          if (!dataItems) {
-            Swal.fire(
-              "Gagal",
-              "Stok Barang " +
-                selectedBarang.text +
-                " Tidak Ada, Tambahkan Stok Dulu",
-              "warning"
-            );
-            return [];
-          }
+      const itemRef = doc(db, "items", selectedBarang.value);
+      let dataItems = null;
+      let newStock = 0;
 
-          // Cek apakah stok mencukupi
-          newStock = parseInt(dataItems.stock) - parseInt(jumlahBarang);
-          if (newStock < 0) {
-            throw new Error("Stock tidak mencukupi.");
-          }
+      if (jenis !== "E-Money") {
+        dataItems = await getInventory(itemRef);
+        console.log(dataItems, "data Items Invent");
+
+        if (!dataItems) {
+          Swal.fire(
+            "Gagal",
+            "Stok Barang " +
+              selectedBarang.text +
+              " Tidak Ada, Tambahkan Stok Dulu",
+            "warning"
+          );
+          return;
         }
-        const categoryRef = doc(db, "category", selectedBarang.refCategory);
-        let dataSend = {};
-        const jam = dayjs().format("HH:mm");
 
-        if (jenis == "E-Money") {
-          dataSend = {
-            refItem: itemRef,
-            refCategory: categoryRef,
-            quantity: parseInt(1),
-            price: parseInt(bayar),
-            payment:
-              jenisTransaksi.text == "Topup"
-                ? "Admin Dalam"
-                : jenisPembayaran.value,
-            adminFee: parseInt(adminFee),
-            type: jenisTransaksi.value,
-            date: tanggal,
-            month: bulan,
-            time: jam,
-            year: tahun,
-            isCheck: false,
-          };
-        } else {
-          dataSend = {
-            refItem: itemRef,
-            refCategory: categoryRef,
-            quantity: parseInt(jumlahBarang),
-            price: parseInt(harga),
-            payment: jenisPembayaran.value,
-            date: tanggal,
-            time: jam,
-            month: bulan,
-            year: tahun,
-            isCheck: false,
-          };
+        newStock = parseInt(dataItems.stock) - parseInt(jumlahBarang);
+        if (newStock < 0) {
+          throw new Error("Stock tidak mencukupi.");
         }
-        // Tambahkan data ke koleksi transactions
-        await transaction.set(
-          doc(collection(db, `transactions${cabang}`)),
-          dataSend
-        );
 
-        // Data yang akan ditambahkan ke historyInventory
-        const dateInput = dayjs().format("DD/MM/YYYY");
-        const timeInput = dayjs().format("HH:mm");
-        const monthInput = dayjs().format("MMMM");
-        const yearInput = dayjs().format("YYYY");
+        // Update stok di inventory
+        await updateDoc(doc(db, `inventorys${cabang}`, dataItems.id), {
+          stock: newStock,
+          dateUpdate: tanggal,
+        });
+      }
 
-        const historyData = {
+      const categoryRef = doc(db, "category", selectedBarang.refCategory);
+      const jam = dayjs().format("HH:mm");
+
+      let dataSend = {};
+      if (jenis === "E-Money") {
+        dataSend = {
           refItem: itemRef,
           refCategory: categoryRef,
-          stock: parseInt(jumlahBarang),
-          dateUpdate: tanggal,
-          info: `Penjualan ${
-            selectedBarang.text
-          } Sejumlah ${jumlahBarang} dengan Total Harga ${formatRupiah(
-            parseInt(jumlahBarang) * parseInt(harga)
-          )}`,
-          dateInput: dateInput,
-          timeInput: timeInput,
-          month: monthInput,
-          year: yearInput,
-          status: "Stok Keluar",
+          quantity: 1,
+          price: parseInt(bayar),
+          payment:
+            jenisTransaksi.text === "Topup"
+              ? "Admin Dalam"
+              : jenisPembayaran.value,
+          adminFee: parseInt(adminFee),
+          type: jenisTransaksi.value,
+          date: tanggal,
+          month: bulan,
+          time: jam,
+          year: tahun,
+          isCheck: false,
         };
+      } else {
+        dataSend = {
+          refItem: itemRef,
+          refCategory: categoryRef,
+          quantity: parseInt(jumlahBarang),
+          price: parseInt(harga),
+          payment: jenisPembayaran.value,
+          date: tanggal,
+          time: jam,
+          month: bulan,
+          year: tahun,
+          isCheck: false,
+        };
+      }
 
-        if (jenis != "E-Money") {
-          // Tambahkan data ke historyInventory
-          await transaction.set(
-            doc(collection(db, `historyInventory${cabang}`)),
-            historyData
-          );
+      // Tambahkan data ke koleksi transactions
+      await setDoc(doc(collection(db, `transactions${cabang}`)), dataSend);
 
-          // Update stok di inventory
-          transaction.update(doc(db, `inventorys${cabang}`, dataItems.id), {
-            stock: newStock,
-            dateUpdate: tanggal,
-          });
-        }
-        console.log(dataItems);
-        Swal.fire("Success", "Transaction added successfully", "success");
+      // Data yang akan ditambahkan ke historyInventory
+      const dateInput = dayjs().format("DD/MM/YYYY");
+      const timeInput = dayjs().format("HH:mm");
+      const monthInput = dayjs().format("MMMM");
+      const yearInput = dayjs().format("YYYY");
 
-        setJenisPembayaran(null);
-        setRefresh(false);
-        setSelectedBarang(null);
-        setJenisPembayaran(null);
-        setJenisTransaksi(null);
-        setBayar(0);
-        setHarga(0);
-        setAdminFee(0);
-        setJumlahBarang(0);
-        setIsLoad(false);
-        setJenis("");
+      const historyData = {
+        refItem: itemRef,
+        refCategory: categoryRef,
+        stock: parseInt(jumlahBarang),
+        dateUpdate: tanggal,
+        info: `Penjualan ${
+          selectedBarang.text
+        } Sejumlah ${jumlahBarang} dengan Total Harga ${formatRupiah(
+          parseInt(jumlahBarang) * parseInt(harga)
+        )}`,
+        dateInput: dateInput,
+        timeInput: timeInput,
+        month: monthInput,
+        year: yearInput,
+        status: "Stok Keluar",
+      };
 
-        setIsOpen(false);
-        getTransactions();
-      });
+      if (jenis !== "E-Money") {
+        // Tambahkan data ke historyInventory
+        await setDoc(
+          doc(collection(db, `historyInventory${cabang}`)),
+          historyData
+        );
+      }
+
+      Swal.fire("Success", "Transaction added successfully", "success");
+
+      // Panggil getTransactions setelah data di-insert
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Tambahkan delay 500ms
+      await getTransactions();
+
+      // Reset state setelah transaksi
+      setJenisPembayaran(null);
+      setRefresh(false);
+      setSelectedBarang(null);
+      setJenisPembayaran(null);
+      setJenisTransaksi(null);
+      setBayar(0);
+      setHarga(0);
+      setAdminFee(0);
+      setJumlahBarang(0);
+      setIsLoad(false);
+      setJenis("");
+
+      setIsOpen(false);
     } catch (error) {
       setIsLoad(false);
       if (error.message === "Stock tidak mencukupi.") {
