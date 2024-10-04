@@ -41,6 +41,7 @@ function MainTransaction() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [jumlahBarang, setJumlahBarang] = useState(0);
+  const [idEdit, setIdEdit] = useState("");
   const [jenisTransaksi, setJenisTransaksi] = useState(null);
   const [harga, setHarga] = useState(0);
   const [adminFee, setAdminFee] = useState(0);
@@ -53,6 +54,7 @@ function MainTransaction() {
   );
   const [bayar, setBayar] = useState(0);
   const [jenis, setJenis] = useState("");
+  const [isCash, setIsCash] = useState("");
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const [totalNominal, setTotalNominal] = useState(0);
@@ -115,6 +117,7 @@ function MainTransaction() {
             ...data,
             item: itemData,
             category: categoryData,
+            isCash: categoryData.isCash ? true : false,
             itemId: itemRef.id,
             categoryId: categoryRef.id,
             total: total, // Tambahkan properti total
@@ -224,7 +227,8 @@ function MainTransaction() {
           value: a.id,
           text: a.itemName,
           refCategory: categoryDoc.id,
-          categoryName: categoryDoc.data().nameCategory,
+          category: categoryDoc.data().nameCategory,
+          isCash: categoryDoc.data().isCash ? true : false,
           price: a.sellPrice,
         };
       });
@@ -296,7 +300,8 @@ function MainTransaction() {
         );
         return;
       }
-    } else {
+    }
+    if (jenis !== "E-Money" && isCash == false) {
       if (
         selectedBarang == null ||
         jumlahBarang <= 0 ||
@@ -316,13 +321,34 @@ function MainTransaction() {
         return;
       }
     }
+    if (jenis !== "E-Money" && isCash == true) {
+      if (
+        selectedBarang == null ||
+        bayar === 0 ||
+        adminFee === 0 ||
+        jenisPembayaran == null
+      ) {
+        let missingFields = [];
 
+        if (selectedBarang == null) missingFields.push("Barang");
+        if (bayar === 0) missingFields.push("Jumlah Bayar");
+        if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+        return;
+      }
+    }
     try {
       const itemRef = doc(db, "items", selectedBarang.value);
       let dataItems = null;
       let newStock = 0;
 
-      if (jenis !== "E-Money") {
+      if (jenis !== "E-Money" && isCash == false) {
         dataItems = await getInventory(itemRef);
         console.log(dataItems, "data Items Invent");
 
@@ -371,7 +397,24 @@ function MainTransaction() {
           year: tahun,
           isCheck: false,
         };
-      } else {
+      }
+      if (jenis !== "E-Money" && isCash == true) {
+        dataSend = {
+          refItem: itemRef,
+          refCategory: categoryRef,
+          quantity: 1,
+          price: parseInt(bayar),
+          payment: jenisPembayaran.value,
+          date: tanggal,
+          time: jam,
+          isCash: true,
+          adminFee: parseInt(adminFee),
+          month: bulan,
+          year: tahun,
+          isCheck: false,
+        };
+      }
+      if (jenis !== "E-Money" && isCash == false) {
         dataSend = {
           refItem: itemRef,
           refCategory: categoryRef,
@@ -412,7 +455,7 @@ function MainTransaction() {
         status: "Stok Keluar",
       };
 
-      if (jenis !== "E-Money") {
+      if (jenis !== "E-Money" && isCash == false) {
         // Tambahkan data ke historyInventory
         await setDoc(
           doc(collection(db, `historyInventory${cabang}`)),
@@ -438,6 +481,7 @@ function MainTransaction() {
       setJumlahBarang(0);
       setIsLoad(false);
       setJenis("");
+      setIsCash(false);
       setIsOpen(false);
       // baru
     } catch (error) {
@@ -544,28 +588,43 @@ function MainTransaction() {
   };
 
   const updateClick = (data) => {
-    scrollToTarget();
-
+    setIdEdit(data.id);
     console.log(data);
-    setIsEdit(true);
+    if (data.id !== idEdit) {
+      setIsEdit(true);
+    } else {
+      setIsEdit(false);
+    }
+    setIsOpen(false);
     setJumlahBarang(data.quantity);
     setHarga(data.price);
-    if (data.category.categoryName == "E-Money") {
-      const pay = getObject(optionPembayaran, data.payment);
+    if (data.category.nameCategory == "E-Money") {
+      const pay = getObject(optionPembayaranEMoney, data.payment);
       const trans = getObject(jenisTrans, data.type);
       setJenisPembayaran(pay);
       setBayar(data.price);
       setAdminFee(data.adminFee);
+      setIsCash(data.isCash);
       setJenisTransaksi(trans);
-      setJenis(data.category.categoryName);
-    } else {
+      setJenis(data.category.nameCategory);
+    }
+    if (data.category.nameCategory !== "E-Money" && data.isCash == false) {
       const pay = getObject(optionPembayaran, data.payment);
       setJenisPembayaran(pay);
       setBayar(data.price);
-      setJenis(data.category.categoryName);
+      setJenis(data.category.nameCategory);
+      setIsCash(data.isCash);
     }
-
+    if (data.category.nameCategory !== "E-Money" && data.isCash == true) {
+      const pay = getObject(optionPembayaran, data.payment);
+      setJenisPembayaran(pay);
+      setBayar(data.price);
+      setAdminFee(data.adminFee);
+      setJenis(data.category.nameCategory);
+      setIsCash(data.isCash);
+    }
     setDataEdit(data);
+    console.log(data.category.nameCategory, data.isCash);
   };
   const handleUpdate = async () => {
     setIsLoad(true);
@@ -592,12 +651,33 @@ function MainTransaction() {
         );
         return;
       }
-    } else {
+    }
+    if (jenis !== "E-Money") {
       if (jumlahBarang <= 0 || jenisPembayaran == null) {
         let missingFields = [];
         if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
 
+        setIsLoad(false);
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+        return;
+      }
+    }
+    if (jenis !== "E-Money" && isCash == true) {
+      if (
+        jumlahBarang <= 0 ||
+        jenisPembayaran == null ||
+        bayar === 0 ||
+        adminFee === 0
+      ) {
+        let missingFields = [];
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+        if (bayar === 0) missingFields.push("Jumlah Bayar");
+        if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
         setIsLoad(false);
         Swal.fire(
           "Error",
@@ -622,7 +702,7 @@ function MainTransaction() {
         let stokUbah = 0;
 
         // Logika perubahan stok jika bukan E-Money
-        if (jenis !== "E-Money") {
+        if (jenis !== "E-Money" && isCash == false) {
           dataItems = await getInventory(itemRef);
           console.log(dataItems, "data Items Invent");
           // Jika data inventory tidak ditemukan
@@ -658,7 +738,7 @@ function MainTransaction() {
         let dataSend = {};
 
         // Buat data yang akan dikirim ke transaksi berdasarkan jenis
-        if (jenis === "E-Money") {
+        if (jenis === "E-Money" && isCash == false) {
           dataSend = {
             quantity: 1,
             price: parseInt(bayar),
@@ -670,7 +750,15 @@ function MainTransaction() {
             type: jenisTransaksi.value,
             time: jam,
           };
-        } else {
+        } else if (jenis !== "E-Money" && isCash == true) {
+          dataSend = {
+            quantity: parseInt(jumlahBarang),
+            price: parseInt(bayar),
+            payment: jenisPembayaran.value,
+            adminFee: parseInt(adminFee),
+            time: jam,
+          };
+        } else if (jenis !== "E-Money" && isCash == false) {
           dataSend = {
             quantity: parseInt(jumlahBarang),
             price: parseInt(harga),
@@ -679,11 +767,12 @@ function MainTransaction() {
           };
         }
 
+        console.log("dataSEnd", dataSend);
         // Update dokumen transaksi
         await transaction.update(transRef, dataSend);
 
         // Tambahkan ke history inventory jika bukan E-Money
-        if (jenis !== "E-Money") {
+        if (jenis !== "E-Money" && isCash == false) {
           const categoryRef = doc(db, "category", dataEdit.categoryId);
           const dateInput = dayjs().format("DD/MM/YYYY");
           const timeInput = dayjs().format("HH:mm");
@@ -738,9 +827,11 @@ function MainTransaction() {
       setJumlahBarang(0);
       setIsLoad(false);
       setJenis("");
+      setIsCash(false);
       getTransactions();
 
       setIsOpen(false);
+      setIsEdit(false);
     } catch (error) {
       setIsLoad(false);
       if (error.message === "Stock tidak mencukupi.") {
@@ -794,10 +885,14 @@ function MainTransaction() {
               }}
               className="flex justify-start items-center gap-2 w-full"
             >
-              {value.category.nameCategory == "E-Money"
-                ? value.item.itemName == "Dana"
-                  ? value.type
-                  : `${value.type}, ${value.item.itemName}`
+              {value.category.nameCategory == "E-Money" || value.isCash == true
+                ? value.category.nameCategory == "E-Money"
+                  ? `${value.type}, ${value.item.itemName} ${formatRupiah(
+                      parseInt(value.price) - parseInt(value.adminFee)
+                    )}`
+                  : `${value.item.itemName} ${formatRupiah(
+                      parseInt(value.price) - parseInt(value.adminFee)
+                    )}`
                 : value.item.itemName}
             </button>
           );
@@ -962,7 +1057,7 @@ function MainTransaction() {
   };
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
       {" "}
       <div>
         {isLoad ? (
@@ -976,10 +1071,7 @@ function MainTransaction() {
           </>
         ) : (
           <>
-            <div
-              ref={targetRef}
-              className="w-full h-full flex flex-col justify-start items-center pb-28"
-            >
+            <div className="w-full h-full flex flex-col justify-start items-center pb-28">
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"
@@ -1107,6 +1199,7 @@ function MainTransaction() {
                         setIsDetail(false);
                       }
                       setIsOpen(!isOpen);
+                      setIsEdit(false);
                     }}
                     type="button"
                     class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
@@ -1123,7 +1216,7 @@ function MainTransaction() {
                 className={`w-full ${
                   !isOpen
                     ? "h-0 p-0"
-                    : jenis == "E-Money"
+                    : jenis == "E-Money" || isCash == true
                     ? "h-[15rem] p-2 mt-3"
                     : "h-[11rem] p-2 mt-3"
                 } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
@@ -1142,7 +1235,9 @@ function MainTransaction() {
                         change={(data) => {
                           setSelectedBarang(data);
                           setHarga(data.price);
-                          setJenis(data.categoryName);
+                          setJenis(data.category);
+                          setIsCash(data.isCash);
+                          console.log(data.category);
                           setRefresh(true);
                         }}
                         options={dataBarang}
@@ -1153,7 +1248,39 @@ function MainTransaction() {
                     </div>
                   </div>
 
-                  {jenis == "E-Money" ? (
+                  {jenis !== "E-Money" && isCash == true && (
+                    <>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Bayar</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={bayar}
+                          onChange={(e) => {
+                            setBayar(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Jenis Pembayaran
+                        </h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          <DropdownSearch
+                            change={(data) => {
+                              setJenisPembayaran(data);
+                              setRefresh(true);
+                            }}
+                            options={optionPembayaran}
+                            refresh={refresh}
+                            value={jenisPembayaran}
+                            name={"Pembayaran"}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {jenis == "E-Money" && isCash == false && (
                     <>
                       {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Nominal</h4>
@@ -1178,7 +1305,8 @@ function MainTransaction() {
                         />
                       </div>
                     </>
-                  ) : (
+                  )}
+                  {jenis != "E-Money" && isCash == false && (
                     <>
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Nominal</h4>
@@ -1223,6 +1351,27 @@ function MainTransaction() {
                     </>
                   )}
                 </div>
+                {jenis !== "E-Money" && isCash == true && (
+                  <>
+                    <div
+                      className={`w-full ${
+                        !isOpen ? "hidden" : "flex"
+                      } justify-start items-end gap-4 mt-3 pl-2`}
+                    >
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Biaya Admin</h4>
+                        <input
+                          type="number"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={adminFee}
+                          onChange={(e) => {
+                            setAdminFee(e.target.value);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
                 {jenis == "E-Money" && (
                   <>
                     <div
@@ -1241,29 +1390,35 @@ function MainTransaction() {
                           }}
                         />
                       </div>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Jenis Transaksi</h4>
-                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                          <DropdownSearch
-                            change={(data) => {
-                              setRefresh(true);
-                              setJenisTransaksi(data);
-                              if (data.text == "Topup") {
-                                setJenisPembayaran(
-                                  getObject(
-                                    optionPembayaranEMoney,
-                                    "Admin Dalam"
-                                  )
-                                );
-                              }
-                            }}
-                            options={jenisTrans}
-                            value={jenisTransaksi}
-                            refresh={refresh}
-                            name={"Transaksi"}
-                          />
-                        </div>
-                      </div>
+                      {jenis == "E-Money" && (
+                        <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Jenis Transaksi
+                            </h4>
+                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                              <DropdownSearch
+                                change={(data) => {
+                                  setRefresh(true);
+                                  setJenisTransaksi(data);
+                                  if (data.text == "Topup") {
+                                    setJenisPembayaran(
+                                      getObject(
+                                        optionPembayaranEMoney,
+                                        "Admin Dalam"
+                                      )
+                                    );
+                                  }
+                                }}
+                                options={jenisTrans}
+                                value={jenisTransaksi}
+                                refresh={refresh}
+                                name={"Transaksi"}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                       {jenisTransaksi && (
                         <>
                           {jenisTransaksi.text == "Topup" ? (
@@ -1319,7 +1474,7 @@ function MainTransaction() {
                     className={`w-full ${
                       !isEdit
                         ? "h-0 p-0"
-                        : jenis == "E-Money"
+                        : jenis == "E-Money" || isCash == true
                         ? "h-[15rem] p-2 mt-3"
                         : "h-[11rem] p-2 mt-3"
                     } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
@@ -1330,13 +1485,13 @@ function MainTransaction() {
                       } justify-start items-center gap-4`}
                     >
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Barang</h4>
+                        <h4 className="font-medium text-xs">Barang {jenis}</h4>
                         <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                           {dataEdit.item.itemName}
                         </div>
                       </div>
 
-                      {jenis == "E-Money" ? (
+                      {jenis == "E-Money" && (
                         <>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">Bayar</h4>
@@ -1350,7 +1505,8 @@ function MainTransaction() {
                             />
                           </div>
                         </>
-                      ) : (
+                      )}
+                      {jenis !== "E-Money" && isCash == false && (
                         <>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">Nominal</h4>
@@ -1396,7 +1552,61 @@ function MainTransaction() {
                           </div>
                         </>
                       )}
+
+                      {isCash == true && jenis !== "E-Money" && (
+                        <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Bayar</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={bayar}
+                              onChange={(e) => {
+                                setBayar(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Jenis Pembayaran
+                            </h4>
+                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                              <DropdownSearch
+                                change={(data) => {
+                                  setJenisPembayaran(data);
+                                  setRefresh(true);
+                                }}
+                                options={optionPembayaran}
+                                refresh={refresh}
+                                value={jenisPembayaran}
+                                name={"Pembayaran"}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
+                    {isCash == true && jenis !== "E-Money" && (
+                      <>
+                        <div
+                          className={`w-full ${
+                            !isEdit ? "hidden" : "flex"
+                          } justify-start items-end gap-4 mt-3 pl-2`}
+                        >
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Biaya Admin</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={adminFee}
+                              onChange={(e) => {
+                                setAdminFee(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
                     {jenis == "E-Money" && (
                       <>
                         <div
