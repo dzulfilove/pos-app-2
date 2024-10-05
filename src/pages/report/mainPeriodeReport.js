@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../component/transaction/table";
 import MUIDataTable from "mui-datatables";
 import "../../styles/card.css";
@@ -65,10 +65,15 @@ function PeriodeReport() {
   const [activeTabIndex, setActiveTabIndex] = useState("tab1");
   const [selectedItems, setSelectedItems] = useState([]);
   const [isData, setIsData] = useState(true);
+  const targetRef = useRef(null);
 
   useEffect(() => {
     getTransactions(bulan, tahun);
+    scrollToTarget();
   }, []);
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
 
   const getTransactions = async (month, year) => {
     setIsData(true);
@@ -117,15 +122,30 @@ function PeriodeReport() {
           const total = data.price * data.quantity;
           let profit = 0;
 
+          if (categoryData.nameCategory == "E-Money") {
+            profit = data.adminFee;
+          }
+
           if (
-            itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
-            itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+            itemData.itemName.toLowerCase().includes("pendapatan") ||
+            itemData.itemName.toLowerCase().includes("piutang")
           ) {
             profit = total;
-          } else {
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            !categoryData.isCash
+          ) {
             profit = total - data.quantity * itemData.buyPrice;
           }
-          if (categoryData.nameCategory == "E-Money") {
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash
+          ) {
             profit = data.adminFee;
           }
           return {
@@ -453,7 +473,11 @@ function PeriodeReport() {
 
   const dataAll = dataTransaction.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: a.category.isCash
+        ? `${a.item.itemName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
       data: a,
@@ -461,7 +485,11 @@ function PeriodeReport() {
   });
   const dataCash = dataTunai.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: a.category.isCash
+        ? `${a.item.itemName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
       data: a,
@@ -470,7 +498,11 @@ function PeriodeReport() {
 
   const dataNonCash = dataNonTunai.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: a.category.isCash
+        ? `${a.item.itemName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
       payment: a.payment,
@@ -495,7 +527,7 @@ function PeriodeReport() {
 
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
       {" "}
       <div>
         <div className="w-full h-full flex flex-col justify-start items-center pb-25">
@@ -667,7 +699,7 @@ function PeriodeReport() {
             <>
               <div
                 // data-aos="fade-up"
-                className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
+                className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28"
               >
                 {isData ? (
                   <>
@@ -700,7 +732,7 @@ function PeriodeReport() {
             <>
               <div
                 // data-aos="fade-up"
-                className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
+                className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 "
               >
                 {isData ? (
                   <>
@@ -751,7 +783,7 @@ function PeriodeReport() {
                   </p>
                 </div>
               </div>
-              <div className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll">
+              <div className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 ">
                 {isData ? (
                   <>
                     <LoaderTable />

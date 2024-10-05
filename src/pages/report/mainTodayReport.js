@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../component/transaction/table";
 import MUIDataTable from "mui-datatables";
 import "../../styles/card.css";
@@ -65,11 +65,15 @@ function TodayReport() {
   const [isLoad, setIsLoad] = useState(false);
   const cabang = sessionStorage.getItem("cabang");
   const peran = sessionStorage.getItem("peran");
+  const targetRef = useRef(null);
 
   useEffect(() => {
     getTransactions();
+    scrollToTarget();
   }, []);
-
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const getTransactions = async () => {
     try {
       // Buat query dengan filter where
@@ -120,14 +124,27 @@ function TodayReport() {
             let profit = 0;
 
             if (
-              itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
-              itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+              itemData.itemName.toLowerCase().includes("pendapatan") ||
+              itemData.itemName.toLowerCase().includes("piutang")
             ) {
               profit = total;
-            } else {
+            }
+
+            if (
+              !itemData.itemName.toLowerCase().includes("pendapatan") &&
+              !itemData.itemName.toLowerCase().includes("piutang") &&
+              !categoryData.isCash
+            ) {
               profit = total - data.quantity * itemData.buyPrice;
             }
 
+            if (
+              !itemData.itemName.toLowerCase().includes("pendapatan") &&
+              !itemData.itemName.toLowerCase().includes("piutang") &&
+              categoryData.isCash
+            ) {
+              profit = data.adminFee;
+            }
             return {
               id: doc.id,
               ...data,
@@ -932,7 +949,11 @@ function TodayReport() {
 
   const dataAll = dataTransaction.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: a.category.isCash
+        ? `${a.item.itemName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
       data: a,
@@ -940,7 +961,11 @@ function TodayReport() {
   });
   const dataCash = dataTunai.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: a.category.isCash
+        ? `${a.item.itemName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
       data: a,
@@ -949,7 +974,11 @@ function TodayReport() {
 
   const dataNonCash = dataNonTunai.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: a.category.isCash
+        ? `${a.item.itemName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
       payment: a.payment,
@@ -974,7 +1003,7 @@ function TodayReport() {
 
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
       {" "}
       <div>
         {isLoad ? (
@@ -1195,7 +1224,7 @@ function TodayReport() {
                       <>
                         <div
                           // data-aos="fade-up"
-                          className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
+                          className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 "
                         >
                           {isData ? (
                             <>
@@ -1228,7 +1257,7 @@ function TodayReport() {
                       <>
                         <div
                           // data-aos="fade-up"
-                          className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
+                          className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 "
                         >
                           {isData ? (
                             <>
