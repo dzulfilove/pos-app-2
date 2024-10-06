@@ -68,8 +68,9 @@ function TodayReport() {
   const targetRef = useRef(null);
 
   useEffect(() => {
-    getTransactions();
     scrollToTarget();
+
+    getTransactions();
   }, []);
   const scrollToTarget = () => {
     targetRef.current.scrollIntoView({ behavior: "smooth" });
@@ -152,6 +153,7 @@ function TodayReport() {
               category: categoryData,
               itemId: itemRef.id,
               profit: profit,
+              isCash: categoryData.isCash ? true : false,
               categoryId: categoryRef.id,
               total: total, // Tambahkan properti total
             };
@@ -164,22 +166,22 @@ function TodayReport() {
         if (dataFull.length > 0) {
           // Menghitung total dari semua transaksi
           const totalNominal = dataFull
-            .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+            .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
             .reduce((acc, transaction) => acc + transaction.total, 0);
 
           const totalPiutang = dataFull
-            .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
+            .filter((a) => a.item.itemName.toLowerCase().includes("piutang"))
             .reduce((acc, transaction) => acc + transaction.total, 0);
 
           const profitTotal = dataFull
-            .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+            .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
             .reduce((acc, transaction) => acc + transaction.profit, 0);
           // Menghitung total untuk payment "Tunai"
           const totalNominalTunai = dataFull
             .filter(
               (transaction) =>
                 transaction.payment === "Tunai" &&
-                transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+                !transaction.item.itemName.toLowerCase().includes("piutang")
             )
             .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -188,7 +190,7 @@ function TodayReport() {
             .filter(
               (transaction) =>
                 transaction.payment !== "Tunai" &&
-                transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+                !transaction.item.itemName.toLowerCase().includes("piutang")
             )
             .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -255,10 +257,13 @@ function TodayReport() {
           setTotalNominal(totalNominal); // Simpan total nominal ke state
           setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
           setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
+          scrollToTarget();
         } else {
           setIsData(false);
         }
+        scrollToTarget();
       }
+      scrollToTarget();
     } catch (e) {
       Swal.fire({
         title: "Error!",
@@ -308,25 +313,21 @@ function TodayReport() {
       try {
         const itemRef = doc(db, "items", data.itemId);
         const categoryRef = doc(db, "category", data.categoryId);
+        const dataRef = doc(db, `transactions${cabang}`, data.id);
 
         // Jalankan transaction
         await runTransaction(db, async (transaction) => {
-          // Dapatkan data inventory terkait
-          const dataItems = await getInventory(itemRef);
-          if (!dataItems) {
-            throw new Error("Inventory data not found.");
-          }
-
-          const dataRef = doc(db, `transactions${cabang}`, data.id);
-
           // Hapus dokumen dari Firestore (transactions)
           transaction.delete(dataRef);
 
-          // Periksa apakah itemId sesuai dengan pengecualian
-          if (
-            data.itemId !== "GBwAvYWhBOpnvkUBDCV6" &&
-            data.itemId !== "zYIsvQcu1HFFYBsfnCF7"
-          ) {
+          // Jika data.isCash == false, jalankan insert history dan update inventory
+          if (!data.isCash) {
+            // Dapatkan data inventory terkait
+            const dataItems = await getInventory(itemRef);
+            if (!dataItems) {
+              throw new Error("Inventory data not found.");
+            }
+
             // Data yang akan ditambahkan ke historyInventory
             const dateInput = dayjs().format("DD/MM/YYYY");
             const timeInput = dayjs().format("HH:mm");
@@ -950,7 +951,7 @@ function TodayReport() {
   const dataAll = dataTransaction.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${formatRupiah(
+        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
             parseInt(a.price) - parseInt(a.adminFee)
           )}`
         : a.item.itemName,
@@ -962,7 +963,7 @@ function TodayReport() {
   const dataCash = dataTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${formatRupiah(
+        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
             parseInt(a.price) - parseInt(a.adminFee)
           )}`
         : a.item.itemName,
@@ -975,7 +976,7 @@ function TodayReport() {
   const dataNonCash = dataNonTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${formatRupiah(
+        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
             parseInt(a.price) - parseInt(a.adminFee)
           )}`
         : a.item.itemName,

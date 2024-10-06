@@ -48,6 +48,7 @@ function MasterBarang() {
   useEffect(() => {
     fetchCategories();
     getItems();
+    scrollToTarget();
   }, []);
   const fetchCategories = async () => {
     try {

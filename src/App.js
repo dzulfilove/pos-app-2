@@ -24,7 +24,7 @@ import "aos/dist/aos.css";
 import "dayjs/locale/id";
 import { IoStatsChartSharp } from "react-icons/io5";
 import { IoMdExit } from "react-icons/io";
-
+import logo from "./styles/logo.png";
 import { BsPersonLinesFill } from "react-icons/bs";
 import Dashboard from "./pages/dashboard/dashboard";
 import MainBarang from "./pages/masterData/barang/mainBarang";
@@ -136,14 +136,14 @@ const App = () => {
                   open ? "w-[12rem]" : "w-[6rem]"
                 } duration-500 text-gray-100 px-4 text-sm border-r-2 border-r-blue-100 rounded-tr-xl rounded-br-xl shadow-blue-600 shadow-xl`}
               >
-                <div className="flex justify-between items-center mt-12 w-full border-b border-b-slate-600 pb-12">
+                <div className="flex justify-between items-center mt-12 w-full border-b border-b-slate-600 pb-3">
                   <div
                     className={`flex ${
                       open ? "px-4" : "px-0"
                     }items-center justify-center gap-2 py-5.5 lg:py-6.5  w-full `}
                   >
                     <div
-                      className="flex px-1 justify-center gap-5 w-full items-center text-blue-100  "
+                      className="flex px-1 flex-col justify-center gap-3 mt-7 w-full items-center text-blue-100  "
                       onClick={() => {
                         window.location.href = "/";
                       }}
@@ -151,6 +151,10 @@ const App = () => {
                       {/* <FaRegUser /> */}
                       {open && (
                         <>
+                          <img
+                            srcSet={logo}
+                            className="w-[4rem] h-[4rem] object-cover "
+                          />
                           <h5
                             style={{
                               transitionDelay: `${4}00ms`,

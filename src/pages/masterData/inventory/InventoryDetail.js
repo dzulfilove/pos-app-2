@@ -136,7 +136,10 @@ function InventoryDetail({ params }) {
       );
 
       // Menghitung total stock
-      const totalStock = items.reduce((total, item) => total + item.stock, 0);
+      const totalStock = items.reduce(
+        (total, item) => total + parseInt(item.stock),
+        0
+      );
 
       // Menghitung jumlah objek yang stok-nya lebih kecil dari minStock
       const countBelowMinStock = items.filter(
@@ -223,7 +226,7 @@ function InventoryDetail({ params }) {
       await getInventory();
       Swal.fire({
         title: "Sukses!",
-        text: "Data kategori berhasil diperbarui.",
+        text: "Data Stok berhasil diperbarui.",
         icon: "success",
         confirmButtonText: "OK",
       });
@@ -234,7 +237,7 @@ function InventoryDetail({ params }) {
       // Tampilkan alert error
       Swal.fire({
         title: "Error!",
-        text: "Terjadi kesalahan saat memperbarui data kategori.",
+        text: "Terjadi kesalahan saat memperbarui data Stok.",
         icon: "error",
         confirmButtonText: "OK",
       });

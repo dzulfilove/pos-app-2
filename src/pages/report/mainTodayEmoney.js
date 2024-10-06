@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../component/transaction/table";
 import MUIDataTable from "mui-datatables";
 import "../../styles/card.css";
@@ -68,11 +68,15 @@ function TodayEmoney() {
   const [isData, setIsData] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
   const cabang = sessionStorage.getItem("cabang");
-
+  const targetRef = useRef(null);
   useEffect(() => {
     getTransactions();
+    scrollToTarget();
   }, []);
 
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const getTransactions = async () => {
     try {
       // Buat query dengan filter where
@@ -444,7 +448,7 @@ function TodayEmoney() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value.item.itemName}{" "}
+              {value.type} {value.productName}{" "}
               {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
             </button>
           );
@@ -554,7 +558,7 @@ function TodayEmoney() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value.item.itemName}{" "}
+              {value.type} {value.productName}{" "}
               {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
             </button>
           );
@@ -689,7 +693,7 @@ function TodayEmoney() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value.item.itemName}{" "}
+              {value.type} {value.productName}{" "}
               {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
             </button>
           );
@@ -791,7 +795,7 @@ function TodayEmoney() {
 
   const dataAll = dataTransaction.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: `${a.type} ${a.productName}`,
       jumlah: a.quantity,
       harga: a.price,
       payment: a.payment,
@@ -802,7 +806,7 @@ function TodayEmoney() {
   });
   const dataCash = dataTarik.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: `${a.type} ${a.productName}`,
       jumlah: a.quantity,
       harga: a.price,
       payment: a.payment,
@@ -814,7 +818,7 @@ function TodayEmoney() {
 
   const dataNonCash = dataTopup.map((a) => {
     return {
-      itemName: a.item.itemName,
+      itemName: `${a.type} ${a.productName}`,
       jumlah: a.quantity,
       harga: a.price,
       payment: a.payment,
@@ -855,7 +859,10 @@ function TodayEmoney() {
           </>
         ) : (
           <>
-            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+            <div
+              ref={targetRef}
+              className="w-full h-full flex flex-col justify-start items-center pb-25"
+            >
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

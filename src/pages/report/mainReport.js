@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import "../../styles/card.css";
 import "../../styles/button.css";
 import { FaCartShopping } from "react-icons/fa6";
@@ -11,12 +11,24 @@ import { FaMoneyBillWave } from "react-icons/fa6";
 import AOS from "aos";
 import { GiProfit } from "react-icons/gi";
 import "aos/dist/aos.css";
+
 function MainReport() {
   const peran = sessionStorage.getItem("peran");
+  const targetRef = useRef(null);
 
+  useEffect(() => {
+    scrollToTarget();
+  }, []);
+
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   return (
     <div>
-      <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+      <div
+        ref={targetRef}
+        className="w-full h-full flex flex-col justify-start items-center pb-25"
+      >
         <div
           data-aos="slide-down"
           data-aos-delay="50"

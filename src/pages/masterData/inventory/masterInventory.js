@@ -93,6 +93,7 @@ function MasterInventory() {
   };
   useEffect(() => {
     fetchItems();
+    scrollToTarget();
     getInventory();
     getHistoryInventory(bulan, tahun);
   }, []);
@@ -194,7 +195,7 @@ function MasterInventory() {
       // Konversi hasil pengelompokan menjadi array
       const groupedArray = Object.values(groupedData);
       const totalStok = filteredItems.reduce((total, item) => {
-        return total + (item.stock || 0);
+        return total + (parseInt(item.stock) || 0);
       }, 0);
 
       setTotalStok(totalStok);
@@ -588,7 +589,10 @@ function MasterInventory() {
         </>
       ) : (
         <>
-          <div className="w-full h-full flex flex-col justify-start items-center">
+          <div
+            ref={targetRef}
+            className="w-full h-full flex flex-col justify-start items-center"
+          >
             <div
               data-aos="slide-down"
               data-aos-delay="50"

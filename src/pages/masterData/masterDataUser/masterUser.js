@@ -126,6 +126,7 @@ function MasterUser() {
       setIsLoad(false);
       getAllUser();
       setRefresh(false);
+      setAkses(null);
       Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -512,7 +513,7 @@ function MasterUser() {
             </div>
             <div
               className={`w-full ${
-                !isOpen ? "h-0 p-0" : "h-[12rem] p-2 mt-3"
+                !isOpen ? "h-0 p-0" : "h-[16rem] p-2 mt-3"
               } duration-500 flex-col justify-start items-end rounded-md bg-white shadow-md`}
             >
               <div
@@ -606,6 +607,32 @@ function MasterUser() {
                     />
                   </div>
                 </div>
+
+                {!isEdit && (
+                  <>
+                    <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                      <h4 className="font-medium text-xs">Boleh Akses ?</h4>
+                      <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                        <DropdownSearch
+                          change={(data) => {
+                            setAkses(data);
+                            setRefresh(true);
+                          }}
+                          options={optionAkses}
+                          value={akses}
+                          refresh={refresh}
+                          name={"Akses Sistem"}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div
+                className={`w-full ${
+                  !isOpen ? "hidden" : "flex"
+                } justify-start items-center gap-4`}
+              >
                 <div className="w-[33%] text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
                   {isEdit == true && (
                     <>
@@ -643,9 +670,9 @@ function MasterUser() {
               </div>
             </div>
             <div
-              data-aos="fade-up"
+              // data-aos="fade-up"
               data-aos-delay="450"
-              className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
+              className="w-full flex justify-center items-start mt-5 h-[35rem] mb-28 "
             >
               {isData ? (
                 <>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../component/transaction/table";
 import MUIDataTable from "mui-datatables";
 import "../../styles/card.css";
@@ -57,9 +57,15 @@ function HistoryStok() {
   const nama = sessionStorage.getItem("nama");
   const [isData, setIsData] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
+  const targetRef = useRef(null);
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    scrollToTarget();
+  }, []);
 
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const getHistory = async (tgl) => {
     try {
       // Menggunakan `&&` untuk menggabungkan kondisi di `where`
@@ -250,7 +256,10 @@ function HistoryStok() {
           </>
         ) : (
           <>
-            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+            <div
+              ref={targetRef}
+              className="w-full h-full flex flex-col justify-start items-center pb-25"
+            >
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

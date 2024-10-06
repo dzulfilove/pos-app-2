@@ -474,7 +474,11 @@ function PeriodeReport() {
   const dataAll = dataTransaction.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${formatRupiah(
+        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.category.nameCategory == "E-Money"
+        ? `${a.type} ${a.productName} ${formatRupiah(
             parseInt(a.price) - parseInt(a.adminFee)
           )}`
         : a.item.itemName,
@@ -486,7 +490,11 @@ function PeriodeReport() {
   const dataCash = dataTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${formatRupiah(
+        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.category.nameCategory == "E-Money"
+        ? `${a.type} ${a.productName} ${formatRupiah(
             parseInt(a.price) - parseInt(a.adminFee)
           )}`
         : a.item.itemName,
@@ -499,7 +507,11 @@ function PeriodeReport() {
   const dataNonCash = dataNonTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${formatRupiah(
+        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
+            parseInt(a.price) - parseInt(a.adminFee)
+          )}`
+        : a.category.nameCategory == "E-Money"
+        ? `${a.type} ${a.productName} ${formatRupiah(
             parseInt(a.price) - parseInt(a.adminFee)
           )}`
         : a.item.itemName,

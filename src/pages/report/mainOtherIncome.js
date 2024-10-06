@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TableData from "../../component/transaction/table";
 import MUIDataTable from "mui-datatables";
 import "../../styles/card.css";
@@ -78,11 +78,15 @@ function OtherIncomeReport() {
   const nama = sessionStorage.getItem("nama");
   const [isData, setIsData] = useState(true);
   const [isLoad, setIsLoad] = useState(false);
-
+  const targetRef = useRef(null);
   useEffect(() => {
     getTransactions(bulan, tahun);
+    scrollToTarget();
   }, []);
 
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const getTransactions = async (month, year) => {
     try {
       // Buat query dengan filter where
@@ -704,7 +708,10 @@ function OtherIncomeReport() {
           </>
         ) : (
           <>
-            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+            <div
+              ref={targetRef}
+              className="w-full h-full flex flex-col justify-start items-center pb-25"
+            >
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

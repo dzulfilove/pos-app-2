@@ -62,6 +62,7 @@ function MainTransaction() {
   const [totalNominalNonTunai, setTotalNominalNonTunai] = useState(0);
   const [itemTerlaris, setitemTerlaris] = useState({});
   const [dataEdit, setDataEdit] = useState({});
+  const [namaProduk, setNamaProduk] = useState("");
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
   const cabang = sessionStorage.getItem("cabang");
@@ -71,6 +72,7 @@ function MainTransaction() {
   useEffect(() => {
     fetchItems();
     getTransactions();
+    scrollToTarget();
   }, []);
 
   const getTransactions = async () => {
@@ -283,7 +285,8 @@ function MainTransaction() {
         jenisTransaksi == null ||
         jenisPembayaran == null ||
         bayar === 0 ||
-        adminFee === 0
+        adminFee === 0 ||
+        namaProduk == ""
       ) {
         let missingFields = [];
 
@@ -292,6 +295,7 @@ function MainTransaction() {
         if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
         if (bayar === 0) missingFields.push("Jumlah Bayar");
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+        if (namaProduk == "") missingFields.push("Nama E-Money");
 
         Swal.fire(
           "Error",
@@ -326,6 +330,7 @@ function MainTransaction() {
         selectedBarang == null ||
         bayar === 0 ||
         adminFee === 0 ||
+        namaProduk == "" ||
         jenisPembayaran == null
       ) {
         let missingFields = [];
@@ -334,6 +339,7 @@ function MainTransaction() {
         if (bayar === 0) missingFields.push("Jumlah Bayar");
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+        if (namaProduk == "") missingFields.push("Nama Produk");
 
         Swal.fire(
           "Error",
@@ -382,6 +388,7 @@ function MainTransaction() {
       if (jenis === "E-Money") {
         dataSend = {
           refItem: itemRef,
+          productName: namaProduk,
           refCategory: categoryRef,
           quantity: 1,
           price: parseInt(bayar),
@@ -401,6 +408,7 @@ function MainTransaction() {
       if (jenis !== "E-Money" && isCash == true) {
         dataSend = {
           refItem: itemRef,
+          productName: namaProduk,
           refCategory: categoryRef,
           quantity: 1,
           price: parseInt(bayar),
@@ -483,6 +491,7 @@ function MainTransaction() {
       setJenis("");
       setIsCash(false);
       setIsOpen(false);
+      setNamaProduk("");
       // baru
     } catch (error) {
       setIsLoad(false);
@@ -508,48 +517,46 @@ function MainTransaction() {
     });
 
     if (confirmDelete.isConfirmed) {
-      // setIsLoad(true);
       try {
         const itemRef = doc(db, "items", data.itemId);
         const categoryRef = doc(db, "category", data.categoryId);
+        const dataRef = doc(db, `transactions${cabang}`, data.id);
 
         // Jalankan transaction
         await runTransaction(db, async (transaction) => {
-          // Dapatkan data inventory terkait
-          const dataItems = await getInventory(itemRef);
-          if (!dataItems) {
-            throw new Error("Inventory data not found.");
-          }
+          if (
+            data.category.nameCategory !== "E-Money" &&
+            data.isCash == false
+          ) {
+            // Dapatkan data inventory terkait
+            const dataItems = await getInventory(itemRef);
+            if (!dataItems) {
+              throw new Error("Inventory data not found.");
+            }
 
-          const dataRef = doc(db, `transactions${cabang}`, data.id);
+            // Data yang akan ditambahkan ke historyInventory
+            const dateInput = dayjs().format("DD/MM/YYYY");
+            const timeInput = dayjs().format("HH:mm");
+            const monthInput = dayjs().format("MMMM");
+            const yearInput = dayjs().format("YYYY");
 
-          // Hapus dokumen dari Firestore (transactions)
-          transaction.delete(dataRef);
+            const historyData = {
+              refItem: itemRef,
+              refCategory: categoryRef,
+              stock: parseInt(data.quantity),
+              dateUpdate: tanggal,
+              info: `Penghapusan Data Transaksi ${
+                data.item.itemName
+              } Sejumlah ${data.quantity} dengan Total Harga ${formatRupiah(
+                parseInt(data.quantity) * parseInt(data.price)
+              )} Oleh ${nama}`,
+              dateInput: dateInput,
+              timeInput: timeInput,
+              month: monthInput,
+              year: yearInput,
+              status: "Stok Masuk",
+            };
 
-          // Data yang akan ditambahkan ke historyInventory
-          const dateInput = dayjs().format("DD/MM/YYYY");
-          const timeInput = dayjs().format("HH:mm");
-          const monthInput = dayjs().format("MMMM");
-          const yearInput = dayjs().format("YYYY");
-
-          const historyData = {
-            refItem: itemRef,
-            refCategory: categoryRef,
-            stock: parseInt(data.quantity),
-            dateUpdate: tanggal,
-            info: `Penghapusan Data Transaksi ${data.item.itemName} Sejumlah ${
-              data.quantity
-            } dengan Total Harga ${formatRupiah(
-              parseInt(data.quantity) * parseInt(data.price)
-            )} Oleh ${nama}`,
-            dateInput: dateInput,
-            timeInput: timeInput,
-            month: monthInput,
-            year: yearInput,
-            status: "Stok Masuk",
-          };
-
-          if (jenis != "E-Money") {
             // Tambahkan data ke historyInventory
             transaction.set(
               doc(collection(db, `historyInventory${cabang}`)),
@@ -563,6 +570,9 @@ function MainTransaction() {
               dateUpdate: tanggal,
             });
           }
+
+          // Hapus dokumen dari Firestore (transactions)
+          transaction.delete(dataRef);
         });
 
         setIsLoad(false);
@@ -603,6 +613,7 @@ function MainTransaction() {
       const trans = getObject(jenisTrans, data.type);
       setJenisPembayaran(pay);
       setBayar(data.price);
+      setNamaProduk(data.productName);
       setAdminFee(data.adminFee);
       setIsCash(data.isCash);
       setJenisTransaksi(trans);
@@ -619,6 +630,7 @@ function MainTransaction() {
       const pay = getObject(optionPembayaran, data.payment);
       setJenisPembayaran(pay);
       setBayar(data.price);
+      setNamaProduk(data.productName);
       setAdminFee(data.adminFee);
       setJenis(data.category.nameCategory);
       setIsCash(data.isCash);
@@ -635,13 +647,15 @@ function MainTransaction() {
         jenisTransaksi == null ||
         jenisPembayaran == null ||
         bayar === 0 ||
-        adminFee === 0
+        adminFee === 0 ||
+        namaProduk == ""
       ) {
         let missingFields = [];
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
         if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
         if (bayar === 0) missingFields.push("Jumlah Bayar");
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+        if (namaProduk === 0) missingFields.push("Nama Product");
 
         setIsLoad(false);
         Swal.fire(
@@ -672,12 +686,15 @@ function MainTransaction() {
         jumlahBarang <= 0 ||
         jenisPembayaran == null ||
         bayar === 0 ||
-        adminFee === 0
+        adminFee === 0 ||
+        namaProduk == ""
       ) {
         let missingFields = [];
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
         if (bayar === 0) missingFields.push("Jumlah Bayar");
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+        if (namaProduk === 0) missingFields.push("Nama Product");
+
         setIsLoad(false);
         Swal.fire(
           "Error",
@@ -740,6 +757,7 @@ function MainTransaction() {
         // Buat data yang akan dikirim ke transaksi berdasarkan jenis
         if (jenis === "E-Money" && isCash == false) {
           dataSend = {
+            productName: namaProduk,
             quantity: 1,
             price: parseInt(bayar),
             payment:
@@ -752,6 +770,8 @@ function MainTransaction() {
           };
         } else if (jenis !== "E-Money" && isCash == true) {
           dataSend = {
+            productName: namaProduk,
+
             quantity: parseInt(jumlahBarang),
             price: parseInt(bayar),
             payment: jenisPembayaran.value,
@@ -822,6 +842,7 @@ function MainTransaction() {
       setJenisPembayaran(null);
       setJenisTransaksi(null);
       setBayar(0);
+      setNamaProduk("");
       setHarga(0);
       setAdminFee(0);
       setJumlahBarang(0);
@@ -829,7 +850,7 @@ function MainTransaction() {
       setJenis("");
       setIsCash(false);
       getTransactions();
-
+      setIdEdit("");
       setIsOpen(false);
       setIsEdit(false);
     } catch (error) {
@@ -887,10 +908,10 @@ function MainTransaction() {
             >
               {value.category.nameCategory == "E-Money" || value.isCash == true
                 ? value.category.nameCategory == "E-Money"
-                  ? `${value.type}, ${value.item.itemName} ${formatRupiah(
+                  ? `${value.type}, ${value.productName} ${formatRupiah(
                       parseInt(value.price) - parseInt(value.adminFee)
                     )}`
-                  : `${value.item.itemName} ${formatRupiah(
+                  : `${value.productName} ${formatRupiah(
                       parseInt(value.price) - parseInt(value.adminFee)
                     )}`
                 : value.item.itemName}
@@ -1251,6 +1272,17 @@ function MainTransaction() {
                   {jenis !== "E-Money" && isCash == true && (
                     <>
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">Nama Produk</h4>
+                        <input
+                          type="text"
+                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                          value={namaProduk}
+                          onChange={(e) => {
+                            setNamaProduk(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Bayar</h4>
                         <input
                           type="number"
@@ -1261,38 +1293,23 @@ function MainTransaction() {
                           }}
                         />
                       </div>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">
-                          Jenis Pembayaran
-                        </h4>
-                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                          <DropdownSearch
-                            change={(data) => {
-                              setJenisPembayaran(data);
-                              setRefresh(true);
-                            }}
-                            options={optionPembayaran}
-                            refresh={refresh}
-                            value={jenisPembayaran}
-                            name={"Pembayaran"}
-                          />
-                        </div>
-                      </div>
                     </>
                   )}
                   {jenis == "E-Money" && isCash == false && (
                     <>
-                      {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Nominal</h4>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Nama {selectedBarang.text}
+                        </h4>
                         <input
-                          type="number"
+                          type="text"
                           className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                          value={harga}
+                          value={namaProduk}
                           onChange={(e) => {
-                            setHarga(e.target.value);
+                            setNamaProduk(e.target.value);
                           }}
                         />
-                      </div> */}
+                      </div>
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Bayar</h4>
                         <input
@@ -1368,6 +1385,23 @@ function MainTransaction() {
                             setAdminFee(e.target.value);
                           }}
                         />
+                      </div>
+                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                        <h4 className="font-medium text-xs">
+                          Jenis Pembayaran
+                        </h4>
+                        <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                          <DropdownSearch
+                            change={(data) => {
+                              setJenisPembayaran(data);
+                              setRefresh(true);
+                            }}
+                            options={optionPembayaran}
+                            refresh={refresh}
+                            value={jenisPembayaran}
+                            name={"Pembayaran"}
+                          />
+                        </div>
                       </div>
                     </div>
                   </>
@@ -1494,6 +1528,19 @@ function MainTransaction() {
                       {jenis == "E-Money" && (
                         <>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Nama {dataEdit.item.itemName}
+                            </h4>
+                            <input
+                              type="text"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={namaProduk}
+                              onChange={(e) => {
+                                setNamaProduk(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">Bayar</h4>
                             <input
                               type="number"
@@ -1555,6 +1602,19 @@ function MainTransaction() {
 
                       {isCash == true && jenis !== "E-Money" && (
                         <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Nama {dataEdit.item.itemName}
+                            </h4>
+                            <input
+                              type="text"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={namaProduk}
+                              onChange={(e) => {
+                                setNamaProduk(e.target.value);
+                              }}
+                            />
+                          </div>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">Bayar</h4>
                             <input

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MUIDataTable from "mui-datatables";
 import "../../../styles/card.css";
 import { Paper, Button } from "@mui/material";
@@ -23,6 +23,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import Loader from "../../../component/features/loader";
 import LoaderTable from "../../../component/features/loader2";
+import DropdownSearch from "../../../component/features/dropdown";
 function MasterKategori() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -35,10 +36,17 @@ function MasterKategori() {
   const [dataCategory, setDataCategory] = useState([]);
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
-
+  const targetRef = useRef(null);
+  const [refresh, setRefresh] = useState(true);
+  const [akses, setAkses] = useState({});
   useEffect(() => {
     getAllCategory();
+    scrollToTarget();
   }, []);
+
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const getAllCategory = async () => {
     try {
       // Ambil semua dokumen dari koleksi category
@@ -98,17 +106,29 @@ function MasterKategori() {
       );
       return;
     }
-    try {
-      await addDoc(collection(db, "category"), {
+    let data = {};
+    if (akses && akses.value == true) {
+      data = {
         nameCategory: kategori,
         description: deskripsi,
-      });
+        isCash: true,
+      };
+    } else {
+      data = {
+        nameCategory: kategori,
+        description: deskripsi,
+      };
+    }
+    try {
+      await addDoc(collection(db, "category"), data);
       setIsLoad(false);
 
       Swal.fire("Success", "Category added successfully", "success");
       setKategori("");
       setDeskripsi("");
       getAllCategory();
+      setRefresh(false);
+      setAkses(null);
     } catch (error) {
       setIsLoad(false);
 
@@ -118,18 +138,29 @@ function MasterKategori() {
   };
 
   const updateClick = (data) => {
+    const selAkses = getObject(optionAkses, data.isCash ? true : false);
     setIsEdit(true);
     setIsOpen(true);
     setIsAdd(false);
+    setAkses(selAkses);
     setIndexDetail(data.id);
     setKategori(data.nameCategory);
     setDeskripsi(data.description);
   };
   const handleUpdate = async () => {
-    const data = {
-      nameCategory: kategori,
-      description: deskripsi,
-    };
+    let data = {};
+    if (akses.value == true) {
+      data = {
+        nameCategory: kategori,
+        description: deskripsi,
+        isCash: true,
+      };
+    } else {
+      data = {
+        nameCategory: kategori,
+        description: deskripsi,
+      };
+    }
     try {
       // Buat referensi ke dokumen kategori yang ingin diperbarui
       const categoryRef = doc(db, "category", indexDetail);
@@ -212,6 +243,9 @@ function MasterKategori() {
       }
     }
   };
+  const getObject = (arr, item) => {
+    return arr.find((x) => x.value === item);
+  };
   const columns = [
     {
       name: "Nama",
@@ -247,6 +281,14 @@ function MasterKategori() {
       },
     },
     {
+      name: "cash",
+      label: "Item Cash ?",
+      options: {
+        filter: true,
+        sort: true,
+      },
+    },
+    {
       name: "Aksi",
       options: {
         filter: true,
@@ -257,6 +299,8 @@ function MasterKategori() {
               <button
                 className="Btn-see text-white"
                 onClick={() => {
+                  scrollToTarget();
+
                   handleDetailData(tableMeta.rowData[3]); // Kirim objek lengkap
                 }}
               >
@@ -268,6 +312,9 @@ function MasterKategori() {
               <button
                 className="Btn-see text-white"
                 onClick={() => {
+                  setAkses({});
+                  setRefresh(false);
+                  scrollToTarget();
                   updateClick(tableMeta.rowData[3]); // Kirim objek lengkap
                 }}
               >
@@ -306,9 +353,20 @@ function MasterKategori() {
     data.nameCategory,
     data.description,
     data.jumlahBarang,
+    data.isCash ? "Ya" : "Tidak",
     data, // Tambahkan objek lengkap di sini
   ]);
 
+  const optionAkses = [
+    {
+      value: true,
+      text: "Iya",
+    },
+    {
+      value: false,
+      text: "Tidak",
+    },
+  ];
   console.log(dataDetail, "Detail data");
   return (
     <div>
@@ -323,7 +381,10 @@ function MasterKategori() {
         </>
       ) : (
         <>
-          <div className="w-full h-full flex flex-col justify-start items-center pb-25">
+          <div
+            ref={targetRef}
+            className="w-full h-full flex flex-col justify-start items-center pb-25"
+          >
             <div
               data-aos="slide-down"
               data-aos-delay="50"
@@ -359,6 +420,8 @@ function MasterKategori() {
             >
               <button
                 onClick={() => {
+                  setAkses(null);
+                  setRefresh(false);
                   if (isDetail) {
                     setIsDetail(false);
                   }
@@ -427,6 +490,22 @@ function MasterKategori() {
                     onChange={(e) => setDeskripsi(e.target.value)}
                     className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                   />
+                </div>
+                <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
+                  <h4 className="font-medium text-xs">Item cash ?</h4>
+                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                    <DropdownSearch
+                      change={(data) => {
+                        setAkses(data);
+                        setRefresh(true);
+                      }}
+                      options={optionAkses}
+                      value={akses}
+                      isSearch={false}
+                      refresh={refresh}
+                      name={"Apakah Item Cash?"}
+                    />
+                  </div>
                 </div>
                 <div className="w-[33%] text-xs flex flex-col justify-end items-start p-2 gap-4 pt-8">
                   {isEdit == true && (
