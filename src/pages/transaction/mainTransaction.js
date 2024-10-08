@@ -1299,7 +1299,7 @@ function MainTransaction() {
                     <>
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">
-                          Nama {selectedBarang.text}
+                          Nama 
                         </h4>
                         <input
                           type="text"
