@@ -53,6 +53,7 @@ function MainTransaction() {
     dayjs().locale("id").format("DD/MM/YYYY")
   );
   const [bayar, setBayar] = useState(0);
+  const [untung, setUntung] = useState(0);
   const [jenis, setJenis] = useState("");
   const [isCash, setIsCash] = useState("");
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
@@ -64,6 +65,7 @@ function MainTransaction() {
   const [dataEdit, setDataEdit] = useState({});
   const [namaProduk, setNamaProduk] = useState("");
   const [isLoad, setIsLoad] = useState(false);
+  const [isIncome, setIsIncome] = useState(false);
   const [isData, setIsData] = useState(true);
   const cabang = sessionStorage.getItem("cabang");
   const peran = sessionStorage.getItem("peran");
@@ -120,11 +122,17 @@ function MainTransaction() {
             item: itemData,
             category: categoryData,
             isCash: categoryData.isCash ? true : false,
+            isIncome: categoryData.isIncome ? true : false,
             itemId: itemRef.id,
             categoryId: categoryRef.id,
             total: total, // Tambahkan properti total
           };
         })
+      );
+      const transData = transactions.filter(
+        (a) =>
+          !a.item.itemName.toLowerCase().includes("pendapatan") ||
+          !a.item.itemName.toLowerCase().includes("piutang")
       );
 
       // Menghitung total dari semua transaksi
@@ -134,22 +142,22 @@ function MainTransaction() {
       );
 
       // Menghitung total untuk payment "Tunai"
-      const totalNominalTunai = transactions
+      const totalNominalTunai = transData
         .filter((transaction) => transaction.payment === "Tunai")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Menghitung total untuk payment selain "Tunai"
-      const totalNominalNonTunai = transactions
+      const totalNominalNonTunai = transData
         .filter((transaction) => transaction.payment !== "Tunai")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      console.log(`transactions${cabang}`, transactions);
+      console.log(`transData${cabang}`, transData);
       console.log("Total Nominal", totalNominal);
       console.log("Total Nominal Tunai", totalNominalTunai);
       console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
 
       // Kelompokkan data berdasarkan refItem
-      const groupedByItem = transactions.reduce((acc, transaction) => {
+      const groupedByItem = transData.reduce((acc, transaction) => {
         const itemId = transaction.itemId;
         if (!acc[itemId]) {
           acc[itemId] = {
@@ -186,11 +194,18 @@ function MainTransaction() {
           }
         }
       );
+      // Mengurutkan berdasarkan properti 'time' secara desc
+      const sortedtransData = transData.sort((a, b) => {
+        const [aHours, aMinutes] = a.time.split(":").map(Number);
+        const [bHours, bMinutes] = b.time.split(":").map(Number);
 
-      console.log("Most Frequent Item:", mostFrequentItem);
+        return bHours - aHours || bMinutes - aMinutes;
+      });
+
+      console.log("SortedItem:", sortedtransData);
       setitemTerlaris(mostFrequentItem);
       setIsData(false);
-      setDataTransaction(transactions); // Simpan transaksi ke state
+      setDataTransaction(sortedtransData); // Simpan transaksi ke state
       setTotalNominal(totalNominal); // Simpan total nominal ke state
       setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
       setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
@@ -231,6 +246,7 @@ function MainTransaction() {
           refCategory: categoryDoc.id,
           category: categoryDoc.data().nameCategory,
           isCash: categoryDoc.data().isCash ? true : false,
+          isIncome: categoryDoc.data().isIncome ? true : false,
           price: a.sellPrice,
         };
       });
@@ -406,21 +422,42 @@ function MainTransaction() {
         };
       }
       if (jenis !== "E-Money" && isCash == true) {
-        dataSend = {
-          refItem: itemRef,
-          productName: namaProduk,
-          refCategory: categoryRef,
-          quantity: 1,
-          price: parseInt(bayar),
-          payment: jenisPembayaran.value,
-          date: tanggal,
-          time: jam,
-          isCash: true,
-          adminFee: parseInt(adminFee),
-          month: bulan,
-          year: tahun,
-          isCheck: false,
-        };
+        if (isCash == true && isIncome == false) {
+          dataSend = {
+            refItem: itemRef,
+            productName: namaProduk,
+            refCategory: categoryRef,
+            quantity: 1,
+            price: parseInt(bayar),
+            payment: jenisPembayaran.value,
+            date: tanggal,
+            time: jam,
+            isCash: true,
+            adminFee: parseInt(adminFee),
+            month: bulan,
+            year: tahun,
+            isCheck: false,
+          };
+        }
+        if (isCash == true && isIncome == true) {
+          dataSend = {
+            refItem: itemRef,
+            productName: namaProduk,
+            refCategory: categoryRef,
+            quantity: 1,
+            price: parseInt(bayar),
+            payment: jenisPembayaran.value,
+            date: tanggal,
+            time: jam,
+            type: "Topup",
+            isCash: true,
+            income: parseInt(untung),
+            adminFee: parseInt(adminFee),
+            month: bulan,
+            year: tahun,
+            isCheck: false,
+          };
+        }
       }
       if (jenis !== "E-Money" && isCash == false) {
         dataSend = {
@@ -491,6 +528,8 @@ function MainTransaction() {
       setJenis("");
       setIsCash(false);
       setIsOpen(false);
+      setIsIncome(false);
+      setUntung(0);
       setNamaProduk("");
       // baru
     } catch (error) {
@@ -628,12 +667,19 @@ function MainTransaction() {
     }
     if (data.category.nameCategory !== "E-Money" && data.isCash == true) {
       const pay = getObject(optionPembayaran, data.payment);
+      if (data.category.isIncome) {
+        setIsIncome(data.category.isIncome);
+        setUntung(data.income);
+      }
       setJenisPembayaran(pay);
       setBayar(data.price);
       setNamaProduk(data.productName);
       setAdminFee(data.adminFee);
       setJenis(data.category.nameCategory);
       setIsCash(data.isCash);
+    }
+    if (data.category.isIncome) {
+      setIsIncome(true);
     }
     setDataEdit(data);
     console.log(data.category.nameCategory, data.isCash);
@@ -769,15 +815,26 @@ function MainTransaction() {
             time: jam,
           };
         } else if (jenis !== "E-Money" && isCash == true) {
-          dataSend = {
-            productName: namaProduk,
-
-            quantity: parseInt(jumlahBarang),
-            price: parseInt(bayar),
-            payment: jenisPembayaran.value,
-            adminFee: parseInt(adminFee),
-            time: jam,
-          };
+          if (isIncome == true) {
+            dataSend = {
+              productName: namaProduk,
+              income: parseInt(untung),
+              quantity: parseInt(jumlahBarang),
+              price: parseInt(bayar),
+              payment: jenisPembayaran.value,
+              adminFee: parseInt(adminFee),
+              time: jam,
+            };
+          } else {
+            dataSend = {
+              productName: namaProduk,
+              quantity: parseInt(jumlahBarang),
+              price: parseInt(bayar),
+              payment: jenisPembayaran.value,
+              adminFee: parseInt(adminFee),
+              time: jam,
+            };
+          }
         } else if (jenis !== "E-Money" && isCash == false) {
           dataSend = {
             quantity: parseInt(jumlahBarang),
@@ -844,6 +901,8 @@ function MainTransaction() {
       setBayar(0);
       setNamaProduk("");
       setHarga(0);
+      setIsIncome(false);
+      setUntung(0);
       setAdminFee(0);
       setJumlahBarang(0);
       setIsLoad(false);
@@ -910,6 +969,12 @@ function MainTransaction() {
                 ? value.category.nameCategory == "E-Money"
                   ? `${value.type}, ${value.productName} ${formatRupiah(
                       parseInt(value.price) - parseInt(value.adminFee)
+                    )}`
+                  : value.category.isIncome
+                  ? `${value.productName} ${formatRupiah(
+                      parseInt(value.price) -
+                        parseInt(value.adminFee) -
+                        parseInt(value.income)
                     )}`
                   : `${value.productName} ${formatRupiah(
                       parseInt(value.price) - parseInt(value.adminFee)
@@ -1258,6 +1323,7 @@ function MainTransaction() {
                           setHarga(data.price);
                           setJenis(data.category);
                           setIsCash(data.isCash);
+                          setIsIncome(data.isIncome);
                           console.log(data.category);
                           setRefresh(true);
                         }}
@@ -1298,9 +1364,7 @@ function MainTransaction() {
                   {jenis == "E-Money" && isCash == false && (
                     <>
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">
-                          Nama {selectedBarang.text}
-                        </h4>
+                        <h4 className="font-medium text-xs">Nama</h4>
                         <input
                           type="text"
                           className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
@@ -1386,6 +1450,21 @@ function MainTransaction() {
                           }}
                         />
                       </div>
+                      {isIncome && (
+                        <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Untung</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={untung}
+                              onChange={(e) => {
+                                setUntung(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">
                           Jenis Pembayaran
@@ -1604,7 +1683,7 @@ function MainTransaction() {
                         <>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">
-                              Nama {dataEdit.item.itemName}
+                              Nama Product
                             </h4>
                             <input
                               type="text"
@@ -1664,6 +1743,17 @@ function MainTransaction() {
                               }}
                             />
                           </div>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Untung</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={untung}
+                              onChange={(e) => {
+                                setUntung(e.target.value);
+                              }}
+                            />
+                          </div>
                         </div>
                       </>
                     )}
@@ -1685,6 +1775,7 @@ function MainTransaction() {
                               }}
                             />
                           </div>
+
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">
                               Jenis Transaksi

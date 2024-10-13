@@ -146,6 +146,13 @@ function TodayReport() {
             ) {
               profit = data.adminFee;
             }
+            if (
+              !itemData.itemName.toLowerCase().includes("pendapatan") &&
+              !itemData.itemName.toLowerCase().includes("piutang") &&
+              categoryData.isIncome
+            ) {
+              profit = data.income;
+            }
             return {
               id: doc.id,
               ...data,
@@ -160,7 +167,7 @@ function TodayReport() {
           })
         );
         const dataFull = transactions.filter(
-          (a) => a.category.nameCategory !== "E-Money"
+          (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
         );
 
         if (dataFull.length > 0) {
@@ -244,6 +251,12 @@ function TodayReport() {
             .filter((transaction) => transaction.payment !== "QRIS")
             .reduce((acc, transaction) => acc + transaction.total, 0);
 
+          const sortedTransactions = dataFull.sort((a, b) => {
+            const [aHours, aMinutes] = a.time.split(":").map(Number);
+            const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+            return bHours - aHours || bMinutes - aMinutes;
+          });
           console.log("Most Frequent Item:", mostFrequentItem);
           setTotalProfit(profitTotal);
           setTransUncheck(transactionUnCheck);
@@ -253,7 +266,7 @@ function TodayReport() {
           setIsData(false);
           setDataNonTunai(transactionNonTunai);
           setitemTerlaris(mostFrequentItem);
-          setDataTransaction(dataFull); // Simpan transaksi ke state
+          setDataTransaction(sortedTransactions); // Simpan transaksi ke state
           setTotalNominal(totalNominal); // Simpan total nominal ke state
           setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
           setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state

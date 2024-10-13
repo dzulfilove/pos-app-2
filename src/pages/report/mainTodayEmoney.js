@@ -119,15 +119,43 @@ function TodayEmoney() {
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
 
-          let profit = 0;
+          let profit = data.adminFee;
+
+          if (categoryData.nameCategory == "E-Money") {
+            profit = data.adminFee;
+          }
 
           if (
-            itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
-            itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+            itemData.itemName.toLowerCase().includes("pendapatan") ||
+            itemData.itemName.toLowerCase().includes("piutang")
           ) {
             profit = total;
-          } else {
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            !categoryData.isCash &&
+            categoryData.nameCategory !== "E-Money"
+          ) {
             profit = total - data.quantity * itemData.buyPrice;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash
+          ) {
+            profit = data.adminFee;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash &&
+            categoryData.isIncome
+          ) {
+            profit = data.income;
           }
 
           return {
@@ -144,7 +172,7 @@ function TodayEmoney() {
       );
 
       const dataEmoney = transactions.filter(
-        (a) => a.category.nameCategory == "E-Money"
+        (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
       );
 
       if (dataEmoney.length > 0) {
@@ -157,11 +185,15 @@ function TodayEmoney() {
         );
 
         const profitTotal = dataEmoney
-          .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
-          .reduce((acc, transaction) => acc + transaction.adminFee, 0);
-        // Menghitung total dari semua transaksi
+          .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
+          .reduce((acc, transaction) => acc + parseInt(transaction.profit), 0);
+        // Menghitung total untuk payment "Tunai"
         const totalNominal = dataEmoney
-          .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .filter(
+            (transaction) =>
+              transaction.payment === "Tunai" &&
+              !transaction.item.itemName.toLowerCase().includes("piutang")
+          )
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
         // Menghitung total untuk payment "Tunai"
@@ -169,7 +201,7 @@ function TodayEmoney() {
           .filter(
             (transaction) =>
               transaction.type === "Tarik Dana" &&
-              transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+              !transaction.item.itemName.toLowerCase().includes("piutang")
           )
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -202,7 +234,7 @@ function TodayEmoney() {
           .filter(
             (transaction) =>
               transaction.type == "Topup" &&
-              transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+              !transaction.item.itemName.toLowerCase().includes("piutang")
           )
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -237,8 +269,13 @@ function TodayEmoney() {
               : prev;
           }
         );
+        const sortedTransactions = dataEmoney.sort((a, b) => {
+          const [aHours, aMinutes] = a.time.split(":").map(Number);
+          const [bHours, bMinutes] = b.time.split(":").map(Number);
 
-        console.log("Most Frequent Item:", mostFrequentItem);
+          return bHours - aHours || bMinutes - aMinutes;
+        });
+        console.log("all data:", dataEmoney);
         setTotalProfit(profitTotal);
         setTransUncheck(transactionUnCheck);
         setTotalQris(totalQris);
@@ -250,7 +287,7 @@ function TodayEmoney() {
         setIsData(false);
         setDataTopup(transactionTopup);
         setitemTerlaris(mostFrequentItem);
-        setDataTransaction(dataEmoney); // Simpan transaksi ke state
+        setDataTransaction(sortedTransactions); // Simpan transaksi ke state
         setTotalNominal(totalNominal); // Simpan total nominal ke state
         setTotalNominalTarik(totalTarik); // Simpan total nominal tunai ke state
         setTotalNominalTopup(totalTopup); // Simpan total nominal non-tunai ke state
@@ -449,7 +486,15 @@ function TodayEmoney() {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
               {value.type} {value.productName}{" "}
-              {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
+              {value.category.isIncome
+                ? formatRupiah(
+                    parseInt(value.price) -
+                      parseInt(value.adminFee) -
+                      parseInt(value.income)
+                  )
+                : formatRupiah(
+                    parseInt(value.price) - parseInt(value.adminFee)
+                  )}
             </button>
           );
         },
@@ -481,7 +526,21 @@ function TodayEmoney() {
         },
       },
     },
-
+    {
+      name: "data",
+      label: "Untung",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button className="flex justify-start items-center gap-2 w-full">
+              {formatRupiah(value.profit)}
+            </button>
+          );
+        },
+      },
+    },
     {
       name: "payment",
       label: "Pembayaran",
@@ -559,7 +618,15 @@ function TodayEmoney() {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
               {value.type} {value.productName}{" "}
-              {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
+              {value.category.isIncome
+                ? formatRupiah(
+                    parseInt(value.price) -
+                      parseInt(value.adminFee) -
+                      parseInt(value.income)
+                  )
+                : formatRupiah(
+                    parseInt(value.price) - parseInt(value.adminFee)
+                  )}
             </button>
           );
         },
@@ -594,15 +661,15 @@ function TodayEmoney() {
     },
 
     {
-      name: "type",
-      label: "Jenis",
+      name: "data",
+      label: "Untung",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value}
+              {formatRupiah(value.profit)}
             </button>
           );
         },
@@ -694,7 +761,15 @@ function TodayEmoney() {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
               {value.type} {value.productName}{" "}
-              {formatRupiah(parseInt(value.price) - parseInt(value.adminFee))}
+              {value.category.isIncome
+                ? formatRupiah(
+                    parseInt(value.price) -
+                      parseInt(value.adminFee) -
+                      parseInt(value.income)
+                  )
+                : formatRupiah(
+                    parseInt(value.price) - parseInt(value.adminFee)
+                  )}
             </button>
           );
         },
@@ -726,7 +801,21 @@ function TodayEmoney() {
         },
       },
     },
-
+    {
+      name: "data",
+      label: "Untung",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <button className="flex justify-start items-center gap-2 w-full">
+              {formatRupiah(value.profit)}
+            </button>
+          );
+        },
+      },
+    },
     {
       name: "payment",
       label: "Pembayaran",

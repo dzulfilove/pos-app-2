@@ -148,6 +148,13 @@ function PeriodeReport() {
           ) {
             profit = data.adminFee;
           }
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isIncome
+          ) {
+            profit = data.income;
+          }
           return {
             id: doc.id,
             ...data,
@@ -161,21 +168,23 @@ function PeriodeReport() {
         })
       );
 
-      // Menghitung total dari semua transaksi
       const totalNominal = transactions
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.total, 0);
-      // Menghitung total untuk payment "Tunai"
+
+      const totalPiutang = transactions
+        .filter((a) => a.item.itemName.toLowerCase().includes("piutang"))
+        .reduce((acc, transaction) => acc + transaction.total, 0);
 
       const profitTotal = transactions
-        .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.profit, 0);
       // Menghitung total untuk payment "Tunai"
       const totalNominalTunai = transactions
         .filter(
           (transaction) =>
             transaction.payment === "Tunai" &&
-            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+            !transaction.item.itemName.toLowerCase().includes("piutang")
         )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -184,7 +193,7 @@ function PeriodeReport() {
         .filter(
           (transaction) =>
             transaction.payment !== "Tunai" &&
-            transaction.itemId != "GBwAvYWhBOpnvkUBDCV6"
+            !transaction.item.itemName.toLowerCase().includes("piutang")
         )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -233,7 +242,24 @@ function PeriodeReport() {
         .filter((transaction) => transaction.payment !== "QRIS")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      console.log("Most Frequent Item:", mostFrequentItem);
+      const sortedTransactions = transactions.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
+        const [aHours, aMinutes] = a.time.split(":").map(Number);
+        const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes;
+      });
+
+      console.log("Most Frequent Item:", sortedTransactions);
       setTotalProfit(profitTotal);
       setTransUncheck(transactionUnCheck);
       setTotalQris(totalQris);
@@ -242,7 +268,7 @@ function PeriodeReport() {
       setDataTunai(transactionTunai);
       setDataNonTunai(transactionNonTunai);
       setItemTerlaris(mostFrequentItem);
-      setDataTransaction(transactions);
+      setDataTransaction(sortedTransactions);
       setTotalNominal(totalNominal);
       setTotalNominalTunai(totalNominalTunai);
       setTotalNominalNonTunai(totalNominalNonTunai);
@@ -474,15 +500,22 @@ function PeriodeReport() {
   const dataAll = dataTransaction.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? a.category.isIncome
+          ? `${a.item.itemName} ${a.productName} 
+            `
+          : `${a.item.itemName} ${a.productName} `
         : a.category.nameCategory == "E-Money"
-        ? `${a.type} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? `${a.type} ${a.productName}`
         : a.item.itemName,
-      jumlah: a.quantity,
+      jumlah: a.category.isCash
+        ? a.category.isIncome
+          ? ` ${formatRupiah(
+              parseInt(a.price) - parseInt(a.adminFee) - parseInt(a.income)
+            )}`
+          : ` ${formatRupiah(parseInt(a.price) - parseInt(a.adminFee))}`
+        : a.category.nameCategory == "E-Money"
+        ? ` ${formatRupiah(parseInt(a.price) - parseInt(a.adminFee))}`
+        : a.quantity,
       harga: a.price,
       data: a,
     };
@@ -490,15 +523,22 @@ function PeriodeReport() {
   const dataCash = dataTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? a.category.isIncome
+          ? `${a.item.itemName} ${a.productName} 
+          `
+          : `${a.item.itemName} ${a.productName} `
         : a.category.nameCategory == "E-Money"
-        ? `${a.type} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? `${a.type} ${a.productName}`
         : a.item.itemName,
-      jumlah: a.quantity,
+      jumlah: a.category.isCash
+        ? a.category.isIncome
+          ? ` ${formatRupiah(
+              parseInt(a.price) - parseInt(a.adminFee) - parseInt(a.income)
+            )}`
+          : ` ${formatRupiah(parseInt(a.price) - parseInt(a.adminFee))}`
+        : a.category.nameCategory == "E-Money"
+        ? ` ${formatRupiah(parseInt(a.price) - parseInt(a.adminFee))}`
+        : a.quantity,
       harga: a.price,
       data: a,
     };
@@ -507,15 +547,22 @@ function PeriodeReport() {
   const dataNonCash = dataNonTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? a.category.isIncome
+          ? `${a.item.itemName} ${a.productName} 
+            `
+          : `${a.item.itemName} ${a.productName} `
         : a.category.nameCategory == "E-Money"
-        ? `${a.type} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? `${a.type} ${a.productName}`
         : a.item.itemName,
-      jumlah: a.quantity,
+      jumlah: a.category.isCash
+        ? a.category.isIncome
+          ? ` ${formatRupiah(
+              parseInt(a.price) - parseInt(a.adminFee) - parseInt(a.income)
+            )}`
+          : ` ${formatRupiah(parseInt(a.price) - parseInt(a.adminFee))}`
+        : a.category.nameCategory == "E-Money"
+        ? ` ${formatRupiah(parseInt(a.price) - parseInt(a.adminFee))}`
+        : a.quantity,
       harga: a.price,
       payment: a.payment,
       data: a,

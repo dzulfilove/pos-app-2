@@ -155,22 +155,28 @@ function OtherIncomeReport() {
 
       const otherData = transactions.filter(
         (a) =>
-          a.itemId == "GBwAvYWhBOpnvkUBDCV6" ||
-          a.itemId == "zYIsvQcu1HFFYBsfnCF7"
+          a.item.itemName.toLowerCase().includes("pendapatan") ||
+          a.item.itemName.toLowerCase().includes("piutang")
       );
+
       if (otherData.length > 0) {
-        // Menghitung total dari semua transaksi
+        // Menghitung total dari semua transaksi yang bukan "piutang"
         const totalNominal = otherData
-          .filter((a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
+        // Menghitung total dari semua transaksi "piutang"
         const totalPiutang = otherData
-          .filter((a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6")
+          .filter((a) => a.item.itemName.toLowerCase().includes("piutang"))
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
-        // Menghitung total untuk payment "Tunai"
+        // Menghitung total dari semua transaksi "Tunai" yang bukan "piutang"
         const totalNominalLain = otherData
-          .filter((transaction) => transaction.itemId != "GBwAvYWhBOpnvkUBDCV6")
+          .filter(
+            (transaction) =>
+              !transaction.item.itemName.toLowerCase().includes("piutang") &&
+              transaction.paymentMethod === "Tunai"
+          )
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
         console.log(`transactions${cabang}`, otherData);
@@ -204,11 +210,11 @@ function OtherIncomeReport() {
           }
         );
 
-        const transactionPiutang = otherData.filter(
-          (a) => a.itemId == "GBwAvYWhBOpnvkUBDCV6"
+        const transactionPiutang = otherData.filter((a) =>
+          a.item.itemName.toLowerCase().includes("piutang")
         );
         const transactionOther = otherData.filter(
-          (a) => a.itemId != "GBwAvYWhBOpnvkUBDCV6"
+          (a) => !a.item.itemName.toLowerCase().includes("piutang")
         );
         const transactionUnCheck = otherData.filter(
           (a) => a.isCheck == false || !a.isCheck
