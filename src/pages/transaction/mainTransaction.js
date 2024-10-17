@@ -199,7 +199,7 @@ function MainTransaction() {
         const [aHours, aMinutes] = a.time.split(":").map(Number);
         const [bHours, bMinutes] = b.time.split(":").map(Number);
 
-        return bHours - aHours || bMinutes - aMinutes;
+        return aHours - bHours || aMinutes - bMinutes;
       });
 
       console.log("SortedItem:", sortedtransData);
