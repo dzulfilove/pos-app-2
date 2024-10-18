@@ -199,7 +199,7 @@ function MainTransaction() {
         const [aHours, aMinutes] = a.time.split(":").map(Number);
         const [bHours, bMinutes] = b.time.split(":").map(Number);
 
-        return aHours - bHours || aMinutes - bMinutes;
+        return bHours - aHours || bMinutes - aMinutes;
       });
 
       console.log("SortedItem:", sortedtransData);
@@ -1854,7 +1854,7 @@ function MainTransaction() {
               )}
               <div
                 // data-aos="fade-up"
-                className="w-full flex justify-center  items-start mt-5 h-[35rem] mb-28 overflow-y-scroll"
+                className="w-full flex justify-center  items-start mt-5 mb-28 "
               >
                 {isData ? (
                   <>

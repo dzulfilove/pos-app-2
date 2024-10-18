@@ -275,6 +275,20 @@ function TodayEmoney() {
 
           return bHours - aHours || bMinutes - aMinutes;
         });
+
+        const tarikSorted = transactionTarik.sort((a, b) => {
+          const [aHours, aMinutes] = a.time.split(":").map(Number);
+          const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+          return bHours - aHours || bMinutes - aMinutes;
+        });
+
+        const topupSorted = transactionTopup.sort((a, b) => {
+          const [aHours, aMinutes] = a.time.split(":").map(Number);
+          const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+          return bHours - aHours || bMinutes - aMinutes;
+        });
         console.log("all data:", dataEmoney);
         setTotalProfit(profitTotal);
         setTransUncheck(transactionUnCheck);
@@ -283,9 +297,9 @@ function TodayEmoney() {
         setTotalAdminDalam(totalNominTarikDalam);
         setTotalSisaFisik(sisaFisik);
         setTotalProfit(profitTotal);
-        setDataTarik(transactionTarik);
+        setDataTarik(tarikSorted);
         setIsData(false);
-        setDataTopup(transactionTopup);
+        setDataTopup(topupSorted);
         setitemTerlaris(mostFrequentItem);
         setDataTransaction(sortedTransactions); // Simpan transaksi ke state
         setTotalNominal(totalNominal); // Simpan total nominal ke state
