@@ -259,14 +259,64 @@ function PeriodeReport() {
         return bHours - aHours || bMinutes - aMinutes;
       });
 
+      const sortedUncheck = transactionUnCheck.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
+        const [aHours, aMinutes] = a.time.split(":").map(Number);
+        const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes;
+      });
+
+      const sortedTunai = transactionTunai.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
+        const [aHours, aMinutes] = a.time.split(":").map(Number);
+        const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes;
+      });
+
+      const sortedNonTunai = transactionNonTunai.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
+        const [aHours, aMinutes] = a.time.split(":").map(Number);
+        const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes;
+      });
       console.log("Most Frequent Item:", sortedTransactions);
       setTotalProfit(profitTotal);
-      setTransUncheck(transactionUnCheck);
+      setTransUncheck(sortedUncheck);
       setTotalQris(totalQris);
       setTotalTransfer(totalTransfer);
       setIsData(false);
-      setDataTunai(transactionTunai);
-      setDataNonTunai(transactionNonTunai);
+      setDataTunai(sortedTunai);
+      setDataNonTunai(sortedNonTunai);
       setItemTerlaris(mostFrequentItem);
       setDataTransaction(sortedTransactions);
       setTotalNominal(totalNominal);

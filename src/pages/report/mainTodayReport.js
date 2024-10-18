@@ -257,14 +257,28 @@ function TodayReport() {
 
             return bHours - aHours || bMinutes - aMinutes;
           });
+
+          const tunaiSorted = transactionTunai.sort((a, b) => {
+            const [aHours, aMinutes] = a.time.split(":").map(Number);
+            const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+            return bHours - aHours || bMinutes - aMinutes;
+          });
+
+          const noTunaiSorted = transactionNonTunai.sort((a, b) => {
+            const [aHours, aMinutes] = a.time.split(":").map(Number);
+            const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+            return bHours - aHours || bMinutes - aMinutes;
+          });
           console.log("Most Frequent Item:", mostFrequentItem);
           setTotalProfit(profitTotal);
           setTransUncheck(transactionUnCheck);
           setTotalQris(totalQris);
           setTotalTransfer(totalTrnsfer);
-          setDataTunai(transactionTunai);
+          setDataTunai(tunaiSorted);
           setIsData(false);
-          setDataNonTunai(transactionNonTunai);
+          setDataNonTunai(noTunaiSorted);
           setitemTerlaris(mostFrequentItem);
           setDataTransaction(sortedTransactions); // Simpan transaksi ke state
           setTotalNominal(totalNominal); // Simpan total nominal ke state

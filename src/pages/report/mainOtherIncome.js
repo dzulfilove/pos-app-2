@@ -220,13 +220,33 @@ function OtherIncomeReport() {
           (a) => a.isCheck == false || !a.isCheck
         );
 
+        const uncheckSorted = transactionUnCheck.sort((a, b) => {
+          const [aHours, aMinutes] = a.time.split(":").map(Number);
+          const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+          return bHours - aHours || bMinutes - aMinutes;
+        });
+
+        const piutangSorted = transactionPiutang.sort((a, b) => {
+          const [aHours, aMinutes] = a.time.split(":").map(Number);
+          const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+          return bHours - aHours || bMinutes - aMinutes;
+        });
+
+        const otherSorted = transactionOther.sort((a, b) => {
+          const [aHours, aMinutes] = a.time.split(":").map(Number);
+          const [bHours, bMinutes] = b.time.split(":").map(Number);
+
+          return bHours - aHours || bMinutes - aMinutes;
+        });
         console.log("Most Frequent Item:", mostFrequentItem);
-        setTransUncheck(transactionUnCheck);
+        setTransUncheck(uncheckSorted);
         setTotalQris(totalQris);
 
-        setDataPiutang(transactionPiutang);
+        setDataPiutang(piutangSorted);
         setIsData(false);
-        setDataOther(transactionOther);
+        setDataOther(otherSorted);
         setitemTerlaris(mostFrequentItem);
         setDataTransaction(otherData); // Simpan transaksi ke state
         setTotalNominal(totalNominal); // Simpan total nominal ke state
