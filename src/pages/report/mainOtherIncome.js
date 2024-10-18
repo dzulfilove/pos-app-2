@@ -700,7 +700,7 @@ function OtherIncomeReport() {
 
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
       {" "}
       <div>
         {isLoad ? (
@@ -714,10 +714,7 @@ function OtherIncomeReport() {
           </>
         ) : (
           <>
-            <div
-              ref={targetRef}
-              className="w-full h-full flex flex-col justify-start items-center pb-25"
-            >
+            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

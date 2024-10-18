@@ -814,7 +814,8 @@ function InventoryDetail({ params }) {
   };
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
+
       {isLoad ? (
         <>
           <div className="w-full h-[100vh] flex flex-col justify-center items-center">
@@ -1077,7 +1078,7 @@ function InventoryDetail({ params }) {
                     index={indexTab}
                   />
                   <div
-                    ref={targetRef}
+                 
                     className={`w-full ${
                       !isDetail ? "h-0 p-0" : "h-auto p-6 mt-5"
                     } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}

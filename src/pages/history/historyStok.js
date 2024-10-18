@@ -242,7 +242,8 @@ function HistoryStok() {
 
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
+
       {" "}
       <div>
         {isLoad ? (
@@ -257,7 +258,7 @@ function HistoryStok() {
         ) : (
           <>
             <div
-              ref={targetRef}
+             
               className="w-full h-full flex flex-col justify-start items-center pb-25"
             >
               <div
