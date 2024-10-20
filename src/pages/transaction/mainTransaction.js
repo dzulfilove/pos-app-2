@@ -1113,6 +1113,43 @@ function MainTransaction() {
         },
       },
     },
+    {
+      name: "data",
+      label: "Aksi",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <div className="flex justify-start gap-4 items-center">
+              <button
+                className="Btn-see text-white"
+                onClick={() => {
+                  handleDelete(value); // Kirim objek lengkap
+                }}
+              >
+                <span className="svgContainer">
+                  <MdDelete className="text-xl " />
+                </span>
+                <span className="BG bg-red-500"></span>
+              </button>
+              <button
+                className="Btn-see text-white"
+                onClick={() => {
+                  updateClick(value); // Kirim objek lengkap
+                  scrollToTarget();
+                }}
+              >
+                <span className="svgContainer">
+                  <RiPencilFill className="text-xl " />
+                </span>
+                <span className="BG bg-emerald-500"></span>
+              </button>
+            </div>
+          );
+        },
+      },
+    },
   ];
   const data = dataTransaction.map((a) => {
     return {
