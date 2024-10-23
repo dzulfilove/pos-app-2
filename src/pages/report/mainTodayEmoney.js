@@ -270,25 +270,26 @@ function TodayEmoney() {
           }
         );
         const sortedTransactions = dataEmoney.sort((a, b) => {
-          const [aHours, aMinutes] = a.time.split(":").map(Number);
-          const [bHours, bMinutes] = b.time.split(":").map(Number);
+          const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+          const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-          return bHours - aHours || bMinutes - aMinutes;
+          return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
 
         const tarikSorted = transactionTarik.sort((a, b) => {
-          const [aHours, aMinutes] = a.time.split(":").map(Number);
-          const [bHours, bMinutes] = b.time.split(":").map(Number);
+          const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+          const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-          return bHours - aHours || bMinutes - aMinutes;
+          return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
 
         const topupSorted = transactionTopup.sort((a, b) => {
-          const [aHours, aMinutes] = a.time.split(":").map(Number);
-          const [bHours, bMinutes] = b.time.split(":").map(Number);
+          const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+          const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-          return bHours - aHours || bMinutes - aMinutes;
+          return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
+
         console.log("all data:", dataEmoney);
         setTotalProfit(profitTotal);
         setTransUncheck(transactionUnCheck);
@@ -949,7 +950,6 @@ function TodayEmoney() {
   console.log(dataDetail, "Detail data");
   return (
     <div ref={targetRef}>
-
       {" "}
       <div>
         {isLoad ? (
@@ -963,10 +963,7 @@ function TodayEmoney() {
           </>
         ) : (
           <>
-            <div
-             
-              className="w-full h-full flex flex-col justify-start items-center pb-25"
-            >
+            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

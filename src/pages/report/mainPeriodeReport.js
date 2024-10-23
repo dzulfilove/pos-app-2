@@ -241,7 +241,6 @@ function PeriodeReport() {
       const totalTransfer = transactionNonTunai
         .filter((transaction) => transaction.payment !== "QRIS")
         .reduce((acc, transaction) => acc + transaction.total, 0);
-
       const sortedTransactions = transactions.sort((a, b) => {
         // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
         const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
@@ -252,11 +251,11 @@ function PeriodeReport() {
         if (aMonth !== bMonth) return bMonth - aMonth;
         if (aDay !== bDay) return bDay - aDay;
 
-        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
-        const [aHours, aMinutes] = a.time.split(":").map(Number);
-        const [bHours, bMinutes] = b.time.split(":").map(Number);
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
 
-        return bHours - aHours || bMinutes - aMinutes;
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
 
       const sortedUncheck = transactionUnCheck.sort((a, b) => {
@@ -269,11 +268,11 @@ function PeriodeReport() {
         if (aMonth !== bMonth) return bMonth - aMonth;
         if (aDay !== bDay) return bDay - aDay;
 
-        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
-        const [aHours, aMinutes] = a.time.split(":").map(Number);
-        const [bHours, bMinutes] = b.time.split(":").map(Number);
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
 
-        return bHours - aHours || bMinutes - aMinutes;
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
 
       const sortedTunai = transactionTunai.sort((a, b) => {
@@ -286,11 +285,11 @@ function PeriodeReport() {
         if (aMonth !== bMonth) return bMonth - aMonth;
         if (aDay !== bDay) return bDay - aDay;
 
-        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
-        const [aHours, aMinutes] = a.time.split(":").map(Number);
-        const [bHours, bMinutes] = b.time.split(":").map(Number);
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
 
-        return bHours - aHours || bMinutes - aMinutes;
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
 
       const sortedNonTunai = transactionNonTunai.sort((a, b) => {
@@ -303,12 +302,13 @@ function PeriodeReport() {
         if (aMonth !== bMonth) return bMonth - aMonth;
         if (aDay !== bDay) return bDay - aDay;
 
-        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm)
-        const [aHours, aMinutes] = a.time.split(":").map(Number);
-        const [bHours, bMinutes] = b.time.split(":").map(Number);
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
 
-        return bHours - aHours || bMinutes - aMinutes;
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
+
       console.log("Most Frequent Item:", sortedTransactions);
       setTotalProfit(profitTotal);
       setTransUncheck(sortedUncheck);

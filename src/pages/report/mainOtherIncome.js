@@ -221,25 +221,26 @@ function OtherIncomeReport() {
         );
 
         const uncheckSorted = transactionUnCheck.sort((a, b) => {
-          const [aHours, aMinutes] = a.time.split(":").map(Number);
-          const [bHours, bMinutes] = b.time.split(":").map(Number);
+          const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+          const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-          return bHours - aHours || bMinutes - aMinutes;
+          return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
-
         const piutangSorted = transactionPiutang.sort((a, b) => {
-          const [aHours, aMinutes] = a.time.split(":").map(Number);
-          const [bHours, bMinutes] = b.time.split(":").map(Number);
+          const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+          const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-          return bHours - aHours || bMinutes - aMinutes;
+          return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
 
         const otherSorted = transactionOther.sort((a, b) => {
-          const [aHours, aMinutes] = a.time.split(":").map(Number);
-          const [bHours, bMinutes] = b.time.split(":").map(Number);
+          const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+          const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-          return bHours - aHours || bMinutes - aMinutes;
+          return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
+
+        
         console.log("Most Frequent Item:", mostFrequentItem);
         setTransUncheck(uncheckSorted);
         setTotalQris(totalQris);

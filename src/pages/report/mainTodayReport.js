@@ -251,26 +251,30 @@ function TodayReport() {
             .filter((transaction) => transaction.payment !== "QRIS")
             .reduce((acc, transaction) => acc + transaction.total, 0);
 
+       
+
           const sortedTransactions = dataFull.sort((a, b) => {
-            const [aHours, aMinutes] = a.time.split(":").map(Number);
-            const [bHours, bMinutes] = b.time.split(":").map(Number);
-
-            return bHours - aHours || bMinutes - aMinutes;
+            const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+            const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
+    
+            return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
           });
-
+    
           const tunaiSorted = transactionTunai.sort((a, b) => {
-            const [aHours, aMinutes] = a.time.split(":").map(Number);
-            const [bHours, bMinutes] = b.time.split(":").map(Number);
-
-            return bHours - aHours || bMinutes - aMinutes;
+            const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+            const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
+    
+            return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
           });
-
+    
           const noTunaiSorted = transactionNonTunai.sort((a, b) => {
-            const [aHours, aMinutes] = a.time.split(":").map(Number);
-            const [bHours, bMinutes] = b.time.split(":").map(Number);
-
-            return bHours - aHours || bMinutes - aMinutes;
+            const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+            const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
+    
+            return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
           });
+
+      
           console.log("Most Frequent Item:", mostFrequentItem);
           setTotalProfit(profitTotal);
           setTransUncheck(transactionUnCheck);

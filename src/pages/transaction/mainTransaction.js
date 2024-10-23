@@ -196,10 +196,10 @@ function MainTransaction() {
       );
       // Mengurutkan berdasarkan properti 'time' secara desc
       const sortedtransData = transData.sort((a, b) => {
-        const [aHours, aMinutes] = a.time.split(":").map(Number);
-        const [bHours, bMinutes] = b.time.split(":").map(Number);
+        const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
-        return bHours - aHours || bMinutes - aMinutes;
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
 
       console.log("SortedItem:", sortedtransData);
@@ -398,7 +398,7 @@ function MainTransaction() {
       }
 
       const categoryRef = doc(db, "category", selectedBarang.refCategory);
-      const jam = dayjs().format("HH:mm");
+      const jam = dayjs().format("HH:mm:ss");
 
       let dataSend = {};
       if (jenis === "E-Money") {
@@ -1094,7 +1094,21 @@ function MainTransaction() {
               }}
               className="flex justify-start items-center gap-2 w-full"
             >
-              {value.type} {value.item.itemName}
+              {value.category.nameCategory == "E-Money" || value.isCash == true
+                ? value.category.nameCategory == "E-Money"
+                  ? `${value.type}, ${value.productName} ${formatRupiah(
+                      parseInt(value.price) - parseInt(value.adminFee)
+                    )}`
+                  : value.category.isIncome
+                  ? `${value.productName} ${formatRupiah(
+                      parseInt(value.price) -
+                        parseInt(value.adminFee) -
+                        parseInt(value.income)
+                    )}`
+                  : `${value.productName} ${formatRupiah(
+                      parseInt(value.price) - parseInt(value.adminFee)
+                    )}`
+                : value.item.itemName}
             </button>
           );
         },
