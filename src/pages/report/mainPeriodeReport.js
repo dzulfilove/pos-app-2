@@ -53,6 +53,7 @@ function PeriodeReport() {
   const cabang = sessionStorage.getItem("cabang");
 
   const [totalProfit, setTotalProfit] = useState(0);
+  const [sisaFisik, setSisaFisik] = useState(0);
 
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
@@ -168,19 +169,64 @@ function PeriodeReport() {
         })
       );
 
-      const totalNominal = transactions
+      const transData = transactions.filter(
+        (a) =>
+          !a.item.itemName.toLowerCase().includes("pendapatan") ||
+          !a.item.itemName.toLowerCase().includes("piutang")
+      );
+      const dataFull = transData.filter(
+        (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
+      );
+      const dataEmoney = transData.filter(
+        (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
+      );
+
+      const totalNominalItem = dataFull
         .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const totalPiutang = transactions
-        .filter((a) => a.item.itemName.toLowerCase().includes("piutang"))
+      const transactionTarik = dataEmoney.filter((a) => a.type == "Tarik Dana");
+
+      const totalTarikLuar = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Luar")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee) * 2),
+          0
+        );
+
+      const totalTarikDalam = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Dalam")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee)),
+          0
+        );
+
+      const totalTopup = dataEmoney
+        .filter(
+          (transaction) =>
+            transaction.type == "Topup" &&
+            !transaction.item.itemName.toLowerCase().includes("piutang")
+        )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const profitTotal = transactions
+      const sisaFisik =
+        parseInt(totalTopup) -
+        parseInt(totalTarikLuar) -
+        parseInt(totalTarikDalam);
+
+      const totalNominal = transData
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const profitTotal = transData
         .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.profit, 0);
       // Menghitung total untuk payment "Tunai"
-      const totalNominalTunai = transactions
+      const totalNominalTunai = transData
         .filter(
           (transaction) =>
             transaction.payment === "Tunai" &&
@@ -189,7 +235,7 @@ function PeriodeReport() {
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Menghitung total untuk payment selain "Tunai"
-      const totalNominalNonTunai = transactions
+      const totalNominalNonTunai = transData
         .filter(
           (transaction) =>
             transaction.payment !== "Tunai" &&
@@ -198,7 +244,7 @@ function PeriodeReport() {
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Kelompokkan data berdasarkan refItem
-      const groupedByItem = transactions.reduce((acc, transaction) => {
+      const groupedByItem = transData.reduce((acc, transaction) => {
         const itemId = transaction.itemId;
         if (!acc[itemId]) {
           acc[itemId] = {
@@ -225,11 +271,9 @@ function PeriodeReport() {
         }
       );
 
-      const transactionTunai = transactions.filter((a) => a.payment == "Tunai");
-      const transactionNonTunai = transactions.filter(
-        (a) => a.payment != "Tunai"
-      );
-      const transactionUnCheck = transactions.filter(
+      const transactionTunai = transData.filter((a) => a.payment == "Tunai");
+      const transactionNonTunai = transData.filter((a) => a.payment != "Tunai");
+      const transactionUnCheck = transData.filter(
         (a) => a.isCheck == false || !a.isCheck
       );
 
@@ -241,7 +285,7 @@ function PeriodeReport() {
       const totalTransfer = transactionNonTunai
         .filter((transaction) => transaction.payment !== "QRIS")
         .reduce((acc, transaction) => acc + transaction.total, 0);
-      const sortedTransactions = transactions.sort((a, b) => {
+      const sortedTransactions = transData.sort((a, b) => {
         // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
         const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
         const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
@@ -314,6 +358,7 @@ function PeriodeReport() {
       setTransUncheck(sortedUncheck);
       setTotalQris(totalQris);
       setTotalTransfer(totalTransfer);
+      setSisaFisik(sisaFisik + totalNominalItem);
       setIsData(false);
       setDataTunai(sortedTunai);
       setDataNonTunai(sortedNonTunai);
@@ -670,7 +715,7 @@ function PeriodeReport() {
             <div
               data-aos="fade-up"
               data-aos-delay="350"
-              className="w-[50%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+              className="w-[30%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
             >
               <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
                 <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
@@ -681,6 +726,29 @@ function PeriodeReport() {
                   </div>
                   <div className="w-full flex justify-start gap-4 items-center">
                     <h3 className="text-xs font-normal">Nominal Profit</h3>
+                  </div>
+                </div>
+                <div className="w-[80%] flex flex-col justify-center gap-4 items-end">
+                  <div className=" w-[4rem] h-[4rem] bg-blue-100 rounded-full flex justify-center items-center p-3">
+                    <GiReceiveMoney className="text-blue-600 text-[2.2rem]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              data-aos="fade-up"
+              data-aos-delay="350"
+              className="w-[30%] h-[8rem] rounded-xl p-3 py-4 shadow-md bg-white flex flex-col justify-between items-center "
+            >
+              <div className="w-[100%] h-[8rem]  border-l-4 border-l-blue-700 p-3 py-2  bg-white flex  justify-start gap-3 items-center">
+                <div className="w-[80%] flex flex-col justify-center gap-4 items-start">
+                  <div className="w-full flex justify-start gap-4 items-center">
+                    <h3 className="text-xl font-medium">
+                      {formatRupiah(sisaFisik)}
+                    </h3>
+                  </div>
+                  <div className="w-full flex justify-start gap-4 items-center">
+                    <h3 className="text-xs font-normal">Nominal Hasil</h3>
                   </div>
                 </div>
                 <div className="w-[80%] flex flex-col justify-center gap-4 items-end">

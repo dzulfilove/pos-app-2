@@ -53,6 +53,7 @@ function MainTransaction() {
     dayjs().locale("id").format("DD/MM/YYYY")
   );
   const [bayar, setBayar] = useState(0);
+  const [sisaFisik, setSisaFisik] = useState(0);
   const [untung, setUntung] = useState(0);
   const [jenis, setJenis] = useState("");
   const [isCash, setIsCash] = useState("");
@@ -135,12 +136,55 @@ function MainTransaction() {
           !a.item.itemName.toLowerCase().includes("piutang")
       );
 
+      const dataEmoney = transactions.filter(
+        (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
+      );
+      const dataFull = transactions.filter(
+        (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
+      );
+
       // Menghitung total dari semua transaksi
-      const totalNominal = transactions.reduce(
+      const totalNominal = transData.reduce(
         (acc, transaction) => acc + transaction.total,
         0
       );
 
+      const totalNominalItem = dataFull
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const transactionTarik = dataEmoney.filter((a) => a.type == "Tarik Dana");
+
+      const totalTarikLuar = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Luar")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee) * 2),
+          0
+        );
+
+      const totalTarikDalam = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Dalam")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee)),
+          0
+        );
+
+      const totalTopup = dataEmoney
+        .filter(
+          (transaction) =>
+            transaction.type == "Topup" &&
+            !transaction.item.itemName.toLowerCase().includes("piutang")
+        )
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const sisaFisik =
+        parseInt(totalTopup) -
+        parseInt(totalTarikLuar) -
+        parseInt(totalTarikDalam);
       // Menghitung total untuk payment "Tunai"
       const totalNominalTunai = transData
         .filter((transaction) => transaction.payment === "Tunai")
@@ -205,6 +249,7 @@ function MainTransaction() {
       console.log("SortedItem:", sortedtransData);
       setitemTerlaris(mostFrequentItem);
       setIsData(false);
+      setSisaFisik(sisaFisik + totalNominalItem);
       setDataTransaction(sortedtransData); // Simpan transaksi ke state
       setTotalNominal(totalNominal); // Simpan total nominal ke state
       setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
@@ -292,6 +337,13 @@ function MainTransaction() {
     }
   };
 
+  function roundUp(number) {
+    // Periksa apakah tiga digit terakhir adalah 999
+    if (number % 1000 === 99) {
+      return Math.ceil(number / 1000) * 1000;
+    }
+    return number;
+  }
   const handleSubmit = async (e) => {
     e.preventDefault();
     // setIsLoad(true);
@@ -407,7 +459,7 @@ function MainTransaction() {
           productName: namaProduk,
           refCategory: categoryRef,
           quantity: 1,
-          price: parseInt(bayar),
+          price: roundUp(parseInt(bayar)),
           payment:
             jenisTransaksi.text === "Topup"
               ? "Admin Dalam"
@@ -428,7 +480,7 @@ function MainTransaction() {
             productName: namaProduk,
             refCategory: categoryRef,
             quantity: 1,
-            price: parseInt(bayar),
+            price: roundUp(parseInt(bayar)),
             payment: jenisPembayaran.value,
             date: tanggal,
             time: jam,
@@ -445,7 +497,7 @@ function MainTransaction() {
             productName: namaProduk,
             refCategory: categoryRef,
             quantity: 1,
-            price: parseInt(bayar),
+            price: roundUp(parseInt(bayar)),
             payment: jenisPembayaran.value,
             date: tanggal,
             time: jam,
@@ -464,7 +516,7 @@ function MainTransaction() {
           refItem: itemRef,
           refCategory: categoryRef,
           quantity: parseInt(jumlahBarang),
-          price: parseInt(harga),
+          price: roundUp(parseInt(harga)),
           payment: jenisPembayaran.value,
           date: tanggal,
           time: jam,
@@ -508,7 +560,13 @@ function MainTransaction() {
         );
       }
 
-      Swal.fire("Success", "Transaction added successfully", "success");
+      Swal.fire({
+        title: "Success",
+        text: "Transaction added successfully",
+        icon: "success",
+        showConfirmButton: false,
+        timer: 2000, // otomatis menutup setelah 2 detik
+      });
 
       // Panggil getTransactions setelah data di-insert
       await new Promise((resolve) => setTimeout(resolve, 500)); // Tambahkan delay 500ms
@@ -1308,18 +1366,16 @@ function MainTransaction() {
                   className="w-[30%] flex flex-col justify-start items-center gap-2 py-4 px-4 h-[8rem] bg-blue-500 rounded-xl shadow-md text-white"
                 >
                   <div className="w-full flex justify-between items-start ">
-                    <h3 className="text-base font-medium">Item Terlaris</h3>
+                    <h3 className="text-base font-medium">Total Hasil</h3>
                     <div className=" w-[2.5rem] h-[2.5rem] bg-white rounded-xl flex justify-center items-center p-3">
                       <FaArrowTrendUp className="text-blue-600 text-[2.3rem]" />
                     </div>
                   </div>
                   <div className="w-full flex flex-col justify-between items-start gap-1">
                     <h3 className="text-xl font-medium">
-                      {itemTerlaris.totalBarang} {itemTerlaris.unit}
+                      {formatRupiah(sisaFisik)}
                     </h3>
-                    <h3 className="text-xs font-medium">
-                      {itemTerlaris.itemName}
-                    </h3>
+                    <h3 className="text-xs font-medium">Total Nominal Hasil</h3>
                   </div>
                 </div>
               </div>
