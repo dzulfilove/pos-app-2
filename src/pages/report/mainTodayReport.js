@@ -536,8 +536,8 @@ function TodayReport() {
   const handleLebih = async (gap) => {
     try {
       const timeInput = dayjs().format("HH:mm");
-      const itemRef = doc(db, "items", "zYIsvQcu1HFFYBsfnCF7");
-      const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
+      const itemRef = doc(db, "items", "q8UdjDVXWz3gTSt816wd");
+      const categoryRef = doc(db, "category", "91fYOlZ5A4SDuk99iTHB");
 
       await addDoc(collection(db, `transactions${cabang}`), {
         refItem: itemRef,
@@ -565,8 +565,8 @@ function TodayReport() {
   const handleKurang = async (gap) => {
     try {
       const timeInput = dayjs().format("HH:mm");
-      const itemRef = doc(db, "items", "GBwAvYWhBOpnvkUBDCV6");
-      const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
+      const itemRef = doc(db, "items", "91fYOlZ5A4SDuk99iTHB");
+      const categoryRef = doc(db, "category", "ZjrFviQmmWXLtxqZJZc9");
 
       await addDoc(collection(db, `transactions${cabang}`), {
         refItem: itemRef,

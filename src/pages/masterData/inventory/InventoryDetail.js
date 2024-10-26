@@ -323,9 +323,9 @@ function InventoryDetail({ params }) {
     try {
       await runTransaction(db, async (transaction) => {
         // Referensi untuk item dan kategori
-        const itemRef = doc(db, "items", "GBwAvYWhBOpnvkUBDCV6");
+        const itemRef = doc(db, "items", "ZjrFviQmmWXLtxqZJZc9");
         const itemRef2 = doc(db, "items", item.itemId);
-        const categoryRef = doc(db, "category", "M16tNTY5RQG6zfM4tVv5");
+        const categoryRef = doc(db, "category", "91fYOlZ5A4SDuk99iTHB");
         const categoryRef2 = doc(db, "category", item.categoryId);
 
         // Hitung harga berdasarkan gap dan harga jual item
@@ -815,7 +815,6 @@ function InventoryDetail({ params }) {
   console.log(dataDetail, "Detail data");
   return (
     <div ref={targetRef}>
-
       {isLoad ? (
         <>
           <div className="w-full h-[100vh] flex flex-col justify-center items-center">
@@ -1078,7 +1077,6 @@ function InventoryDetail({ params }) {
                     index={indexTab}
                   />
                   <div
-                 
                     className={`w-full ${
                       !isDetail ? "h-0 p-0" : "h-auto p-6 mt-5"
                     } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
