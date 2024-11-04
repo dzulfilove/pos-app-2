@@ -565,7 +565,7 @@ function MainTransaction() {
         text: "Transaction added successfully",
         icon: "success",
         showConfirmButton: false,
-        timer: 2000, // otomatis menutup setelah 2 detik
+        timer: 1000, // otomatis menutup setelah 2 detik
       });
 
       // Panggil getTransactions setelah data di-insert
@@ -673,11 +673,13 @@ function MainTransaction() {
         });
 
         setIsLoad(false);
+
         Swal.fire({
-          title: "Sukses!",
+          title: "Success",
           text: "Transaksi berhasil dihapus.",
           icon: "success",
-          confirmButtonText: "OK",
+          showConfirmButton: false,
+          timer: 1000, // otomatis menutup setelah 2 detik
         });
         getTransactions();
       } catch (error) {

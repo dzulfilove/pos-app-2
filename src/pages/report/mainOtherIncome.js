@@ -132,8 +132,8 @@ function OtherIncomeReport() {
           let profit = 0;
 
           if (
-            itemRef.id == "GBwAvYWhBOpnvkUBDCV6" ||
-            itemRef.id == "zYIsvQcu1HFFYBsfnCF7"
+            itemData.itemName.toLowerCase().includes("pendapatan") ||
+            itemData.itemName.toLowerCase().includes("piutang")
           ) {
             profit = total;
           } else {
@@ -240,7 +240,6 @@ function OtherIncomeReport() {
           return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
         });
 
-        
         console.log("Most Frequent Item:", mostFrequentItem);
         setTransUncheck(uncheckSorted);
         setTotalQris(totalQris);
@@ -264,29 +263,6 @@ function OtherIncomeReport() {
         confirmButtonText: "OK",
       });
       return [];
-    }
-  };
-  const getInventory = async (itemRef) => {
-    try {
-      const inventoryQuery = query(
-        collection(db, `inventorys${cabang}`),
-        where("refItem", "==", itemRef)
-      );
-
-      const querySnapshot = await getDocs(inventoryQuery);
-      const items = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      return items[0];
-    } catch (e) {
-      Swal.fire({
-        title: "Error!",
-        text: "Gagal mendapatkan data: " + e.message,
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-      return null;
     }
   };
 
@@ -320,10 +296,6 @@ function OtherIncomeReport() {
         // Jalankan transaction
         await runTransaction(db, async (transaction) => {
           // Dapatkan data inventory terkait
-          const dataItems = await getInventory(itemRef);
-          if (!dataItems) {
-            throw new Error("Inventory data not found.");
-          }
 
           const dataRef = doc(db, `transactions${cabang}`, data.id);
 
@@ -331,46 +303,6 @@ function OtherIncomeReport() {
           transaction.delete(dataRef);
 
           // Periksa apakah itemId sesuai dengan pengecualian
-          if (
-            data.itemId !== "GBwAvYWhBOpnvkUBDCV6" &&
-            data.itemId !== "zYIsvQcu1HFFYBsfnCF7"
-          ) {
-            // Data yang akan ditambahkan ke historyInventory
-            const dateInput = dayjs().format("DD/MM/YYYY");
-            const timeInput = dayjs().format("HH:mm");
-            const monthInput = dayjs().format("MMMM");
-            const yearInput = dayjs().format("YYYY");
-
-            const historyData = {
-              refItem: itemRef,
-              refCategory: categoryRef,
-              stock: parseInt(data.quantity),
-              dateUpdate: tanggal,
-              info: `Penghapusan Data Transaksi ${
-                data.item.itemName
-              } Sejumlah ${data.quantity} dengan Total Harga ${formatRupiah(
-                parseInt(data.quantity) * parseInt(data.price)
-              )} Oleh ${nama}`,
-              dateInput: dateInput,
-              timeInput: timeInput,
-              month: monthInput,
-              year: yearInput,
-              status: "Stok Masuk",
-            };
-
-            // Tambahkan data ke historyInventory
-            transaction.set(
-              doc(collection(db, `historyInventory${cabang}`)),
-              historyData
-            );
-
-            // Update stok di inventory
-            const newStock = parseInt(data.quantity) + dataItems.stock;
-            transaction.update(doc(db, `inventorys${cabang}`, dataItems.id), {
-              stock: newStock,
-              dateUpdate: tanggal,
-            });
-          }
         });
 
         setIsLoad(false);
@@ -380,7 +312,7 @@ function OtherIncomeReport() {
           icon: "success",
           confirmButtonText: "OK",
         });
-        getTransactions();
+        getTransactions(bulan, tahun);
       } catch (error) {
         console.error("Error deleting transaksi:", error.message);
         setIsLoad(false);
@@ -419,7 +351,7 @@ function OtherIncomeReport() {
         });
 
         setIsLoad(false);
-        getTransactions(bulan, tahun);
+        await getTransactions(bulan, tahun);
         Swal.fire("Berhasil!", `Data transaksi telah diceklis.`, "success");
 
         console.log("Transaction updated successfully");
