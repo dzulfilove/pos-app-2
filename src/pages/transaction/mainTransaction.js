@@ -353,8 +353,7 @@ function MainTransaction() {
         jenisTransaksi == null ||
         jenisPembayaran == null ||
         bayar === 0 ||
-        adminFee === 0 ||
-        namaProduk == ""
+        adminFee === 0
       ) {
         let missingFields = [];
 
@@ -363,7 +362,7 @@ function MainTransaction() {
         if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
         if (bayar === 0) missingFields.push("Jumlah Bayar");
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
-        if (namaProduk == "") missingFields.push("Nama E-Money");
+        // if (namaProduk == "") missingFields.push("Nama E-Money");
 
         Swal.fire(
           "Error",
@@ -393,7 +392,7 @@ function MainTransaction() {
         return;
       }
     }
-    if (jenis !== "E-Money" && isCash == true) {
+    if (jenis !== "E-Money" && isCash == true && isIncome == false) {
       if (
         selectedBarang == null ||
         bayar === 0 ||
@@ -408,6 +407,28 @@ function MainTransaction() {
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
         if (namaProduk == "") missingFields.push("Nama Produk");
+
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+        return;
+      }
+    }
+    if (jenis !== "E-Money" && isCash == true && isIncome == true) {
+      if (
+        selectedBarang == null ||
+        bayar === 0 ||
+        adminFee === 0 ||
+        jenisPembayaran == null
+      ) {
+        let missingFields = [];
+
+        if (selectedBarang == null) missingFields.push("Barang");
+        if (bayar === 0) missingFields.push("Jumlah Bayar");
+        if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
 
         Swal.fire(
           "Error",
@@ -456,7 +477,7 @@ function MainTransaction() {
       if (jenis === "E-Money") {
         dataSend = {
           refItem: itemRef,
-          productName: namaProduk,
+          productName: selectedBarang.text,
           refCategory: categoryRef,
           quantity: 1,
           price: roundUp(parseInt(bayar)),
@@ -494,7 +515,7 @@ function MainTransaction() {
         if (isCash == true && isIncome == true) {
           dataSend = {
             refItem: itemRef,
-            productName: namaProduk,
+            productName: selectedBarang.text,
             refCategory: categoryRef,
             quantity: 1,
             price: roundUp(parseInt(bayar)),
@@ -696,6 +717,15 @@ function MainTransaction() {
     }
   };
 
+  const info = () => {
+    const string = `Item Tagihan = Listrik, Air, dll<br>Item Top-up : Top up game apapun<br>Item Pulsa : Pulsa All Operator<br>Sisanya cari Sesuai Nama Item`;
+    Swal.fire({
+      icon: "info",
+      title: "Info Item",
+      html: string,
+    });
+  };
+
   const updateClick = (data) => {
     setIdEdit(data.id);
     console.log(data);
@@ -707,9 +737,12 @@ function MainTransaction() {
     setIsOpen(false);
     setJumlahBarang(data.quantity);
     setHarga(data.price);
+
     if (data.category.nameCategory == "E-Money") {
       const pay = getObject(optionPembayaranEMoney, data.payment);
       const trans = getObject(jenisTrans, data.type);
+      const barang = getObject2(dataBarang, data.productName);
+      setSelectedBarang(barang);
       setJenisPembayaran(pay);
       setBayar(data.price);
       setNamaProduk(data.productName);
@@ -720,12 +753,39 @@ function MainTransaction() {
     }
     if (data.category.nameCategory !== "E-Money" && data.isCash == false) {
       const pay = getObject(optionPembayaran, data.payment);
+      const barang = getObject2(dataBarang, data.item.itemName);
+      setSelectedBarang(barang);
       setJenisPembayaran(pay);
       setBayar(data.price);
       setJenis(data.category.nameCategory);
       setIsCash(data.isCash);
     }
-    if (data.category.nameCategory !== "E-Money" && data.isCash == true) {
+    if (
+      data.category.nameCategory !== "E-Money" &&
+      data.isCash == true &&
+      data.isIncome == true
+    ) {
+      const pay = getObject(optionPembayaran, data.payment);
+      const barang = getObject2(dataBarang, data.productName);
+      console.log("payyyy", barang);
+
+      setSelectedBarang(barang);
+      if (data.category.isIncome) {
+        setIsIncome(data.category.isIncome);
+        setUntung(data.income);
+      }
+      setJenisPembayaran(pay);
+      setBayar(data.price);
+      // setNamaProduk(data.productName);
+      setAdminFee(data.adminFee);
+      setJenis(data.category.nameCategory);
+      setIsCash(data.isCash);
+    }
+    if (
+      data.category.nameCategory !== "E-Money" &&
+      data.isCash == true &&
+      data.isIncome == false
+    ) {
       const pay = getObject(optionPembayaran, data.payment);
       if (data.category.isIncome) {
         setIsIncome(data.category.isIncome);
@@ -753,15 +813,14 @@ function MainTransaction() {
         jenisTransaksi == null ||
         jenisPembayaran == null ||
         bayar === 0 ||
-        adminFee === 0 ||
-        namaProduk == ""
+        adminFee === 0
       ) {
         let missingFields = [];
         if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
         if (jenisTransaksi == null) missingFields.push("Jenis Transaksi");
         if (bayar === 0) missingFields.push("Jumlah Bayar");
         if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
-        if (namaProduk === 0) missingFields.push("Nama Product");
+        // if (namaProduk === 0) missingFields.push("Nama Product");
 
         setIsLoad(false);
         Swal.fire(
@@ -772,7 +831,7 @@ function MainTransaction() {
         return;
       }
     }
-    if (jenis !== "E-Money") {
+    if (jenis !== "E-Money" && isCash == false && isIncome == false) {
       if (jumlahBarang <= 0 || jenisPembayaran == null) {
         let missingFields = [];
         if (jumlahBarang <= 0) missingFields.push("Jumlah Barang");
@@ -787,7 +846,7 @@ function MainTransaction() {
         return;
       }
     }
-    if (jenis !== "E-Money" && isCash == true) {
+    if (jenis !== "E-Money" && isCash == true && isIncome == false) {
       if (
         jumlahBarang <= 0 ||
         jenisPembayaran == null ||
@@ -810,7 +869,28 @@ function MainTransaction() {
         return;
       }
     }
+    if (jenis !== "E-Money" && isCash == true && isIncome == true) {
+      if (
+        jumlahBarang <= 0 ||
+        jenisPembayaran == null ||
+        bayar === 0 ||
+        adminFee === 0
+      ) {
+        let missingFields = [];
+        if (jenisPembayaran == null) missingFields.push("Jenis Pembayaran");
+        if (bayar === 0) missingFields.push("Jumlah Bayar");
+        if (adminFee === 0) missingFields.push("Jumlah Biaya Admin");
+        // if (namaProduk === 0) missingFields.push("Nama Product");
 
+        setIsLoad(false);
+        Swal.fire(
+          "Error",
+          `${missingFields.join(" dan ")} tidak boleh kosong`,
+          "error"
+        );
+        return;
+      }
+    }
     try {
       // Gunakan runTransaction untuk operasi yang melibatkan stok dan transaksi
       await runTransaction(db, async (transaction) => {
@@ -863,7 +943,7 @@ function MainTransaction() {
         // Buat data yang akan dikirim ke transaksi berdasarkan jenis
         if (jenis === "E-Money" && isCash == false) {
           dataSend = {
-            productName: namaProduk,
+            productName: selectedBarang.text,
             quantity: 1,
             price: parseInt(bayar),
             payment:
@@ -877,7 +957,7 @@ function MainTransaction() {
         } else if (jenis !== "E-Money" && isCash == true) {
           if (isIncome == true) {
             dataSend = {
-              productName: namaProduk,
+              productName: selectedBarang.text,
               income: parseInt(untung),
               quantity: parseInt(jumlahBarang),
               price: parseInt(bayar),
@@ -1252,6 +1332,9 @@ function MainTransaction() {
   const getObject = (arr, item) => {
     return arr.find((x) => x.value === item);
   };
+  const getObject2 = (arr, item) => {
+    return arr.find((x) => x.text === item);
+  };
   console.log(dataDetail, "Detail data");
   return (
     <div ref={targetRef}>
@@ -1387,7 +1470,19 @@ function MainTransaction() {
                 data-aos-delay="550"
                 className="w-full flex justify-end items-center  p-2 rounded-md mt-5"
               >
-                <div>
+                <div className="flex justify-start gap-6 items-center">
+                  <button
+                    onClick={() => {
+                      info();
+                    }}
+                    type="button"
+                    class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                  >
+                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                    </div>
+                    <p class="translate-x-2 text-xs text-white">Info Item</p>
+                  </button>
                   <button
                     onClick={() => {
                       if (isDetail) {
@@ -1444,35 +1539,66 @@ function MainTransaction() {
                     </div>
                   </div>
 
-                  {jenis !== "E-Money" && isCash == true && (
-                    <>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Nama Produk</h4>
-                        <input
-                          type="text"
-                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                          value={namaProduk}
-                          onChange={(e) => {
-                            setNamaProduk(e.target.value);
-                          }}
-                        />
-                      </div>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                        <h4 className="font-medium text-xs">Bayar</h4>
-                        <input
-                          type="number"
-                          className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                          value={bayar}
-                          onChange={(e) => {
-                            setBayar(e.target.value);
-                          }}
-                        />
-                      </div>
-                    </>
-                  )}
+                  {jenis !== "E-Money" &&
+                    isCash == true &&
+                    isIncome == true && (
+                      <>
+                        {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Nama Produk</h4>
+                            <input
+                              type="text"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={namaProduk}
+                              onChange={(e) => {
+                                setNamaProduk(e.target.value);
+                              }}
+                            />
+                          </div> */}
+                        <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                          <h4 className="font-medium text-xs">Bayar</h4>
+                          <input
+                            type="number"
+                            className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                            value={bayar}
+                            onChange={(e) => {
+                              setBayar(e.target.value);
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                  {jenis !== "E-Money" &&
+                    isCash == true &&
+                    isIncome == false && (
+                      <>
+                        <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                          <h4 className="font-medium text-xs">Nama Produk</h4>
+                          <input
+                            type="text"
+                            className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                            value={namaProduk}
+                            onChange={(e) => {
+                              setNamaProduk(e.target.value);
+                            }}
+                          />
+                        </div>
+                        <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                          <h4 className="font-medium text-xs">Bayar</h4>
+                          <input
+                            type="number"
+                            className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                            value={bayar}
+                            onChange={(e) => {
+                              setBayar(e.target.value);
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
                   {jenis == "E-Money" && isCash == false && (
                     <>
-                      <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Nama</h4>
                         <input
                           type="text"
@@ -1482,7 +1608,7 @@ function MainTransaction() {
                             setNamaProduk(e.target.value);
                           }}
                         />
-                      </div>
+                      </div> */}
                       <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                         <h4 className="font-medium text-xs">Bayar</h4>
                         <input
@@ -1715,7 +1841,7 @@ function MainTransaction() {
 
                       {jenis == "E-Money" && (
                         <>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                          {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">
                               Nama {dataEdit.item.itemName}
                             </h4>
@@ -1727,7 +1853,7 @@ function MainTransaction() {
                                 setNamaProduk(e.target.value);
                               }}
                             />
-                          </div>
+                          </div> */}
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">Bayar</h4>
                             <input
@@ -1788,9 +1914,58 @@ function MainTransaction() {
                         </>
                       )}
 
-                      {isCash == true && jenis !== "E-Money" && (
-                        <>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                      {isCash == true &&
+                        jenis !== "E-Money" &&
+                        isIncome == false && (
+                          <>
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">
+                                Nama Product
+                              </h4>
+                              <input
+                                type="text"
+                                className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                value={namaProduk}
+                                onChange={(e) => {
+                                  setNamaProduk(e.target.value);
+                                }}
+                              />
+                            </div>
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">Bayar</h4>
+                              <input
+                                type="number"
+                                className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                value={bayar}
+                                onChange={(e) => {
+                                  setBayar(e.target.value);
+                                }}
+                              />
+                            </div>
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">
+                                Jenis Pembayaran
+                              </h4>
+                              <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                <DropdownSearch
+                                  change={(data) => {
+                                    setJenisPembayaran(data);
+                                    setRefresh(true);
+                                  }}
+                                  options={optionPembayaran}
+                                  refresh={refresh}
+                                  value={jenisPembayaran}
+                                  name={"Pembayaran"}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      {isCash == true &&
+                        jenis !== "E-Money" &&
+                        isIncome == true && (
+                          <>
+                            {/* <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">
                               Nama Product
                             </h4>
@@ -1802,70 +1977,99 @@ function MainTransaction() {
                                 setNamaProduk(e.target.value);
                               }}
                             />
-                          </div>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">Bayar</h4>
-                            <input
-                              type="number"
-                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                              value={bayar}
-                              onChange={(e) => {
-                                setBayar(e.target.value);
-                              }}
-                            />
-                          </div>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">
-                              Jenis Pembayaran
-                            </h4>
-                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                              <DropdownSearch
-                                change={(data) => {
-                                  setJenisPembayaran(data);
-                                  setRefresh(true);
+                          </div> */}
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">Bayar</h4>
+                              <input
+                                type="number"
+                                className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                value={bayar}
+                                onChange={(e) => {
+                                  setBayar(e.target.value);
                                 }}
-                                options={optionPembayaran}
-                                refresh={refresh}
-                                value={jenisPembayaran}
-                                name={"Pembayaran"}
+                              />
+                            </div>
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">
+                                Jenis Pembayaran
+                              </h4>
+                              <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                <DropdownSearch
+                                  change={(data) => {
+                                    setJenisPembayaran(data);
+                                    setRefresh(true);
+                                  }}
+                                  options={optionPembayaran}
+                                  refresh={refresh}
+                                  value={jenisPembayaran}
+                                  name={"Pembayaran"}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                    </div>
+                    {isCash == true &&
+                      jenis !== "E-Money" &&
+                      isIncome == true && (
+                        <>
+                          <div
+                            className={`w-full ${
+                              !isEdit ? "hidden" : "flex"
+                            } justify-start items-end gap-4 mt-3 pl-2`}
+                          >
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">
+                                Biaya Admin
+                              </h4>
+                              <input
+                                type="number"
+                                className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                value={adminFee}
+                                onChange={(e) => {
+                                  setAdminFee(e.target.value);
+                                }}
+                              />
+                            </div>
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">Untung</h4>
+                              <input
+                                type="number"
+                                className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                value={untung}
+                                onChange={(e) => {
+                                  setUntung(e.target.value);
+                                }}
                               />
                             </div>
                           </div>
                         </>
                       )}
-                    </div>
-                    {isCash == true && jenis !== "E-Money" && (
-                      <>
-                        <div
-                          className={`w-full ${
-                            !isEdit ? "hidden" : "flex"
-                          } justify-start items-end gap-4 mt-3 pl-2`}
-                        >
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">Biaya Admin</h4>
-                            <input
-                              type="number"
-                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                              value={adminFee}
-                              onChange={(e) => {
-                                setAdminFee(e.target.value);
-                              }}
-                            />
+                    {isCash == true &&
+                      jenis !== "E-Money" &&
+                      isIncome == false && (
+                        <>
+                          <div
+                            className={`w-full ${
+                              !isEdit ? "hidden" : "flex"
+                            } justify-start items-end gap-4 mt-3 pl-2`}
+                          >
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">
+                                Biaya Admin
+                              </h4>
+                              <input
+                                type="number"
+                                className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                value={adminFee}
+                                onChange={(e) => {
+                                  setAdminFee(e.target.value);
+                                }}
+                              />
+                            </div>
                           </div>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">Untung</h4>
-                            <input
-                              type="number"
-                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                              value={untung}
-                              onChange={(e) => {
-                                setUntung(e.target.value);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
+                        </>
+                      )}
                     {jenis == "E-Money" && (
                       <>
                         <div

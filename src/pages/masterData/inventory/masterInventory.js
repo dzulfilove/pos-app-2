@@ -44,6 +44,7 @@ function MasterInventory() {
   const [refresh, setRefresh] = useState(false);
   const [isDetail, setIsDetail] = useState(false);
   const [dataDetail, setDataDetail] = useState({});
+  const [dataReal, setDataReal] = useState([]);
   const [indexDetail, setIndexDetail] = useState(0);
   const [totalStok, setTotalStok] = useState(0);
   const [totalStokMasuk, setTotalStokMasuk] = useState(0);
@@ -155,6 +156,8 @@ function MasterInventory() {
             id: doc.id,
             ...data,
             item: itemData,
+            isCash: categoryData.isCash ? true : false,
+            isIncome: categoryData.isincome ? true : false,
             category: categoryData,
             itemId: itemRef.id,
             categoryId: categoryRef.id,
@@ -164,6 +167,12 @@ function MasterInventory() {
 
       // Hapus nilai null dari items
       const filteredItems = items.filter((item) => item !== null);
+      const itemsBarang = filteredItems
+        .filter((item) => item.isCash === false && item.isIncome === false)
+        .map((item) => ({
+          id: item.itemId,
+          name: item.item.itemName,
+        }));
 
       // Mengelompokkan data inventory berdasarkan kategori
       const groupedData = filteredItems.reduce((acc, item) => {
@@ -198,7 +207,9 @@ function MasterInventory() {
         return total + (parseInt(item.stock) || 0);
       }, 0);
 
+      setDataReal(itemsBarang);
       setTotalStok(totalStok);
+      console.log(filteredItems);
       console.log("Grouped Items", groupedArray);
       setDataStok(filteredItems);
       setDataDisplay(groupedArray);
@@ -332,6 +343,14 @@ function MasterInventory() {
   };
 
   const addNewForm = () => {
+    if (barang == null || satuan == "" || stok == 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Data Belum Lengkap",
+        text: "Lengkapi data Barang, Satuan, dan Stok sebelum menambahkan data tambahan",
+      });
+      return;
+    }
     setAdditionalForms([
       ...additionalForms,
       {
@@ -395,6 +414,23 @@ function MasterInventory() {
     }
 
     try {
+      const result = checkDataMatch(additionalForms, dataReal);
+      if (additionalForms.length < dataReal.length) {
+        console.log(result);
+
+        if (result.allMatched == false) {
+          console.log(result.notFoundItems);
+          const namaString = result.notFoundItems
+            .map((item) => item.name)
+            .join(", ");
+          Swal.fire({
+            icon: "error",
+            title: "Data tidak sesuai",
+            text: "Data Stok Yang belum ditambahkan : " + namaString,
+          });
+          return;
+        }
+      }
       // Menggunakan transaksi
       await runTransaction(db, async (transaction) => {
         for (const data of dataGroup) {
@@ -482,7 +518,24 @@ function MasterInventory() {
       );
     }
   };
+  function checkDataMatch(dataNow, dataItems) {
+    console.log(dataNow);
+    console.log(dataItems);
+    // Filter `dataNow` untuk mencari item yang id-nya tidak ada di `dataItems`
+    const notFoundItems = dataItems.filter(
+      (item) => !dataNow.some((nowItem) => nowItem.barang.value === item.id)
+    );
 
+    // isMatch akan true jika ada kecocokan sebagian atau total
+    const isMatch = notFoundItems.length !== dataItems.length;
+
+    // Jika `notFoundItems` kosong, berarti semua item ditemukan, allMatched menjadi true
+    return {
+      allMatched: notFoundItems.length === 0,
+      isMatch: isMatch,
+      notFoundItems: notFoundItems,
+    };
+  }
   const handleDetailData = (id) => {
     if (indexDetail === id && isDetail) {
       setIsDetail(false);
@@ -578,7 +631,6 @@ function MasterInventory() {
   console.log(dataDetail, "Detail data");
   return (
     <div ref={targetRef}>
-
       {isLoad ? (
         <>
           <div className="w-full h-[100vh] flex flex-col justify-center items-center">
@@ -590,10 +642,7 @@ function MasterInventory() {
         </>
       ) : (
         <>
-          <div
-          
-            className="w-full h-full flex flex-col justify-start items-center"
-          >
+          <div className="w-full h-full flex flex-col justify-start items-center">
             <div
               data-aos="slide-down"
               data-aos-delay="50"
