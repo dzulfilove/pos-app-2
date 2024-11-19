@@ -177,9 +177,11 @@ function TodayEmoney() {
 
       if (dataEmoney.length > 0) {
         const transactionTarik = dataEmoney.filter(
-          (a) => a.type == "Tarik Dana"
+          (a) => a.type == "Tarik Tunai"
         );
-        const transactionTopup = dataEmoney.filter((a) => a.type == "Topup");
+        const transactionTopup = dataEmoney.filter(
+          (a) => a.type == "Topup" || a.type == "Transfer"
+        );
         const transactionUnCheck = dataEmoney.filter(
           (a) => a.isCheck == false || !a.isCheck
         );
@@ -200,7 +202,7 @@ function TodayEmoney() {
         const totalTarik = dataEmoney
           .filter(
             (transaction) =>
-              transaction.type === "Tarik Dana" &&
+              transaction.type === "Tarik Tunai" &&
               !transaction.item.itemName.toLowerCase().includes("piutang")
           )
           .reduce((acc, transaction) => acc + transaction.total, 0);
@@ -233,8 +235,8 @@ function TodayEmoney() {
         const totalTopup = dataEmoney
           .filter(
             (transaction) =>
-              transaction.type == "Topup" &&
-              !transaction.item.itemName.toLowerCase().includes("piutang")
+              !transaction.item.itemName.toLowerCase().includes("piutang") &&
+              (transaction.type == "Topup" || transaction.type == "Transfer")
           )
           .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -500,31 +502,9 @@ function TodayEmoney() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
-              {value.type} {value.productName}{" "}
-              {value.category.isIncome
-                ? formatRupiah(
-                    parseInt(value.price) -
-                      parseInt(value.adminFee) -
-                      parseInt(value.income)
-                  )
-                : formatRupiah(
-                    parseInt(value.price) - parseInt(value.adminFee)
-                  )}
+              {value.type} {value.productName}
             </button>
           );
-        },
-      },
-    },
-    {
-      name: "adminfee",
-      label: "Admin",
-      options: {
-        filter: true,
-        sort: true,
-        customBodyRender: (value) => {
-          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
-          const price = formatRupiah(value);
-          return price; // Kembalikan tanggal dalam format yang diinginkan
         },
       },
     },
@@ -541,6 +521,20 @@ function TodayEmoney() {
         },
       },
     },
+    {
+      name: "adminfee",
+      label: "Admin",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+
     {
       name: "data",
       label: "Untung",
@@ -633,24 +627,14 @@ function TodayEmoney() {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
               {value.type} {value.productName}{" "}
-              {value.category.isIncome
-                ? formatRupiah(
-                    parseInt(value.price) -
-                      parseInt(value.adminFee) -
-                      parseInt(value.income)
-                  )
-                : formatRupiah(
-                    parseInt(value.price) - parseInt(value.adminFee)
-                  )}
             </button>
           );
         },
       },
     },
-
     {
-      name: "adminfee",
-      label: "Admin",
+      name: "harga",
+      label: "Harga",
       options: {
         filter: true,
         sort: true,
@@ -662,8 +646,8 @@ function TodayEmoney() {
       },
     },
     {
-      name: "harga",
-      label: "Harga",
+      name: "adminfee",
+      label: "Admin",
       options: {
         filter: true,
         sort: true,
@@ -776,30 +760,8 @@ function TodayEmoney() {
           return (
             <button className="flex justify-start items-center gap-2 w-full">
               {value.type} {value.productName}{" "}
-              {value.category.isIncome
-                ? formatRupiah(
-                    parseInt(value.price) -
-                      parseInt(value.adminFee) -
-                      parseInt(value.income)
-                  )
-                : formatRupiah(
-                    parseInt(value.price) - parseInt(value.adminFee)
-                  )}
             </button>
           );
-        },
-      },
-    },
-    {
-      name: "adminfee",
-      label: "Admin",
-      options: {
-        filter: true,
-        sort: true,
-        customBodyRender: (value) => {
-          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
-          const price = formatRupiah(value);
-          return price; // Kembalikan tanggal dalam format yang diinginkan
         },
       },
     },
@@ -816,6 +778,20 @@ function TodayEmoney() {
         },
       },
     },
+    {
+      name: "adminfee",
+      label: "Admin",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => {
+          // Mengonversi tanggal dari format DD/MM/YYYY ke format yang diinginkan
+          const price = formatRupiah(value);
+          return price; // Kembalikan tanggal dalam format yang diinginkan
+        },
+      },
+    },
+
     {
       name: "data",
       label: "Untung",

@@ -978,9 +978,7 @@ function TodayReport() {
   const dataAll = dataTransaction.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? `${a.item.itemName} ${a.productName}`
         : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
@@ -990,9 +988,7 @@ function TodayReport() {
   const dataCash = dataTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? `${a.item.itemName} ${a.productName}`
         : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,
@@ -1003,9 +999,7 @@ function TodayReport() {
   const dataNonCash = dataNonTunai.map((a) => {
     return {
       itemName: a.category.isCash
-        ? `${a.item.itemName} ${a.productName} ${formatRupiah(
-            parseInt(a.price) - parseInt(a.adminFee)
-          )}`
+        ? `${a.item.itemName} ${a.productName}`
         : a.item.itemName,
       jumlah: a.quantity,
       harga: a.price,

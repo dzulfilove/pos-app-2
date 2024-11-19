@@ -67,6 +67,7 @@ function MainTransaction() {
   const [namaProduk, setNamaProduk] = useState("");
   const [isLoad, setIsLoad] = useState(false);
   const [isIncome, setIsIncome] = useState(false);
+  const [isUntung, setIsUntung] = useState({ text: "Ya", value: true });
   const [isData, setIsData] = useState(true);
   const cabang = sessionStorage.getItem("cabang");
   const peran = sessionStorage.getItem("peran");
@@ -153,7 +154,9 @@ function MainTransaction() {
         .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const transactionTarik = dataEmoney.filter((a) => a.type == "Tarik Dana");
+      const transactionTarik = dataEmoney.filter(
+        (a) => a.type == "Tarik Tunai"
+      );
 
       const totalTarikLuar = transactionTarik
         .filter((transaction) => transaction.payment == "Admin Luar")
@@ -176,8 +179,8 @@ function MainTransaction() {
       const totalTopup = dataEmoney
         .filter(
           (transaction) =>
-            transaction.type == "Topup" &&
-            !transaction.item.itemName.toLowerCase().includes("piutang")
+            !transaction.item.itemName.toLowerCase().includes("piutang") &&
+            (transaction.type == "Topup" || transaction.type == "Transfer")
         )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
@@ -477,12 +480,15 @@ function MainTransaction() {
       if (jenis === "E-Money") {
         dataSend = {
           refItem: itemRef,
-          productName: selectedBarang.text,
+          productName: `${selectedBarang.text} ${formatRupiah(
+            parseInt(bayar) - parseInt(adminFee)
+          )}`,
           refCategory: categoryRef,
           quantity: 1,
           price: roundUp(parseInt(bayar)),
           payment:
-            jenisTransaksi.text === "Topup"
+            jenisTransaksi.text === "Topup" ||
+            jenisTransaksi.text === "Transfer"
               ? "Admin Dalam"
               : jenisPembayaran.value,
           adminFee: parseInt(adminFee),
@@ -498,7 +504,14 @@ function MainTransaction() {
         if (isCash == true && isIncome == false) {
           dataSend = {
             refItem: itemRef,
-            productName: namaProduk,
+            productName:
+              isUntung.value == false
+                ? `${namaProduk} ${formatRupiah(
+                    parseInt(bayar) - parseInt(adminFee) - parseInt(untung)
+                  )}`
+                : `${namaProduk} ${formatRupiah(
+                    parseInt(bayar) - parseInt(adminFee)
+                  )}`,
             refCategory: categoryRef,
             quantity: 1,
             price: roundUp(parseInt(bayar)),
@@ -506,7 +519,8 @@ function MainTransaction() {
             date: tanggal,
             time: jam,
             isCash: true,
-            adminFee: parseInt(adminFee),
+            adminFee:
+              isUntung.value == false ? parseInt(untung) : parseInt(adminFee),
             month: bulan,
             year: tahun,
             isCheck: false,
@@ -515,7 +529,9 @@ function MainTransaction() {
         if (isCash == true && isIncome == true) {
           dataSend = {
             refItem: itemRef,
-            productName: selectedBarang.text,
+            productName: `${selectedBarang.text} ${formatRupiah(
+              parseInt(bayar) - parseInt(adminFee) - parseInt(untung)
+            )}`,
             refCategory: categoryRef,
             quantity: 1,
             price: roundUp(parseInt(bayar)),
@@ -607,6 +623,7 @@ function MainTransaction() {
       setJenis("");
       setIsCash(false);
       setIsOpen(false);
+      setIsUntung({ text: "Ya", value: true });
       setIsIncome(false);
       setUntung(0);
       setNamaProduk("");
@@ -718,7 +735,7 @@ function MainTransaction() {
   };
 
   const info = () => {
-    const string = `Item Tagihan = Listrik, Air, dll<br>Item Top-up : Top up game apapun<br>Item Pulsa : Pulsa All Operator<br>Sisanya cari Sesuai Nama Item`;
+    const string = `Transfer Bank : Tarik Tunai / Transfer Tunai <br>Item Tagihan = Listrik, Air, dll<br>Item Top-up : Top up game apapun<br>Item Pulsa : Pulsa All Operator<br>Sisanya cari Sesuai Nama Item`;
     Swal.fire({
       icon: "info",
       title: "Info Item",
@@ -740,7 +757,7 @@ function MainTransaction() {
 
     if (data.category.nameCategory == "E-Money") {
       const pay = getObject(optionPembayaranEMoney, data.payment);
-      const trans = getObject(jenisTrans, data.type);
+      const trans = data.type.toLowerCase.includes("transfer") ? getObject(jenisBank, data.type):getObject(jenisTrans, data.type);
       const barang = getObject2(dataBarang, data.productName);
       setSelectedBarang(barang);
       setJenisPembayaran(pay);
@@ -947,7 +964,8 @@ function MainTransaction() {
             quantity: 1,
             price: parseInt(bayar),
             payment:
-              jenisTransaksi.text === "Topup"
+              jenisTransaksi.text === "Topup" ||
+              jenisTransaksi.text === "Transfer"
                 ? "Admin Dalam"
                 : jenisPembayaran.value,
             adminFee: parseInt(adminFee),
@@ -1107,18 +1125,10 @@ function MainTransaction() {
             >
               {value.category.nameCategory == "E-Money" || value.isCash == true
                 ? value.category.nameCategory == "E-Money"
-                  ? `${value.type}, ${value.productName} ${formatRupiah(
-                      parseInt(value.price) - parseInt(value.adminFee)
-                    )}`
+                  ? `${value.type}, ${value.productName}`
                   : value.category.isIncome
-                  ? `${value.productName} ${formatRupiah(
-                      parseInt(value.price) -
-                        parseInt(value.adminFee) -
-                        parseInt(value.income)
-                    )}`
-                  : `${value.productName} ${formatRupiah(
-                      parseInt(value.price) - parseInt(value.adminFee)
-                    )}`
+                  ? `${value.productName}`
+                  : `${value.productName}`
                 : value.item.itemName}
             </button>
           );
@@ -1236,18 +1246,10 @@ function MainTransaction() {
             >
               {value.category.nameCategory == "E-Money" || value.isCash == true
                 ? value.category.nameCategory == "E-Money"
-                  ? `${value.type}, ${value.productName} ${formatRupiah(
-                      parseInt(value.price) - parseInt(value.adminFee)
-                    )}`
+                  ? `${value.type}, ${value.productName}`
                   : value.category.isIncome
-                  ? `${value.productName} ${formatRupiah(
-                      parseInt(value.price) -
-                        parseInt(value.adminFee) -
-                        parseInt(value.income)
-                    )}`
-                  : `${value.productName} ${formatRupiah(
-                      parseInt(value.price) - parseInt(value.adminFee)
-                    )}`
+                  ? `${value.productName}`
+                  : `${value.productName}`
                 : value.item.itemName}
             </button>
           );
@@ -1326,7 +1328,15 @@ function MainTransaction() {
 
   const jenisTrans = [
     { text: "Topup", value: "Topup" },
-    { text: "Tarik Dana", value: "Tarik Dana" },
+    { text: "Tarik Tunai", value: "Tarik Tunai" },
+  ];
+  const jenisBank = [
+    { text: "Transfer", value: "Transfer" },
+    { text: "Tarik Tunai", value: "Tarik Tunai" },
+  ];
+  const jenisUntung = [
+    { text: "Ya", value: true },
+    { text: "Tidak", value: false },
   ];
 
   const getObject = (arr, item) => {
@@ -1594,6 +1604,23 @@ function MainTransaction() {
                             }}
                           />
                         </div>
+                        <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                          <h4 className="font-medium text-xs">
+                            Untung = Admin ?
+                          </h4>
+                          <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                            <DropdownSearch
+                              change={(data) => {
+                                setIsUntung(data);
+                                setRefresh(true);
+                              }}
+                              options={jenisUntung}
+                              refresh={refresh}
+                              value={isUntung}
+                              name={"Jenis Untung"}
+                            />
+                          </div>
+                        </div>
                       </>
                     )}
                   {jenis == "E-Money" && isCash == false && (
@@ -1685,6 +1712,21 @@ function MainTransaction() {
                           }}
                         />
                       </div>
+                      {isUntung.value == false && (
+                        <>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">Untung</h4>
+                            <input
+                              type="number"
+                              className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                              value={untung}
+                              onChange={(e) => {
+                                setUntung(e.target.value);
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
                       {isIncome && (
                         <>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
@@ -1740,31 +1782,70 @@ function MainTransaction() {
                       </div>
                       {jenis == "E-Money" && (
                         <>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">
-                              Jenis Transaksi
-                            </h4>
-                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                              <DropdownSearch
-                                change={(data) => {
-                                  setRefresh(true);
-                                  setJenisTransaksi(data);
-                                  if (data.text == "Topup") {
-                                    setJenisPembayaran(
-                                      getObject(
-                                        optionPembayaranEMoney,
-                                        "Admin Dalam"
-                                      )
-                                    );
-                                  }
-                                }}
-                                options={jenisTrans}
-                                value={jenisTransaksi}
-                                refresh={refresh}
-                                name={"Transaksi"}
-                              />
-                            </div>
-                          </div>
+                          {selectedBarang.text &&
+                            selectedBarang.text
+                              .toLowerCase()
+                              .includes("transfer") && (
+                              <>
+                                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                  <h4 className="font-medium text-xs">
+                                    Jenis Transaksi
+                                  </h4>
+                                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                    <DropdownSearch
+                                      change={(data) => {
+                                        setRefresh(true);
+                                        setJenisTransaksi(data);
+                                        if (data.text == "Transfer") {
+                                          setJenisPembayaran(
+                                            getObject(
+                                              optionPembayaranEMoney,
+                                              "Admin Dalam"
+                                            )
+                                          );
+                                        }
+                                      }}
+                                      options={jenisBank}
+                                      value={jenisTransaksi}
+                                      refresh={refresh}
+                                      name={"Transaksi"}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          {selectedBarang.text &&
+                            !selectedBarang.text
+                              .toLowerCase()
+                              .includes("transfer") && (
+                              <>
+                                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                  <h4 className="font-medium text-xs">
+                                    Jenis Transaksi
+                                  </h4>
+                                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                    <DropdownSearch
+                                      change={(data) => {
+                                        setRefresh(true);
+                                        setJenisTransaksi(data);
+                                        if (data.text == "Topup") {
+                                          setJenisPembayaran(
+                                            getObject(
+                                              optionPembayaranEMoney,
+                                              "Admin Dalam"
+                                            )
+                                          );
+                                        }
+                                      }}
+                                      options={jenisTrans}
+                                      value={jenisTransaksi}
+                                      refresh={refresh}
+                                      name={"Transaksi"}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
                         </>
                       )}
                       {jenisTransaksi && (
@@ -1944,18 +2025,18 @@ function MainTransaction() {
                             </div>
                             <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                               <h4 className="font-medium text-xs">
-                                Jenis Pembayaran
+                                Untung = Admin ?
                               </h4>
                               <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                                 <DropdownSearch
                                   change={(data) => {
-                                    setJenisPembayaran(data);
+                                    setIsUntung(data);
                                     setRefresh(true);
                                   }}
-                                  options={optionPembayaran}
+                                  options={jenisUntung}
                                   refresh={refresh}
-                                  value={jenisPembayaran}
-                                  name={"Pembayaran"}
+                                  value={isUntung}
+                                  name={"Jenis Untung"}
                                 />
                               </div>
                             </div>
@@ -2068,6 +2149,38 @@ function MainTransaction() {
                               />
                             </div>
                           </div>
+                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                            <h4 className="font-medium text-xs">
+                              Jenis Pembayaran
+                            </h4>
+                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                              <DropdownSearch
+                                change={(data) => {
+                                  setJenisPembayaran(data);
+                                  setRefresh(true);
+                                }}
+                                options={optionPembayaran}
+                                refresh={refresh}
+                                value={jenisPembayaran}
+                                name={"Pembayaran"}
+                              />
+                            </div>
+                          </div>
+                          {isUntung.value == false && (
+                            <>
+                              <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                <h4 className="font-medium text-xs">Untung</h4>
+                                <input
+                                  type="number"
+                                  className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                  value={untung}
+                                  onChange={(e) => {
+                                    setUntung(e.target.value);
+                                  }}
+                                />
+                              </div>
+                            </>
+                          )}
                         </>
                       )}
                     {jenis == "E-Money" && (
@@ -2089,31 +2202,70 @@ function MainTransaction() {
                             />
                           </div>
 
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">
-                              Jenis Transaksi
-                            </h4>
-                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                              <DropdownSearch
-                                change={(data) => {
-                                  setRefresh(true);
-                                  setJenisTransaksi(data);
-                                  if (data.text == "Topup") {
-                                    setJenisPembayaran(
-                                      getObject(
-                                        optionPembayaranEMoney,
-                                        "Admin Dalam"
-                                      )
-                                    );
-                                  }
-                                }}
-                                options={jenisTrans}
-                                value={jenisTransaksi}
-                                refresh={refresh}
-                                name={"Transaksi"}
-                              />
-                            </div>
-                          </div>
+                          {dataEdit.type &&
+                            dataEdit.type
+                              .toLowerCase()
+                              .includes("transfer") && (
+                              <>
+                                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                  <h4 className="font-medium text-xs">
+                                    Jenis Transaksi
+                                  </h4>
+                                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                    <DropdownSearch
+                                      change={(data) => {
+                                        setRefresh(true);
+                                        setJenisTransaksi(data);
+                                        if (data.text == "Transfer") {
+                                          setJenisPembayaran(
+                                            getObject(
+                                              optionPembayaranEMoney,
+                                              "Admin Dalam"
+                                            )
+                                          );
+                                        }
+                                      }}
+                                      options={jenisBank}
+                                      value={jenisTransaksi}
+                                      refresh={refresh}
+                                      name={"Transaksi"}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          {dataEdit.type &&
+                            !dataEdit.type
+                              .toLowerCase()
+                              .includes("transfer") && (
+                              <>
+                                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                  <h4 className="font-medium text-xs">
+                                    Jenis Transaksi
+                                  </h4>
+                                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                    <DropdownSearch
+                                      change={(data) => {
+                                        setRefresh(true);
+                                        setJenisTransaksi(data);
+                                        if (data.text == "Topup") {
+                                          setJenisPembayaran(
+                                            getObject(
+                                              optionPembayaranEMoney,
+                                              "Admin Dalam"
+                                            )
+                                          );
+                                        }
+                                      }}
+                                      options={jenisTrans}
+                                      value={jenisTransaksi}
+                                      refresh={refresh}
+                                      name={"Transaksi"}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           {jenisTransaksi && (
                             <>
                               {jenisTransaksi.text == "Topup" ? (

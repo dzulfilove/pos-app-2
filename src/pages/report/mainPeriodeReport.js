@@ -185,7 +185,9 @@ function PeriodeReport() {
         .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
-      const transactionTarik = dataEmoney.filter((a) => a.type == "Tarik Dana");
+      const transactionTarik = dataEmoney.filter(
+        (a) => a.type == "Tarik Tunai"
+      );
 
       const totalTarikLuar = transactionTarik
         .filter((transaction) => transaction.payment == "Admin Luar")
@@ -208,8 +210,8 @@ function PeriodeReport() {
       const totalTopup = dataEmoney
         .filter(
           (transaction) =>
-            transaction.type == "Topup" &&
-            !transaction.item.itemName.toLowerCase().includes("piutang")
+            !transaction.item.itemName.toLowerCase().includes("piutang") &&
+            (transaction.type == "Topup" || transaction.type == "Transfer")
         )
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
