@@ -746,6 +746,8 @@ function MainTransaction() {
   const updateClick = (data) => {
     setIdEdit(data.id);
     console.log(data);
+    const angkaPrice = parseInt(data.productName.replace(/[^\d]/g, ""), 10);
+
     if (data.id !== idEdit) {
       setIsEdit(true);
     } else {
@@ -757,7 +759,9 @@ function MainTransaction() {
 
     if (data.category.nameCategory == "E-Money") {
       const pay = getObject(optionPembayaranEMoney, data.payment);
-      const trans = data.type.toLowerCase.includes("transfer") ? getObject(jenisBank, data.type):getObject(jenisTrans, data.type);
+      const trans = data.type.toLowerCase.includes("transfer")
+        ? getObject(jenisBank, data.type)
+        : getObject(jenisTrans, data.type);
       const barang = getObject2(dataBarang, data.productName);
       setSelectedBarang(barang);
       setJenisPembayaran(pay);
@@ -803,15 +807,26 @@ function MainTransaction() {
       data.isCash == true &&
       data.isIncome == false
     ) {
+      const incomeData = data.income ? data.income : 0;
+      const adminMinPrice = parseInt(data.price) - parseInt(data.adminFee);
+
+      const feeAdmin =
+        parseInt(adminMinPrice) != parseInt(angkaPrice)
+          ? parseInt(adminMinPrice) - parseInt(angkaPrice)
+          : data.adminFee;
       const pay = getObject(optionPembayaran, data.payment);
       if (data.category.isIncome) {
         setIsIncome(data.category.isIncome);
         setUntung(data.income);
       }
+      setUntung(data.adminFee);
+      if (parseInt(adminMinPrice) != parseInt(angkaPrice)) {
+        setIsUntung({ text: "Tidak", value: false });
+      }
       setJenisPembayaran(pay);
       setBayar(data.price);
       setNamaProduk(data.productName);
-      setAdminFee(data.adminFee);
+      setAdminFee(feeAdmin);
       setJenis(data.category.nameCategory);
       setIsCash(data.isCash);
     }
@@ -1977,7 +1992,7 @@ function MainTransaction() {
                           </div>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">
-                              Jenis Pembayaran
+                              Jenis Pembayaran haha
                             </h4>
                             <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                               <DropdownSearch
@@ -2072,7 +2087,7 @@ function MainTransaction() {
                             </div>
                             <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                               <h4 className="font-medium text-xs">
-                                Jenis Pembayaran
+                                Jenis Pembayaran haha 2
                               </h4>
                               <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                                 <DropdownSearch
@@ -2148,39 +2163,41 @@ function MainTransaction() {
                                 }}
                               />
                             </div>
-                          </div>
-                          <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                            <h4 className="font-medium text-xs">
-                              Jenis Pembayaran
-                            </h4>
-                            <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                              <DropdownSearch
-                                change={(data) => {
-                                  setJenisPembayaran(data);
-                                  setRefresh(true);
-                                }}
-                                options={optionPembayaran}
-                                refresh={refresh}
-                                value={jenisPembayaran}
-                                name={"Pembayaran"}
-                              />
-                            </div>
-                          </div>
-                          {isUntung.value == false && (
-                            <>
-                              <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                                <h4 className="font-medium text-xs">Untung</h4>
-                                <input
-                                  type="number"
-                                  className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                                  value={untung}
-                                  onChange={(e) => {
-                                    setUntung(e.target.value);
+                            {isUntung.value == false && (
+                              <>
+                                <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                                  <h4 className="font-medium text-xs">
+                                    Untung
+                                  </h4>
+                                  <input
+                                    type="number"
+                                    className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                                    value={untung}
+                                    onChange={(e) => {
+                                      setUntung(e.target.value);
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            )}
+                            <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
+                              <h4 className="font-medium text-xs">
+                                Jenis Pembayaran haha3
+                              </h4>
+                              <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
+                                <DropdownSearch
+                                  change={(data) => {
+                                    setJenisPembayaran(data);
+                                    setRefresh(true);
                                   }}
+                                  options={optionPembayaran}
+                                  refresh={refresh}
+                                  value={jenisPembayaran}
+                                  name={"Pembayaran"}
                                 />
                               </div>
-                            </>
-                          )}
+                            </div>
+                          </div>
                         </>
                       )}
                     {jenis == "E-Money" && (
@@ -2274,7 +2291,7 @@ function MainTransaction() {
                                 <>
                                   <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                                     <h4 className="font-medium text-xs">
-                                      Jenis Pembayaran
+                                      Jenis Pembayaran E-Money
                                     </h4>
                                     <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                                       <DropdownSearch
