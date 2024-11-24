@@ -64,6 +64,7 @@ function MasterInventory() {
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const cabang = sessionStorage.getItem("cabang");
+  const peran = sessionStorage.getItem("peran");
 
   const [keterangan, setKeterangan] = useState("");
   const [satuan, setSatuan] = useState("");
@@ -415,7 +416,7 @@ function MasterInventory() {
 
     try {
       const result = checkDataMatch(additionalForms, dataReal);
-      if (additionalForms.length < dataReal.length) {
+      if (additionalForms.length < dataReal.length && peran !== "Super Admin") {
         console.log(result);
 
         if (result.allMatched == false) {

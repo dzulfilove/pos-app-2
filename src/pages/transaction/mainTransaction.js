@@ -40,7 +40,7 @@ function MainTransaction() {
   const [dataDetail, setDataDetail] = useState({});
   const [isOpen, setIsOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
-  const [jumlahBarang, setJumlahBarang] = useState(0);
+  const [jumlahBarang, setJumlahBarang] = useState(1);
   const [idEdit, setIdEdit] = useState("");
   const [jenisTransaksi, setJenisTransaksi] = useState(null);
   const [harga, setHarga] = useState(0);
@@ -69,8 +69,12 @@ function MainTransaction() {
   const [isIncome, setIsIncome] = useState(false);
   const [isUntung, setIsUntung] = useState({ text: "Ya", value: true });
   const [isData, setIsData] = useState(true);
+  const [judul, setJudul] = useState([]);
+  const [dataExport, setDataExport] = useState([]);
+  const [totalUntung, setTotalUntung] = useState(0);
   const cabang = sessionStorage.getItem("cabang");
   const peran = sessionStorage.getItem("peran");
+
   const targetRef = useRef(null);
 
   useEffect(() => {
@@ -117,7 +121,44 @@ function MainTransaction() {
 
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
+          let profit = data.adminFee;
 
+          if (categoryData.nameCategory == "E-Money") {
+            profit = data.adminFee;
+          }
+
+          if (
+            itemData.itemName.toLowerCase().includes("pendapatan") ||
+            itemData.itemName.toLowerCase().includes("piutang")
+          ) {
+            profit = 0;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            !categoryData.isCash &&
+            categoryData.nameCategory !== "E-Money"
+          ) {
+            profit = total - data.quantity * itemData.buyPrice;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash
+          ) {
+            profit = data.adminFee;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash &&
+            categoryData.isIncome
+          ) {
+            profit = data.income;
+          }
           return {
             id: doc.id,
             ...data,
@@ -126,6 +167,7 @@ function MainTransaction() {
             isCash: categoryData.isCash ? true : false,
             isIncome: categoryData.isIncome ? true : false,
             itemId: itemRef.id,
+            profit: profit,
             categoryId: categoryRef.id,
             total: total, // Tambahkan properti total
           };
@@ -137,10 +179,10 @@ function MainTransaction() {
           !a.item.itemName.toLowerCase().includes("piutang")
       );
 
-      const dataEmoney = transactions.filter(
+      const dataEmoney = transData.filter(
         (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
       );
-      const dataFull = transactions.filter(
+      const dataFull = transData.filter(
         (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
       );
 
@@ -154,6 +196,10 @@ function MainTransaction() {
         .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
+      const totalUntungItem = transData.reduce(
+        (acc, transaction) => acc + transaction.profit,
+        0
+      );
       const transactionTarik = dataEmoney.filter(
         (a) => a.type == "Tarik Tunai"
       );
@@ -249,9 +295,11 @@ function MainTransaction() {
         return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
 
+      await formatCSVData(sortedtransData);
       console.log("SortedItem:", sortedtransData);
       setitemTerlaris(mostFrequentItem);
       setIsData(false);
+      setTotalUntung(totalUntungItem);
       setSisaFisik(sisaFisik + totalNominalItem);
       setDataTransaction(sortedtransData); // Simpan transaksi ke state
       setTotalNominal(totalNominal); // Simpan total nominal ke state
@@ -618,7 +666,7 @@ function MainTransaction() {
       setBayar(0);
       setHarga(0);
       setAdminFee(0);
-      setJumlahBarang(0);
+      setJumlahBarang(1);
       setIsLoad(false);
       setJenis("");
       setIsCash(false);
@@ -747,6 +795,7 @@ function MainTransaction() {
     setIdEdit(data.id);
     console.log(data);
     const angkaPrice = parseInt(data.productName.replace(/[^\d]/g, ""), 10);
+    const namOfProduct = data.productName.replace(/Rp|[^a-zA-Z]/g, "");
 
     if (data.id !== idEdit) {
       setIsEdit(true);
@@ -807,7 +856,6 @@ function MainTransaction() {
       data.isCash == true &&
       data.isIncome == false
     ) {
-      const incomeData = data.income ? data.income : 0;
       const adminMinPrice = parseInt(data.price) - parseInt(data.adminFee);
 
       const feeAdmin =
@@ -825,7 +873,11 @@ function MainTransaction() {
       }
       setJenisPembayaran(pay);
       setBayar(data.price);
-      setNamaProduk(data.productName);
+      setNamaProduk(
+        parseInt(adminMinPrice) != parseInt(angkaPrice)
+          ? namOfProduct
+          : data.productName
+      );
       setAdminFee(feeAdmin);
       setJenis(data.category.nameCategory);
       setIsCash(data.isCash);
@@ -990,7 +1042,9 @@ function MainTransaction() {
         } else if (jenis !== "E-Money" && isCash == true) {
           if (isIncome == true) {
             dataSend = {
-              productName: selectedBarang.text,
+              productName: `${selectedBarang.text} ${formatRupiah(
+                parseInt(bayar) - parseInt(adminFee) - parseInt(untung)
+              )}`,
               income: parseInt(untung),
               quantity: parseInt(jumlahBarang),
               price: parseInt(bayar),
@@ -1000,11 +1054,19 @@ function MainTransaction() {
             };
           } else {
             dataSend = {
-              productName: namaProduk,
+              productName:
+                isUntung.value == false
+                  ? `${namaProduk} ${formatRupiah(
+                      parseInt(bayar) - parseInt(adminFee) - parseInt(untung)
+                    )}`
+                  : `${namaProduk} ${formatRupiah(
+                      parseInt(bayar) - parseInt(adminFee)
+                    )}`,
               quantity: parseInt(jumlahBarang),
               price: parseInt(bayar),
               payment: jenisPembayaran.value,
-              adminFee: parseInt(adminFee),
+              adminFee:
+                isUntung.value == false ? parseInt(untung) : parseInt(adminFee),
               time: jam,
             };
           }
@@ -1077,7 +1139,8 @@ function MainTransaction() {
       setIsIncome(false);
       setUntung(0);
       setAdminFee(0);
-      setJumlahBarang(0);
+      setJumlahBarang(1);
+      setIsUntung({ text: "Ya", value: true });
       setIsLoad(false);
       setJenis("");
       setIsCash(false);
@@ -1330,6 +1393,111 @@ function MainTransaction() {
       data: a,
     };
   });
+  const formatTanggal = (tanggal) => {
+    const bulanIndonesia = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    // Pecah string tanggal ke dalam array [DD, MM, YYYY]
+    const [dd, mm, yyyy] = tanggal.split("/");
+
+    // Ambil nama bulan berdasarkan indeks (0-based)
+    const namaBulan = bulanIndonesia[parseInt(mm, 10) - 1];
+
+    // Gabungkan kembali dalam format "DD [Nama Bulan] YYYY"
+    return `${parseInt(dd, 10)} ${namaBulan} ${yyyy}`;
+  };
+  const formatCSVData = async (data) => {
+    setIsLoad(true);
+    console.log(data, "Awal Data");
+    const reversedData = [...data].reverse();
+    const dataArrayString = reversedData.map((obj, index) => {
+      return [
+        index + 1,
+        obj.date,
+        obj.time,
+        obj.category.nameCategory == "E-Money" || obj.isCash == true
+          ? obj.category.nameCategory == "E-Money"
+            ? `${obj.type}, ${obj.productName}`
+            : obj.category.isIncome
+            ? `${obj.productName}`
+            : `${obj.productName}`
+          : obj.item.itemName,
+        obj.quantity,
+        obj.type == "Tarik Tunai"
+          ? "[" + `${Math.abs(obj.price)}` + "]"
+          : obj.price,
+        obj.type == "Tarik Tunai"
+          ? "[" + `${parseInt(obj.price) * parseInt(obj.quantity)}` + "]"
+          : parseInt(obj.price) * parseInt(obj.quantity),
+
+        obj.type == "Tarik Tunai"
+          ? "[" + `${Math.abs(obj.profit)}` + "]"
+          : obj.profit,
+      ];
+    });
+
+    const propertyNames = [
+      ["Rekap Transaksi Apin Cell" + formatTanggal(data[0].date)],
+      [""],
+
+      [
+        "No",
+        "Tanggal",
+        "Jam",
+        "Nama Product",
+        "Jumlah",
+        "Harga Satuan",
+        "Total Harga",
+        "Untung",
+      ],
+    ];
+
+    console.log(dataArrayString);
+    setJudul(propertyNames);
+    setDataExport(dataArrayString);
+    setIsLoad(false);
+  };
+
+  const convertToCSV = (array) => {
+    console.log(array, "convert");
+    return array.map((row) => row.join(";")).join("\r\n");
+  };
+
+  const downloadCSV = (data, fileName) => {
+    const csvData = new Blob([data], { type: "text/csv;charset=utf-8;" });
+    const csvURL = URL.createObjectURL(csvData);
+    const link = document.createElement("a");
+    link.href = csvURL;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExport = () => {
+    const footer = ["Total", "", "", "", "", "", sisaFisik, totalUntung];
+
+    // Flatten the array for csv
+    const csvContent = convertToCSV([...judul, ...dataExport, footer]);
+    downloadCSV(
+      csvContent,
+      `Data Rekap Transaksi Apin Cell ${formatTanggal(
+        dataTransaction[0].date
+      )}.csv`
+    );
+  };
 
   const optionPembayaran = [
     { text: "Tunai", value: "Tunai" },
@@ -1496,6 +1664,18 @@ function MainTransaction() {
                 className="w-full flex justify-end items-center  p-2 rounded-md mt-5"
               >
                 <div className="flex justify-start gap-6 items-center">
+                  <button
+                    onClick={() => {
+                      handleExport();
+                    }}
+                    type="button"
+                    class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+                  >
+                    <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                      <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+                    </div>
+                    <p class="translate-x-2 text-xs text-white">Export Data</p>
+                  </button>
                   <button
                     onClick={() => {
                       info();
@@ -1992,7 +2172,7 @@ function MainTransaction() {
                           </div>
                           <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                             <h4 className="font-medium text-xs">
-                              Jenis Pembayaran haha
+                              Jenis Pembayaran
                             </h4>
                             <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                               <DropdownSearch
@@ -2087,7 +2267,7 @@ function MainTransaction() {
                             </div>
                             <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                               <h4 className="font-medium text-xs">
-                                Jenis Pembayaran haha 2
+                                Jenis Pembayaran 
                               </h4>
                               <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                                 <DropdownSearch
@@ -2182,7 +2362,7 @@ function MainTransaction() {
                             )}
                             <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                               <h4 className="font-medium text-xs">
-                                Jenis Pembayaran haha3
+                                Jenis Pembayaran
                               </h4>
                               <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                                 <DropdownSearch

@@ -52,7 +52,7 @@ const App = () => {
   const isLamaran = sessionStorage.getItem("isLamaran");
   // const isLoggedIn = true;
   const menus = [
-    { name: "Dashboard", link: "", icon: MdOutlineDashboard, main: false },
+    // { name: "Dashboard", link: "", icon: MdOutlineDashboard, main: false },
     { name: "Transaksi", link: "transaction", icon: FaJediOrder, main: false },
     { name: "Barang", link: "barang", icon: PiShoppingCartBold, main: false },
     {
@@ -336,7 +336,7 @@ const App = () => {
               <div className=" mt-8  text-gray-900 font-semibold w-full flex flex-col justify-start items-center bg-blue-50 px-6 overflow-y-scroll mb-44">
                 <div className="h-[100vh] w-[100%] pt-6  p-0 pb-32 m-0  ">
                   <Routes>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/" element={<MainTransaction />} />
                     <Route path="/barang" element={<MainBarang />} />
                     <Route path="/report" element={<MainReport />} />
 
