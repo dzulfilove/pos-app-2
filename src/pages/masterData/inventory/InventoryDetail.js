@@ -630,7 +630,7 @@ function InventoryDetail({ params }) {
                 onClick={(data) => handleDetailData(value)}
               >
                 <span className="svgContainer">
-                  <IoEyeSharp className="text-xl " />
+                  <IoEyeSharp className="text-base" />
                 </span>
                 <span className="BG bg-blue-600"></span>
               </button>
@@ -642,7 +642,7 @@ function InventoryDetail({ params }) {
                 }}
               >
                 <span className="svgContainer">
-                  <RiPencilFill className="text-xl " />
+                  <RiPencilFill className="text-base " />
                 </span>
                 <span className="BG bg-emerald-500"></span>
               </button>
@@ -653,7 +653,7 @@ function InventoryDetail({ params }) {
                 }}
               >
                 <span className="svgContainer">
-                  <MdDelete className="text-xl " />
+                  <MdDelete className="text-base " />
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>
@@ -1008,7 +1008,7 @@ function InventoryDetail({ params }) {
                                 className="bg-red-500 flex justify-center items-center p-2 rounded-md text-white"
                                 onClick={() => removeForm(form)}
                               >
-                                <MdDelete className="text-xl " />
+                                <MdDelete className="text-base " />
                               </button>
                             </div>
                           </div>

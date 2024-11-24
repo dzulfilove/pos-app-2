@@ -360,7 +360,7 @@ function MasterUser() {
                 }}
               >
                 <span className="svgContainer">
-                  <RiPencilFill className="text-xl " />
+                  <RiPencilFill className="text-base " />
                 </span>
                 <span className="BG bg-emerald-500"></span>
               </button>
@@ -371,7 +371,7 @@ function MasterUser() {
                 }}
               >
                 <span className="svgContainer">
-                  <MdDelete className="text-xl " />
+                  <MdDelete className="text-base " />
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>

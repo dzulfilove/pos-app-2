@@ -1265,7 +1265,7 @@ function MainTransaction() {
                 }}
               >
                 <span className="svgContainer">
-                  <MdDelete className="text-xl " />
+                  <MdDelete className="text-base " />
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>
@@ -1277,7 +1277,7 @@ function MainTransaction() {
                 }}
               >
                 <span className="svgContainer">
-                  <RiPencilFill className="text-xl " />
+                  <RiPencilFill className="text-base " />
                 </span>
                 <span className="BG bg-emerald-500"></span>
               </button>
@@ -1363,7 +1363,7 @@ function MainTransaction() {
                 }}
               >
                 <span className="svgContainer">
-                  <MdDelete className="text-xl " />
+                  <MdDelete className="text-base " />
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>
@@ -1375,7 +1375,7 @@ function MainTransaction() {
                 }}
               >
                 <span className="svgContainer">
-                  <RiPencilFill className="text-xl " />
+                  <RiPencilFill className="text-base " />
                 </span>
                 <span className="BG bg-emerald-500"></span>
               </button>
@@ -2267,7 +2267,7 @@ function MainTransaction() {
                             </div>
                             <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
                               <h4 className="font-medium text-xs">
-                                Jenis Pembayaran 
+                                Jenis Pembayaran
                               </h4>
                               <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                                 <DropdownSearch

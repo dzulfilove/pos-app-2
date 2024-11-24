@@ -362,7 +362,7 @@ function MasterBarang() {
                 }}
               >
                 <span className="svgContainer">
-                  <IoEyeSharp className="text-xl " />
+                  <IoEyeSharp className="text-base" />
                 </span>
                 <span className="BG bg-blue-600"></span>
               </button>
@@ -374,7 +374,7 @@ function MasterBarang() {
                 }}
               >
                 <span className="svgContainer">
-                  <RiPencilFill className="text-xl " />
+                  <RiPencilFill className="text-base " />
                 </span>
                 <span className="BG bg-emerald-500"></span>
               </button>
@@ -385,7 +385,7 @@ function MasterBarang() {
                 }}
               >
                 <span className="svgContainer">
-                  <MdDelete className="text-xl " />
+                  <MdDelete className="text-base " />
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>
@@ -410,7 +410,6 @@ function MasterBarang() {
   console.log(data, "Detail data");
   return (
     <div ref={targetRef}>
-
       {" "}
       <div>
         {isLoad ? (
@@ -424,10 +423,7 @@ function MasterBarang() {
           </>
         ) : (
           <>
-            <div
-            
-              className="w-full h-full flex flex-col justify-start items-center pb-25"
-            >
+            <div className="w-full h-full flex flex-col justify-start items-center pb-25">
               <div
                 data-aos="slide-down"
                 data-aos-delay="50"

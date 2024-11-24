@@ -74,7 +74,7 @@ const TableHistory = (props) => {
                 to={`/history-detail/${formatLink(value)}`}
               >
                 <span className="svgContainer">
-                  <IoEyeSharp className="text-xl " />
+                  <IoEyeSharp className="text-base" />
                 </span>
                 <span className="BG bg-blue-600"></span>
               </Link>

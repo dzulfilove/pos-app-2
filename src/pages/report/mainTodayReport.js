@@ -715,7 +715,7 @@ function TodayReport() {
                     }}
                   >
                     <span className="svgContainer">
-                      <MdDelete className="text-xl " />
+                      <MdDelete className="text-base " />
                     </span>
                     <span className="BG bg-red-500"></span>
                   </button>
@@ -727,7 +727,7 @@ function TodayReport() {
                   }}
                 >
                   <span className="svgContainer">
-                    <IoEyeSharp className="text-xl " />
+                    <IoEyeSharp className="text-base" />
                   </span>
                   <span className="BG bg-blue-600"></span>
                 </button>
@@ -852,7 +852,7 @@ function TodayReport() {
                     }}
                   >
                     <span className="svgContainer">
-                      <MdDelete className="text-xl " />
+                      <MdDelete className="text-base " />
                     </span>
                     <span className="BG bg-red-500"></span>
                   </button>
@@ -949,7 +949,7 @@ function TodayReport() {
                     }}
                   >
                     <span className="svgContainer">
-                      <MdDelete className="text-xl " />
+                      <MdDelete className="text-base " />
                     </span>
                     <span className="BG bg-red-500"></span>
                   </button>
@@ -961,7 +961,7 @@ function TodayReport() {
                   }}
                 >
                   <span className="svgContainer">
-                    <IoEyeSharp className="text-xl " />
+                    <IoEyeSharp className="text-base" />
                   </span>
                   <span className="BG bg-blue-600"></span>
                 </button>

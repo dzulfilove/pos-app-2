@@ -305,7 +305,7 @@ function MasterKategori() {
                 }}
               >
                 <span className="svgContainer">
-                  <IoEyeSharp className="text-xl " />
+                  <IoEyeSharp className="text-base" />
                 </span>
                 <span className="BG bg-blue-600"></span>
               </button>
@@ -319,7 +319,7 @@ function MasterKategori() {
                 }}
               >
                 <span className="svgContainer">
-                  <RiPencilFill className="text-xl " />
+                  <RiPencilFill className="text-base " />
                 </span>
                 <span className="BG bg-emerald-500"></span>
               </button>
@@ -330,7 +330,7 @@ function MasterKategori() {
                 }}
               >
                 <span className="svgContainer">
-                  <MdDelete className="text-xl " />
+                  <MdDelete className="text-base " />
                 </span>
                 <span className="BG bg-red-500"></span>
               </button>

@@ -609,7 +609,7 @@ function MasterInventory() {
                 to={`/inventory-detail/${value.idCategory}`}
               >
                 <span className="svgContainer">
-                  <IoEyeSharp className="text-xl " />
+                  <IoEyeSharp className="text-base" />
                 </span>
                 <span className="BG bg-blue-600"></span>
               </Link>
