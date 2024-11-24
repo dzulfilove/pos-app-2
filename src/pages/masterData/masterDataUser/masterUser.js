@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import MUIDataTable from "mui-datatables";
 import "../../../styles/card.css";
 import { Paper, Button } from "@mui/material";
@@ -45,10 +45,14 @@ function MasterUser() {
   const [isData, setIsData] = useState(true);
   const [refresh, setRefresh] = useState(true);
   const [akses, setAkses] = useState({});
+  const targetRef = useRef(null);
 
   useEffect(() => {
     getAllUser();
   }, []);
+  const scrollToTarget = () => {
+    targetRef.current.scrollIntoView({ behavior: "smooth" });
+  };
   const getAllUser = async () => {
     try {
       // Ambil semua dokumen dari koleksi category
@@ -156,6 +160,8 @@ function MasterUser() {
     }
   };
   const updateClick = (data) => {
+    scrollToTarget();
+
     const selPeran = getObject(optionPeran, data.peran);
     const selcabang = getObject(optionCabang, data.cabang);
     const selAkses = getObject(optionAkses, data.isAccess);
@@ -418,7 +424,7 @@ function MasterUser() {
   ];
   console.log(dataDetail, "Detail data");
   return (
-    <div>
+    <div ref={targetRef}>
       {isLoad ? (
         <>
           <div className="w-full h-[100vh] flex flex-col justify-center items-center">
