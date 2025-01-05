@@ -236,7 +236,7 @@ function MasterBarang() {
 
       Swal.fire({
         title: "Sukses!",
-        text: "Data kategori berhasil diperbarui.",
+        text: "Data Barang berhasil diperbarui.",
         icon: "success",
         confirmButtonText: "OK",
       });
@@ -248,7 +248,7 @@ function MasterBarang() {
       // Tampilkan alert error
       Swal.fire({
         title: "Error!",
-        text: "Terjadi kesalahan saat memperbarui data kategori.",
+        text: "Terjadi kesalahan saat memperbarui data Barang.",
         icon: "error",
         confirmButtonText: "OK",
       });

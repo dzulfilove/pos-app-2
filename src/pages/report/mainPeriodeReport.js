@@ -50,11 +50,14 @@ function PeriodeReport() {
   const [tanggal, setTanggal] = useState(
     dayjs().locale("id").format("DD/MM/YYYY")
   );
+
+  const [isTanggal, setIsTanggal] = useState(false);
   const cabang = sessionStorage.getItem("cabang");
 
   const [totalProfit, setTotalProfit] = useState(0);
   const [sisaFisik, setSisaFisik] = useState(0);
-
+  const [judul, setJudul] = useState([]);
+  const [dataExport, setDataExport] = useState([]);
   const [bulan, setBulan] = useState(dayjs().format("MMMM"));
   const [tahun, setTahun] = useState(dayjs().format("YYYY"));
   const [totalNominal, setTotalNominal] = useState(0);
@@ -77,9 +80,8 @@ function PeriodeReport() {
   };
 
   const getTransactions = async (month, year) => {
-    setIsData(true);
     try {
-      // Buat query dengan filter where untuk bulan dan tahun
+      // Buat query dengan filter where
       const transactionsQuery = query(
         collection(db, `transactions${cabang}`),
         where("month", "==", month), // Ganti kondisi where untuk bulan
@@ -92,19 +94,13 @@ function PeriodeReport() {
       if (querySnapshot.empty) {
         console.log("No transactions found for the given month and year.");
         setIsData(false);
-        setTransUncheck([]);
-        setTotalQris(0);
-        setTotalTransfer(0);
-        setDataTunai([]);
-        setDataNonTunai([]);
-        setItemTerlaris({});
+
         setDataTransaction([]);
         setTotalNominal(0);
         setTotalNominalTunai(0);
         setTotalNominalNonTunai(0);
         return [];
       }
-
       const transactions = await Promise.all(
         querySnapshot.docs.map(async (doc) => {
           const data = doc.data();
@@ -121,7 +117,7 @@ function PeriodeReport() {
 
           // Menghitung total harga dari price * quantity
           const total = data.price * data.quantity;
-          let profit = 0;
+          let profit = data.adminFee;
 
           if (categoryData.nameCategory == "E-Money") {
             profit = data.adminFee;
@@ -131,15 +127,18 @@ function PeriodeReport() {
             itemData.itemName.toLowerCase().includes("pendapatan") ||
             itemData.itemName.toLowerCase().includes("piutang")
           ) {
-            profit = total;
+            profit = 0;
           }
 
           if (
             !itemData.itemName.toLowerCase().includes("pendapatan") &&
             !itemData.itemName.toLowerCase().includes("piutang") &&
-            !categoryData.isCash
+            !categoryData.isCash &&
+            categoryData.nameCategory !== "E-Money"
           ) {
-            profit = total - data.quantity * itemData.buyPrice;
+            profit =
+              parseInt(data.quantity) * parseInt(itemData.sellPrice) -
+              parseInt(data.quantity) * parseInt(itemData.buyPrice);
           }
 
           if (
@@ -149,9 +148,11 @@ function PeriodeReport() {
           ) {
             profit = data.adminFee;
           }
+
           if (
             !itemData.itemName.toLowerCase().includes("pendapatan") &&
             !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash &&
             categoryData.isIncome
           ) {
             profit = data.income;
@@ -161,6 +162,8 @@ function PeriodeReport() {
             ...data,
             item: itemData,
             category: categoryData,
+            isCash: categoryData.isCash ? true : false,
+            isIncome: categoryData.isIncome ? true : false,
             itemId: itemRef.id,
             profit: profit,
             categoryId: categoryRef.id,
@@ -168,23 +171,36 @@ function PeriodeReport() {
           };
         })
       );
-
       const transData = transactions.filter(
         (a) =>
           !a.item.itemName.toLowerCase().includes("pendapatan") ||
           !a.item.itemName.toLowerCase().includes("piutang")
       );
+
+      const dataEmoney = transData.filter(
+        (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
+      );
       const dataFull = transData.filter(
         (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
       );
-      const dataEmoney = transData.filter(
-        (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
+
+      const datappk = transData.filter((a) => a.total == 6000);
+
+      console.log("ppk", datappk);
+      // Menghitung total dari semua transaksi
+      const totalNominal = transData.reduce(
+        (acc, transaction) => acc + transaction.total,
+        0
       );
 
       const totalNominalItem = dataFull
         .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
+      const totalUntungItem = transData.reduce(
+        (acc, transaction) => acc + transaction.profit,
+        0
+      );
       const transactionTarik = dataEmoney.filter(
         (a) => a.type == "Tarik Tunai"
       );
@@ -219,31 +235,20 @@ function PeriodeReport() {
         parseInt(totalTopup) -
         parseInt(totalTarikLuar) -
         parseInt(totalTarikDalam);
-
-      const totalNominal = transData
-        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const profitTotal = transData
-        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
-        .reduce((acc, transaction) => acc + transaction.profit, 0);
       // Menghitung total untuk payment "Tunai"
       const totalNominalTunai = transData
-        .filter(
-          (transaction) =>
-            transaction.payment === "Tunai" &&
-            !transaction.item.itemName.toLowerCase().includes("piutang")
-        )
+        .filter((transaction) => transaction.payment === "Tunai")
         .reduce((acc, transaction) => acc + transaction.total, 0);
 
       // Menghitung total untuk payment selain "Tunai"
       const totalNominalNonTunai = transData
-        .filter(
-          (transaction) =>
-            transaction.payment !== "Tunai" &&
-            !transaction.item.itemName.toLowerCase().includes("piutang")
-        )
+        .filter((transaction) => transaction.payment !== "Tunai")
         .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      console.log(`transData${cabang}`, transData);
+      console.log("Total Nominal", totalNominal);
+      console.log("Total Nominal Tunai", totalNominalTunai);
+      console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
 
       // Kelompokkan data berdasarkan refItem
       const groupedByItem = transData.reduce((acc, transaction) => {
@@ -251,55 +256,51 @@ function PeriodeReport() {
         if (!acc[itemId]) {
           acc[itemId] = {
             itemId: itemId,
-            itemName: transaction.item.itemName,
-            unit: transaction.item.unit,
+            itemName: transaction.item.itemName, // Tambahkan nama item
+            unit: transaction.item.unit, // Tambahkan unit item
             jumlahTransaksi: 0,
-            totalBarang: 0,
+            totalBarang: 0, // Inisialisasi totalBarang
             dataTransaksi: [],
           };
         }
-        acc[itemId].jumlahTransaksi += 1;
-        acc[itemId].totalBarang += transaction.quantity;
-        acc[itemId].dataTransaksi.push(transaction);
+        acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
+        acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
+        acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
         return acc;
       }, {});
 
-      // Temukan item dengan jumlah transaksi terbanyak
+      // Temukan item dengan jumlah transaksi terbanyak dan total quantity terbanyak
       const mostFrequentItem = Object.values(groupedByItem).reduce(
         (prev, current) => {
-          return current.jumlahTransaksi > prev.jumlahTransaksi
-            ? current
-            : prev;
+          const transaksiLebihBanyak =
+            current.jumlahTransaksi > prev.jumlahTransaksi;
+          const quantityLebihBanyak = current.totalBarang > prev.totalBarang;
+
+          // Jika current memiliki transaksi lebih banyak, atau jika transaksi sama dan quantity lebih banyak
+          if (
+            transaksiLebihBanyak ||
+            (current.jumlahTransaksi === prev.jumlahTransaksi &&
+              quantityLebihBanyak)
+          ) {
+            return current;
+          } else {
+            return prev;
+          }
         }
       );
+      const profitTotal = transData
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
+        .reduce((acc, transaction) => acc + transaction.profit, 0);
 
       const transactionTunai = transData.filter((a) => a.payment == "Tunai");
       const transactionNonTunai = transData.filter((a) => a.payment != "Tunai");
       const transactionUnCheck = transData.filter(
         (a) => a.isCheck == false || !a.isCheck
       );
-
-      // Menghitung total untuk payment selain "Tunai"
-      const totalQris = transactionNonTunai
-        .filter((transaction) => transaction.payment == "QRIS")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-
-      const totalTransfer = transactionNonTunai
-        .filter((transaction) => transaction.payment !== "QRIS")
-        .reduce((acc, transaction) => acc + transaction.total, 0);
-      const sortedTransactions = transData.sort((a, b) => {
-        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
-        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
-        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
-
-        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
-        if (aYear !== bYear) return bYear - aYear;
-        if (aMonth !== bMonth) return bMonth - aMonth;
-        if (aDay !== bDay) return bDay - aDay;
-
-        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
-        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
-        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
+      // Mengurutkan berdasarkan properti 'time' secara desc
+      const sortedtransData = transData.sort((a, b) => {
+        const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
 
         return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
@@ -354,24 +355,24 @@ function PeriodeReport() {
 
         return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
       });
-
-      console.log("Most Frequent Item:", sortedTransactions);
+      await formatCSVData(sortedtransData);
       setTotalProfit(profitTotal);
       setTransUncheck(sortedUncheck);
       setTotalQris(totalQris);
       setTotalTransfer(totalTransfer);
-      setSisaFisik(sisaFisik + totalNominalItem);
       setIsData(false);
       setDataTunai(sortedTunai);
       setDataNonTunai(sortedNonTunai);
       setItemTerlaris(mostFrequentItem);
-      setDataTransaction(sortedTransactions);
-      setTotalNominal(totalNominal);
-      setTotalNominalTunai(totalNominalTunai);
-      setTotalNominalNonTunai(totalNominalNonTunai);
-    } catch (e) {
-      setIsData(false);
 
+      console.log("SortedItem:", sortedtransData);
+      setIsData(false);
+      setSisaFisik(sisaFisik + totalNominalItem);
+      setDataTransaction(sortedtransData); // Simpan transaksi ke state
+      setTotalNominal(totalNominal); // Simpan total nominal ke state
+      setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
+      setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
+    } catch (e) {
       Swal.fire({
         title: "Error!",
         text: "Gagal mendapatkan data: " + e.message,
@@ -380,6 +381,384 @@ function PeriodeReport() {
       });
       return [];
     }
+  };
+
+  const getTransactionsDate = async (tgl) => {
+    try {
+      // Buat query dengan filter where
+      const transactionsQuery = query(
+        collection(db, `transactions${cabang}`),
+        where("date", "==", tgl)
+      );
+
+      const querySnapshot = await getDocs(transactionsQuery);
+
+      // Jika tidak ada dokumen yang ditemukan, kembalikan array kosong
+      if (querySnapshot.empty) {
+        console.log("No transactions found for the given month and year.");
+        setIsData(false);
+
+        setDataTransaction([]);
+        setTotalNominal(0);
+        setTotalNominalTunai(0);
+        setTotalNominalNonTunai(0);
+        return [];
+      }
+      const transactions = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+
+          // Fetch data item berdasarkan refItem
+          const itemRef = data.refItem;
+          const itemDoc = await getDoc(itemRef);
+          const itemData = itemDoc.data();
+
+          // Fetch data category berdasarkan refCategory
+          const categoryRef = data.refCategory;
+          const categoryDoc = await getDoc(categoryRef);
+          const categoryData = categoryDoc.data();
+
+          // Menghitung total harga dari price * quantity
+          const total = data.price * data.quantity;
+          let profit = data.adminFee;
+
+          if (categoryData.nameCategory == "E-Money") {
+            profit = data.adminFee;
+          }
+
+          if (
+            itemData.itemName.toLowerCase().includes("pendapatan") ||
+            itemData.itemName.toLowerCase().includes("piutang")
+          ) {
+            profit = 0;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            !categoryData.isCash &&
+            categoryData.nameCategory !== "E-Money"
+          ) {
+            profit =
+              parseInt(data.quantity) * parseInt(itemData.sellPrice) -
+              parseInt(data.quantity) * parseInt(itemData.buyPrice);
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash
+          ) {
+            profit = data.adminFee;
+          }
+
+          if (
+            !itemData.itemName.toLowerCase().includes("pendapatan") &&
+            !itemData.itemName.toLowerCase().includes("piutang") &&
+            categoryData.isCash &&
+            categoryData.isIncome
+          ) {
+            profit = data.income;
+          }
+          return {
+            id: doc.id,
+            ...data,
+            item: itemData,
+            category: categoryData,
+            isCash: categoryData.isCash ? true : false,
+            isIncome: categoryData.isIncome ? true : false,
+            itemId: itemRef.id,
+            profit: profit,
+            categoryId: categoryRef.id,
+            total: total, // Tambahkan properti total
+          };
+        })
+      );
+      const transData = transactions.filter(
+        (a) =>
+          !a.item.itemName.toLowerCase().includes("pendapatan") ||
+          !a.item.itemName.toLowerCase().includes("piutang")
+      );
+
+      const dataEmoney = transData.filter(
+        (a) => a.category.nameCategory == "E-Money" || a.category.isIncome
+      );
+      const dataFull = transData.filter(
+        (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
+      );
+
+      const datappk = transData.filter((a) => a.total == 6000);
+
+      console.log("ppk", datappk);
+      // Menghitung total dari semua transaksi
+      const totalNominal = transData.reduce(
+        (acc, transaction) => acc + transaction.total,
+        0
+      );
+
+      const totalNominalItem = dataFull
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const totalUntungItem = transData.reduce(
+        (acc, transaction) => acc + transaction.profit,
+        0
+      );
+      const transactionTarik = dataEmoney.filter(
+        (a) => a.type == "Tarik Tunai"
+      );
+
+      const totalTarikLuar = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Luar")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee) * 2),
+          0
+        );
+
+      const totalTarikDalam = transactionTarik
+        .filter((transaction) => transaction.payment == "Admin Dalam")
+        .reduce(
+          (acc, transaction) =>
+            acc +
+            (parseInt(transaction.price) - parseInt(transaction.adminFee)),
+          0
+        );
+
+      const totalTopup = dataEmoney
+        .filter(
+          (transaction) =>
+            !transaction.item.itemName.toLowerCase().includes("piutang") &&
+            (transaction.type == "Topup" || transaction.type == "Transfer")
+        )
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      const sisaFisik =
+        parseInt(totalTopup) -
+        parseInt(totalTarikLuar) -
+        parseInt(totalTarikDalam);
+      // Menghitung total untuk payment "Tunai"
+      const totalNominalTunai = transData
+        .filter((transaction) => transaction.payment === "Tunai")
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      // Menghitung total untuk payment selain "Tunai"
+      const totalNominalNonTunai = transData
+        .filter((transaction) => transaction.payment !== "Tunai")
+        .reduce((acc, transaction) => acc + transaction.total, 0);
+
+      console.log(`transData${cabang}`, transData);
+      console.log("Total Nominal", totalNominal);
+      console.log("Total Nominal Tunai", totalNominalTunai);
+      console.log("Total Nominal Non-Tunai", totalNominalNonTunai);
+
+      // Kelompokkan data berdasarkan refItem
+      const groupedByItem = transData.reduce((acc, transaction) => {
+        const itemId = transaction.itemId;
+        if (!acc[itemId]) {
+          acc[itemId] = {
+            itemId: itemId,
+            itemName: transaction.item.itemName, // Tambahkan nama item
+            unit: transaction.item.unit, // Tambahkan unit item
+            jumlahTransaksi: 0,
+            totalBarang: 0, // Inisialisasi totalBarang
+            dataTransaksi: [],
+          };
+        }
+        acc[itemId].jumlahTransaksi += 1; // Tambahkan jumlah transaksi
+        acc[itemId].totalBarang += transaction.quantity; // Tambahkan quantity ke totalBarang
+        acc[itemId].dataTransaksi.push(transaction); // Tambahkan transaksi ke kelompok
+        return acc;
+      }, {});
+
+      // Temukan item dengan jumlah transaksi terbanyak dan total quantity terbanyak
+      const mostFrequentItem = Object.values(groupedByItem).reduce(
+        (prev, current) => {
+          const transaksiLebihBanyak =
+            current.jumlahTransaksi > prev.jumlahTransaksi;
+          const quantityLebihBanyak = current.totalBarang > prev.totalBarang;
+
+          // Jika current memiliki transaksi lebih banyak, atau jika transaksi sama dan quantity lebih banyak
+          if (
+            transaksiLebihBanyak ||
+            (current.jumlahTransaksi === prev.jumlahTransaksi &&
+              quantityLebihBanyak)
+          ) {
+            return current;
+          } else {
+            return prev;
+          }
+        }
+      );
+      const profitTotal = transData
+        .filter((a) => !a.item.itemName.toLowerCase().includes("piutang"))
+        .reduce((acc, transaction) => acc + transaction.profit, 0);
+
+      const transactionTunai = transData.filter((a) => a.payment == "Tunai");
+      const transactionNonTunai = transData.filter((a) => a.payment != "Tunai");
+      const transactionUnCheck = transData.filter(
+        (a) => a.isCheck == false || !a.isCheck
+      );
+      // Mengurutkan berdasarkan properti 'time' secara desc
+      const sortedtransData = transData.sort((a, b) => {
+        const [aHours, aMinutes, aSeconds] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
+      });
+
+      const sortedUncheck = transactionUnCheck.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
+      });
+
+      const sortedTunai = transactionTunai.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
+      });
+
+      const sortedNonTunai = transactionNonTunai.sort((a, b) => {
+        // Pecah dan urutkan berdasarkan tanggal (DD/MM/YYYY)
+        const [aDay, aMonth, aYear] = a.date.split("/").map(Number);
+        const [bDay, bMonth, bYear] = b.date.split("/").map(Number);
+
+        // Urutkan berdasarkan tahun, bulan, dan hari terlebih dahulu
+        if (aYear !== bYear) return bYear - aYear;
+        if (aMonth !== bMonth) return bMonth - aMonth;
+        if (aDay !== bDay) return bDay - aDay;
+
+        // Jika tanggal sama, lanjutkan dengan urutan waktu (HH:mm:ss)
+        const [aHours, aMinutes, aSeconds = 0] = a.time.split(":").map(Number);
+        const [bHours, bMinutes, bSeconds = 0] = b.time.split(":").map(Number);
+
+        return bHours - aHours || bMinutes - aMinutes || bSeconds - aSeconds;
+      });
+      await formatCSVData(sortedtransData);
+      setTotalProfit(profitTotal);
+      setTransUncheck(sortedUncheck);
+      setTotalQris(totalQris);
+      setTotalTransfer(totalTransfer);
+      setIsData(false);
+      setDataTunai(sortedTunai);
+      setDataNonTunai(sortedNonTunai);
+      setItemTerlaris(mostFrequentItem);
+
+      console.log("SortedItem:", sortedtransData);
+      setIsData(false);
+      setSisaFisik(sisaFisik + totalNominalItem);
+      setDataTransaction(sortedtransData); // Simpan transaksi ke state
+      setTotalNominal(totalNominal); // Simpan total nominal ke state
+      setTotalNominalTunai(totalNominalTunai); // Simpan total nominal tunai ke state
+      setTotalNominalNonTunai(totalNominalNonTunai); // Simpan total nominal non-tunai ke state
+    } catch (e) {
+      Swal.fire({
+        title: "Error!",
+        text: "Gagal mendapatkan data: " + e.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return [];
+    }
+  };
+  const formatCSVData = async (data) => {
+    setIsData(true);
+    console.log(data, "Awal Data");
+    const reversedData = [...data].reverse();
+    const dataArrayString = reversedData.map((obj, index) => {
+      return [
+        index + 1,
+        obj.date,
+        obj.time,
+        obj.category.nameCategory == "E-Money" || obj.isCash == true
+          ? obj.category.nameCategory == "E-Money"
+            ? `${obj.type}, ${obj.productName}`
+            : obj.category.isIncome
+            ? `${obj.productName}`
+            : `${obj.productName}`
+          : obj.item.itemName,
+        obj.quantity,
+        obj.type == "Tarik Tunai"
+          ? "[" + `${Math.abs(obj.price)}` + "]"
+          : obj.price,
+        obj.type == "Tarik Tunai"
+          ? "[" + `${parseInt(obj.price) * parseInt(obj.quantity)}` + "]"
+          : parseInt(obj.price) * parseInt(obj.quantity),
+
+        obj.type == "Tarik Tunai"
+          ? "[" + `${Math.abs(obj.profit)}` + "]"
+          : obj.profit,
+      ];
+    });
+
+    const propertyNames = [
+      ["Rekap Transaksi Apin Cell"],
+      [""],
+
+      [
+        "No",
+        "Tanggal",
+        "Jam",
+        "Nama Product",
+        "Jumlah",
+        "Harga Satuan",
+        "Total Harga",
+        "Untung",
+      ],
+    ];
+
+    console.log(dataArrayString);
+    setJudul(propertyNames);
+    setDataExport(dataArrayString);
+    setIsData(false);
+  };
+
+  const convertToCSV = (array) => {
+    console.log(array, "convert");
+    return array.map((row) => row.join(";")).join("\r\n");
+  };
+
+  const downloadCSV = (data, fileName) => {
+    const csvData = new Blob([data], { type: "text/csv;charset=utf-8;" });
+    const csvURL = URL.createObjectURL(csvData);
+    const link = document.createElement("a");
+    link.href = csvURL;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExport = () => {
+    const footer = ["Total", "", "", "", "", "", sisaFisik, totalProfit];
+
+    // Flatten the array for csv
+    const csvContent = convertToCSV([...judul, ...dataExport, footer]);
+    downloadCSV(csvContent, `Data Rekap Transaksi Apin Cell.csv`);
   };
 
   const handleTabChange = (index) => {
@@ -825,6 +1204,20 @@ function PeriodeReport() {
             className="w-[100%] flex justify-start items-center gap-6 bg-white rounded-xl p-4 mb-5"
           >
             <div className="flex justify-start gap-4 items-center">
+              <p className="text-sm font-normal">Pilih Tanggal</p>
+              <Space direction="vertical" size={12}>
+                <DatePicker
+                  defaultValue={dayjs(tanggal, "DD/MM/YYYY")}
+                  format={["DD/MM/YYYY"]}
+                  onChange={(date) => {
+                    setTanggal(date.format("DD/MM/YYYY"));
+                    setIsTanggal(true);
+                  }}
+                  className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
+                />
+              </Space>
+            </div>
+            <div className="flex justify-start gap-4 items-center">
               <p className="text-sm font-normal">Pilih Bulan</p>
               <Space direction="vertical" size={12}>
                 <DatePicker
@@ -833,6 +1226,8 @@ function PeriodeReport() {
                   picker="month"
                   onChange={(date) => {
                     setBulan(date.format("MMMM"));
+                    setIsTanggal(false);
+
                     // getHistoryInventory(date.format("MMMM"), tahun);
                   }}
                   className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
@@ -848,6 +1243,7 @@ function PeriodeReport() {
                   picker="year"
                   onChange={(date) => {
                     setTahun(date.format("YYYY"));
+                    setIsTanggal(false);
                   }}
                   className="w-[10rem] flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                 />
@@ -855,7 +1251,11 @@ function PeriodeReport() {
             </div>
             <button
               onClick={() => {
-                getTransactions(bulan, tahun);
+                if (isTanggal == true) {
+                  getTransactionsDate(tanggal);
+                } else {
+                  getTransactions(bulan, tahun);
+                }
               }}
               type="button"
               className="bg-blue-500 text-center w-[10rem] rounded-2xl h-10 relative text-black text-xs font-medium group"
@@ -866,6 +1266,18 @@ function PeriodeReport() {
               <p className="translate-x-2 text-[0.65rem] text-white">
                 Cari Data
               </p>
+            </button>
+            <button
+              onClick={() => {
+                handleExport();
+              }}
+              type="button"
+              class="bg-blue-500 text-center w-48 rounded-2xl h-10 relative  text-black text-xl font-semibold group"
+            >
+              <div class="bg-white rounded-xl h-8 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+                <IoAddCircleOutline className="text-[25px] text-blue-700 hover:text-blue-700" />
+              </div>
+              <p class="translate-x-2 text-xs text-white">Export Data</p>
             </button>
           </div>
           <TabBar

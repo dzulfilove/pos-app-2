@@ -45,7 +45,7 @@ function MainTransaction() {
   const [jenisTransaksi, setJenisTransaksi] = useState(null);
   const [harga, setHarga] = useState(0);
   const [adminFee, setAdminFee] = useState(0);
-  const [jenisPembayaran, setJenisPembayaran] = useState(null);
+  const [jenisPembayaran, setJenisPembayaran] = useState();
   const [indexDetail, setIndexDetail] = useState(0);
   const [dataBarang, setDataBarang] = useState([]);
   const [dataTransaction, setDataTransaction] = useState([]);
@@ -140,7 +140,9 @@ function MainTransaction() {
             !categoryData.isCash &&
             categoryData.nameCategory !== "E-Money"
           ) {
-            profit = total - data.quantity * itemData.buyPrice;
+            profit =
+              parseInt(data.quantity) * parseInt(itemData.sellPrice) -
+              parseInt(data.quantity) * parseInt(itemData.buyPrice);
           }
 
           if (
@@ -186,6 +188,9 @@ function MainTransaction() {
         (a) => a.category.nameCategory !== "E-Money" && !a.category.isIncome
       );
 
+      const datappk = transData.filter((a) => a.total == 6000);
+
+      console.log("ppk", datappk);
       // Menghitung total dari semua transaksi
       const totalNominal = transData.reduce(
         (acc, transaction) => acc + transaction.total,
@@ -808,10 +813,13 @@ function MainTransaction() {
 
     if (data.category.nameCategory == "E-Money") {
       const pay = getObject(optionPembayaranEMoney, data.payment);
-      const trans = data.type.toLowerCase.includes("transfer")
-        ? getObject(jenisBank, data.type)
-        : getObject(jenisTrans, data.type);
-      const barang = getObject2(dataBarang, data.productName);
+      const trans =
+        typeof data.type === "string" &&
+        data.type.toLowerCase().includes("transfer")
+          ? getObject(jenisBank, data.type)
+          : getObject(jenisTrans, data.type);
+      const barang = getObject2(dataBarang, data.item.itemName);
+      console.log(trans, "baranggg");
       setSelectedBarang(barang);
       setJenisPembayaran(pay);
       setBayar(data.price);
@@ -1027,7 +1035,9 @@ function MainTransaction() {
         // Buat data yang akan dikirim ke transaksi berdasarkan jenis
         if (jenis === "E-Money" && isCash == false) {
           dataSend = {
-            productName: selectedBarang.text,
+            productName: `${selectedBarang.text} ${formatRupiah(
+              parseInt(bayar) - parseInt(adminFee)
+            )}`,
             quantity: 1,
             price: parseInt(bayar),
             payment:
@@ -1733,7 +1743,16 @@ function MainTransaction() {
                           setJenis(data.category);
                           setIsCash(data.isCash);
                           setIsIncome(data.isIncome);
-                          console.log(data.category);
+
+                          if (
+                            data.category != "E-Money" &&
+                            data.isCash == false
+                          ) {
+                            setJenisPembayaran({
+                              text: "Tunai",
+                              value: "Tunai",
+                            });
+                          }
                           setRefresh(true);
                         }}
                         options={dataBarang}
