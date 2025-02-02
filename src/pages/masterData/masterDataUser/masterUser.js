@@ -402,6 +402,7 @@ function MasterUser() {
   const optionCabang = [
     { value: "", text: "Way Dadi 1" },
     { value: "2", text: "Way Dadi 2" },
+    { value: "3", text: "Way Dadi 3" },
   ];
   // Membuat listData tanpa menampilkan id
   const listData = dataUser.map((data) => [
