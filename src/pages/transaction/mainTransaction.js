@@ -896,8 +896,10 @@ function MainTransaction() {
     setDataEdit(data);
     console.log(data.category.nameCategory, data.isCash);
   };
-  const handleUpdate = async () => {
+   const handleUpdate = async () => {
     setIsLoad(true);
+
+    console.log(selectedBarang, "barang Update");
 
     // Cek kondisi input berdasarkan jenis transaksi
     if (jenis === "E-Money") {
@@ -1005,7 +1007,7 @@ function MainTransaction() {
             Swal.fire(
               "Gagal",
               "Stok Barang " +
-                selectedBarang.text +
+                dataEdit.item.itemName +
                 " Tidak Ada, Tambahkan Stok Dulu",
               "warning"
             );
@@ -1035,7 +1037,7 @@ function MainTransaction() {
         // Buat data yang akan dikirim ke transaksi berdasarkan jenis
         if (jenis === "E-Money" && isCash == false) {
           dataSend = {
-            productName: `${selectedBarang.text} ${formatRupiah(
+            productName: `${dataEdit.item.itemName} ${formatRupiah(
               parseInt(bayar) - parseInt(adminFee)
             )}`,
             quantity: 1,
@@ -1052,7 +1054,7 @@ function MainTransaction() {
         } else if (jenis !== "E-Money" && isCash == true) {
           if (isIncome == true) {
             dataSend = {
-              productName: `${selectedBarang.text} ${formatRupiah(
+              productName: `${dataEdit.item.itemName} ${formatRupiah(
                 parseInt(bayar) - parseInt(adminFee) - parseInt(untung)
               )}`,
               income: parseInt(untung),
@@ -1168,7 +1170,6 @@ function MainTransaction() {
       }
     }
   };
-
   const handleDetailData = (data) => {
     if (indexDetail === data.id && isDetail) {
       setIsDetail(false);
