@@ -301,7 +301,7 @@ function MasterKategori() {
                 onClick={() => {
                   scrollToTarget();
 
-                  handleDetailData(tableMeta.rowData[3]); // Kirim objek lengkap
+                  handleDetailData(tableMeta.rowData[4]); // Kirim objek lengkap
                 }}
               >
                 <span className="svgContainer">
@@ -315,7 +315,7 @@ function MasterKategori() {
                   setAkses({});
                   setRefresh(false);
                   scrollToTarget();
-                  updateClick(tableMeta.rowData[3]); // Kirim objek lengkap
+                  updateClick(tableMeta.rowData[4]); // Kirim objek lengkap
                 }}
               >
                 <span className="svgContainer">
@@ -326,7 +326,7 @@ function MasterKategori() {
               <button
                 className="Btn-see text-white"
                 onClick={() => {
-                  deleteCategory(tableMeta.rowData[3]); // Kirim objek lengkap
+                  deleteCategory(tableMeta.rowData[4]); // Kirim objek lengkap
                 }}
               >
                 <span className="svgContainer">
