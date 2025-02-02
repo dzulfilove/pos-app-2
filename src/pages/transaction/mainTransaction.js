@@ -1520,6 +1520,7 @@ function MainTransaction() {
   ];
 
   const jenisTrans = [
+      { text: "Transfer", value: "Transfer" },
     { text: "Topup", value: "Topup" },
     { text: "Tarik Tunai", value: "Tarik Tunai" },
   ];
