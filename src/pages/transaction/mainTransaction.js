@@ -2043,7 +2043,7 @@ function MainTransaction() {
                                       change={(data) => {
                                         setRefresh(true);
                                         setJenisTransaksi(data);
-                                        if (data.text == "Topup") {
+                                        if (data.text == "Topup" || data.text == "Transfer") {
                                           setJenisPembayaran(
                                             getObject(
                                               optionPembayaranEMoney,
@@ -2065,7 +2065,7 @@ function MainTransaction() {
                       )}
                       {jenisTransaksi && (
                         <>
-                          {jenisTransaksi.text == "Topup" ? (
+                          {jenisTransaksi.text == "Topup" || jenisTransaksi.text == "Transfer" ? (
                             <></>
                           ) : (
                             <>
@@ -2485,7 +2485,7 @@ function MainTransaction() {
                             )}
                           {jenisTransaksi && (
                             <>
-                              {jenisTransaksi.text == "Topup" ? (
+                              {jenisTransaksi.text == "Topup" || jenisTransaksi.text == "Transfer" ? (
                                 <></>
                               ) : (
                                 <>
