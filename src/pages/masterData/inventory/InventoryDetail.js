@@ -142,9 +142,10 @@ function InventoryDetail({ params }) {
       );
 
       // Menghitung jumlah objek yang stok-nya lebih kecil dari minStock
-      const countBelowMinStock = items.filter(
-        (item) => item.stock < item.item.minStock
-      ).length;
+ const countBelowMinStock = items.filter(
+  (item) => item.stock < (item.item?.minStock ?? 0)
+).length;
+
 
       // Sorting data berdasarkan itemName
       const sortedItems = items.sort((a, b) => {
