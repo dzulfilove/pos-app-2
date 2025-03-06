@@ -165,6 +165,7 @@ function MainTransaction() {
             id: doc.id,
             ...data,
             item: itemData,
+            productName:itemData.itemName,
             category: categoryData,
             isCash: categoryData.isCash ? true : false,
             isIncome: categoryData.isIncome ? true : false,
