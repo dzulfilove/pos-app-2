@@ -799,8 +799,7 @@ function MainTransaction() {
   const updateClick = (data) => {
     setIdEdit(data.id);
     console.log(data);
-    const angkaPrice = parseInt(data.productName.replace(/[^\d]/g, ""), 10);
-    const namOfProduct = data.productName.replace(/Rp|[^a-zA-Z]/g, "");
+    
 
     if (data.id !== idEdit) {
       setIsEdit(true);
@@ -812,6 +811,8 @@ function MainTransaction() {
     setHarga(data.price);
 
     if (data.category.nameCategory == "E-Money") {
+      const angkaPrice = parseInt(data.productName.replace(/[^\d]/g, ""), 10);
+    const namOfProduct = data.productName.replace(/Rp|[^a-zA-Z]/g, "");
       const pay = getObject(optionPembayaranEMoney, data.payment);
       const trans =
         typeof data.type === "string" &&
@@ -843,6 +844,8 @@ function MainTransaction() {
       data.isCash == true &&
       data.isIncome == true
     ) {
+      const angkaPrice = parseInt(data.productName.replace(/[^\d]/g, ""), 10);
+    const namOfProduct = data.productName.replace(/Rp|[^a-zA-Z]/g, "");
       const pay = getObject(optionPembayaran, data.payment);
       const barang = getObject2(dataBarang, data.productName);
       console.log("payyyy", barang);
@@ -864,6 +867,8 @@ function MainTransaction() {
       data.isCash == true &&
       data.isIncome == false
     ) {
+      const angkaPrice = parseInt(data.productName.replace(/[^\d]/g, ""), 10);
+    const namOfProduct = data.productName.replace(/Rp|[^a-zA-Z]/g, "");
       const adminMinPrice = parseInt(data.price) - parseInt(data.adminFee);
 
       const feeAdmin =
@@ -1049,7 +1054,7 @@ function MainTransaction() {
                 : jenisPembayaran.value,
             adminFee: parseInt(adminFee),
             type: jenisTransaksi.value,
-            time: jam,
+           
           };
         } else if (jenis !== "E-Money" && isCash == true) {
           if (isIncome == true) {
@@ -1062,7 +1067,7 @@ function MainTransaction() {
               price: parseInt(bayar),
               payment: jenisPembayaran.value,
               adminFee: parseInt(adminFee),
-              time: jam,
+           
             };
           } else {
             dataSend = {
@@ -1079,7 +1084,7 @@ function MainTransaction() {
               payment: jenisPembayaran.value,
               adminFee:
                 isUntung.value == false ? parseInt(untung) : parseInt(adminFee),
-              time: jam,
+            
             };
           }
         } else if (jenis !== "E-Money" && isCash == false) {
@@ -1087,7 +1092,7 @@ function MainTransaction() {
             quantity: parseInt(jumlahBarang),
             price: parseInt(harga),
             payment: jenisPembayaran.value,
-            time: jam,
+          
           };
         }
 
