@@ -150,7 +150,7 @@ function InventoryDetail({ params }) {
 
       // Sorting data berdasarkan itemName
       const sortedItems = items.sort((a, b) => {
-        if (a.item.itemName < (b.item.itemName) return -1;
+        if (a.item.itemName < b.item.itemName) return -1;
         if (a.item.itemName > b.item.itemName) return 1;
         return 0;
       });
