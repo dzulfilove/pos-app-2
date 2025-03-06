@@ -97,6 +97,7 @@ function InventoryDetail({ params }) {
   };
   useEffect(() => {
     getInventory();
+    scrollToTarget();
   }, []);
 
   const getInventory = async () => {
