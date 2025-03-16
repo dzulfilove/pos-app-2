@@ -27,58 +27,46 @@ import LoaderTable from "../../../component/features/loader2";
 import DropdownSearch from "../../../component/features/dropdown";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import firebase from "firebase/compat/app";
-function MasterUser() {
+function MasterCabang() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [isAdd, setIsAdd] = useState(true);
   const [isDetail, setIsDetail] = useState(false);
-  const [dataDetail, setDataDetail] = useState({});
-  const [dataBranch, setDataBranch] = useState([{ value: "", text: "" }]);
-  const [peran, setPeran] = useState({});
   const [cabang, setCabang] = useState({});
   const [nama, setNama] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [deskripsi, setDeskripsi] = useState("");
+  const [alamat, setAlamat] = useState("");
   const [indexDetail, setIndexDetail] = useState(0);
-  const [dataUser, setDataUser] = useState([]);
+  const [dataCabang, setDataCabang] = useState([]);
   const [isLoad, setIsLoad] = useState(false);
   const [isData, setIsData] = useState(true);
   const [refresh, setRefresh] = useState(true);
-  const [akses, setAkses] = useState({});
   const targetRef = useRef(null);
 
   useEffect(() => {
-    getAllUser();
-    fetchBranch();
-    scrollToTarget()
+    getAllCabang();
+    scrollToTarget();
   }, []);
   const scrollToTarget = () => {
     targetRef.current.scrollIntoView({ behavior: "smooth" });
   };
-  const fetchBranch = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "branch"));
-      const categoriesArray = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const dataOption = categoriesArray.map((a) => {
-        return { value: a.value, text: a.branchName };
-      });
-      console.log(dataOption, "branchh");
-      setDataBranch(dataOption);
-    } catch (error) {
-      console.error("Error fetching categories: ", error);
+
+  const getObjectString = (arr, item) => {
+    const res = arr.find((x) => x.value === item);
+    if (res) {
+      return res.branchName;
     }
+    return "";
   };
-  const getAllUser = async () => {
+  const getAllCabang = async () => {
     try {
       // Ambil semua dokumen dari koleksi category
-      const querySnapshot = await getDocs(collection(db, "users"));
+      const querySnapshot = await getDocs(collection(db, "branch"));
 
       if (querySnapshot.empty) {
         console.log("Tidak ada User yang ditemukan.");
+        setIsLoad(false);
+        setIsData(false);
+
         return;
       }
 
@@ -87,9 +75,10 @@ function MasterUser() {
         id: doc.id,
         ...doc.data(),
       }));
+      setIsLoad(false);
 
-      console.log(usersData, "user Daa");
-      setDataUser(categoriesArray);
+      console.log(usersData, "user Cabang");
+      setDataCabang(categoriesArray);
       setIsData(false);
     } catch (error) {
       console.error(
@@ -104,13 +93,11 @@ function MasterUser() {
     setIsLoad(true);
 
     // Cek jika state kosong
-    if (!nama || !email || !peran || !cabang || !password) {
+    if (!nama || !alamat) {
       let missingFields = [];
       if (!nama) missingFields.push("Nama");
-      if (!email) missingFields.push("Email");
-      if (!peran) missingFields.push("Peran");
-      if (!cabang) missingFields.push("Cabang");
-      if (!password) missingFields.push("Password");
+      if (!alamat) missingFields.push("Alamat");
+      if (!cabang) missingFields.push("Cabang Ke");
       setIsLoad(false);
 
       Swal.fire(
@@ -120,99 +107,57 @@ function MasterUser() {
       );
       return;
     }
+    let data = {};
+    data = {
+      branchName: nama + " " + cabang.text,
+      address: alamat,
+      value: cabang.value,
+    };
     try {
-      // Daftar pengguna baru dengan email dan password
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
-      // Ambil informasi pengguna yang baru dibuat
-      const user = userCredential.user;
-
-      // Simpan informasi ke sessionStorage
-      sessionStorage.setItem("isLoggedIn", true);
-      // sessionStorage.setItem("userEmail", email);
-      sessionStorage.setItem("nama", nama);
-
-      // sessionStorage.setItem("peran", peran);
-
-      // Jika perlu, simpan informasi tambahan ke database, misalnya ke Firestore
-      await saveUserData(user.uid, {
-        email,
-        nama,
-        peran: peran.value,
-        cabang: cabang.value,
-        isAccess: true,
-      });
+      await addDoc(collection(db, "branch"), data);
       setIsLoad(false);
-      getAllUser();
+
+      Swal.fire("Success", "Cabang added successfully", "success");
+      setNama("");
+      setAlamat("");
+      await getAllCabang();
       setRefresh(false);
-      setAkses(null);
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil",
-        text: "Selamat, Anda Berhasil Mendaftar!",
-        showConfirmButton: false,
-        timer: 1500,
-      });
     } catch (error) {
       setIsLoad(false);
 
-      Swal.fire({
-        icon: "error",
-        title: "Gagal",
-        text: "Pendaftaran gagal. " + error.message,
-        showConfirmButton: true,
-      });
-      console.log(error);
+      console.error("Error adding Cabang: ", error);
+      Swal.fire("Error", "Failed to add Cabang", "error");
     }
   };
 
   // Fungsi untuk menyimpan data pengguna ke Firestore (jika diperlukan)
-  const saveUserData = async (uid, userData) => {
-    try {
-      await setDoc(doc(db, "users", uid), userData); // Simpan data pengguna ke koleksi 'users'
-    } catch (error) {
-      console.log("Error saving user data:", error);
-    }
-  };
+
   const updateClick = (data) => {
     scrollToTarget();
+    const selCabang = getObject(optionCabang, data.value);
 
-    const selPeran = getObject(optionPeran, data.peran);
-    const selcabang = getObject(dataBranch, data.cabang);
-    const selAkses = getObject(optionAkses, data.isAccess);
-    console.log(selPeran, selAkses, selcabang);
     setIsEdit(true);
     setIsOpen(true);
     setIsAdd(false);
+    setCabang(selCabang);
     setIndexDetail(data.id);
-    setNama(data.nama);
-    setEmail(data.email);
-    setPeran(selPeran);
-    setCabang(selcabang);
-    setAkses(selAkses);
+    setNama(data.branchName);
+    setAlamat(data.address);
   };
   const handleUpdate = async () => {
     const data = {
-      nama,
-      email,
-      cabang: cabang.value,
-      peran: peran.value,
-      isAccess: akses.value,
+      branchName: nama + " " + cabang.text,
+      value: cabang.value,
+      address: alamat,
     };
     try {
       // Buat referensi ke dokumen User yang ingin diperbarui
-      const categoryRef = doc(db, "users", indexDetail);
+      const categoryRef = doc(db, "branch", indexDetail);
 
       // Perbarui data di Firestore
       await updateDoc(categoryRef, data);
       setNama("");
-      setEmail("");
-      setPeran({});
-      setCabang({});
+      setAlamat("");
       setIsOpen(false);
       setIsEdit(false);
       setIsAdd(true);
@@ -221,17 +166,17 @@ function MasterUser() {
       // Tampilkan alert sukses
       Swal.fire({
         title: "Sukses!",
-        text: "Data User berhasil diperbarui.",
+        text: "Data Cabang berhasil diperbarui.",
         icon: "success",
         confirmButtonText: "OK",
       });
-      getAllUser();
+      await getAllCabang();
     } catch (error) {
-      console.error("Error updating category:", error.message);
+      console.error("Error updating Branch:", error.message);
       // Tampilkan alert error
       Swal.fire({
         title: "Error!",
-        text: "Terjadi kesalahan saat memperbarui data User.",
+        text: "Terjadi kesalahan saat memperbarui data Cabang.",
         icon: "error",
         confirmButtonText: "OK",
       });
@@ -240,43 +185,35 @@ function MasterUser() {
   const deleteCategory = async (categoryId) => {
     const confirmDelete = await Swal.fire({
       title: "Konfirmasi Hapus",
-      text: "Anda yakin ingin menghapus User ini?",
+      text: "Anda yakin ingin menghapus Cabang ini?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
     });
 
-    console.log(categoryId);
-
     if (confirmDelete.isConfirmed) {
       try {
-        // Buat referensi ke dokumen User yang ingin dihapus
-        const categoryRef = doc(db, "users", categoryId.id);
+        // Buat referensi ke dokumen kategori yang ingin dihapus
+        const branchRef = doc(db, "branch", categoryId.id);
 
         // Hapus dokumen dari Firestore
-        await deleteDoc(categoryRef);
-
-        // Hapus akun dari Firebase Authentication
-        const user = firebase.auth().currentUser; // Ambil user yang sedang login
-        if (user) {
-          await user.delete(); // Hapus akun pengguna
-        }
+        await deleteDoc(branchRef);
 
         // Tampilkan alert sukses
         Swal.fire({
           title: "Sukses!",
-          text: "User berhasil dihapus.",
+          text: "Kategori berhasil dihapus.",
           icon: "success",
           confirmButtonText: "OK",
         });
-        getAllUser();
+        await getAllCabang();
       } catch (error) {
-        console.error("Error deleting category:", error.message);
+        console.error("Error deleting branch:", error.message);
         // Tampilkan alert error
         Swal.fire({
           title: "Error!",
-          text: "Terjadi kesalahan saat menghapus User.",
+          text: "Terjadi kesalahan saat menghapus cabang.",
           icon: "error",
           confirmButtonText: "OK",
         });
@@ -284,7 +221,34 @@ function MasterUser() {
     }
   };
 
+  const getObject = (arr, item) => {
+    return arr.find((x) => x.value === item);
+  };
   const columns = [
+    {
+      name: "data",
+      label: "Aksi",
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value, tableMeta, updateValue) => {
+          return (
+            <div className="flex justify-start gap-4 items-center">
+              <button
+                className="border hover:border-blue-500  bg-blue-500 hover:bg-blue-100 flex justify-center items-center px-4 py-2 rounded-lg text-blue-100 hover:text-blue-500"
+                onClick={() => {
+                  sessionStorage.setItem("cabang", value.value);
+                  sessionStorage.setItem("branchName", value.branchName);
+                  window.location.reload();
+                }}
+              >
+                Pilih
+              </button>
+            </div>
+          );
+        },
+      },
+    },
     {
       name: "data",
       label: "Nama",
@@ -294,11 +258,9 @@ function MasterUser() {
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button
-              className={`flex justify-start items-center gap-2 w-full p-2 ${
-                value.isAccess == false ? "bg-blue-100" : ""
-              }`}
+              className={`flex justify-start items-center gap-2 w-full p-2`}
             >
-              {value.nama}
+              {value.branchName}
             </button>
           );
         },
@@ -306,18 +268,16 @@ function MasterUser() {
     },
     {
       name: "data",
-      label: "Email",
+      label: "Alamat",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button
-              className={`flex justify-start items-center gap-2 w-full p-2 ${
-                value.isAccess == false ? "bg-blue-100" : ""
-              }`}
+              className={`flex justify-start items-center gap-2 w-full p-2 `}
             >
-              {value.email}
+              {value.address}
             </button>
           );
         },
@@ -325,38 +285,16 @@ function MasterUser() {
     },
     {
       name: "data",
-      label: "Peran",
+      label: "Cabang Ke",
       options: {
         filter: true,
         sort: true,
         customBodyRender: (value, tableMeta, updateValue) => {
           return (
             <button
-              className={`flex justify-start items-center gap-2 w-full p-2 ${
-                value.isAccess == false ? "bg-blue-100" : ""
-              }`}
+              className={`flex justify-start items-center gap-2 w-full p-2 `}
             >
-              {value.peran}
-            </button>
-          );
-        },
-      },
-    },
-
-    {
-      name: "data",
-      label: "Cabang",
-      options: {
-        filter: true,
-        sort: true,
-        customBodyRender: (value, tableMeta, updateValue) => {
-          return (
-            <button
-              className={`flex justify-start items-center gap-2 w-full p-2 ${
-                value.isAccess == false ? "bg-blue-100" : ""
-              }`}
-            >
-              {getObjectString(dataBranch, value.cabang)}
+              Cabang Ke {value.value == "" ? "1" : value.value}
             </button>
           );
         },
@@ -407,40 +345,29 @@ function MasterUser() {
     rowsPerPage: 5,
     rowsPerPageOptions: [5, 10],
   };
-  const getObject = (arr, item) => {
-    return arr.find((x) => x.value === item);
-  };
-  const getObjectString = (arr, item) => {
-    const res = arr.find((x) => x.value === item);
-    if (res) {
-      return res.text;
-    }
-    return "";
-  };
-  const optionPeran = [
-    { value: "Super Admin", text: "Super Admin" },
-    { value: "Admin", text: "Admin" },
-  ];
+
   // Membuat listData tanpa menampilkan id
-  const listData = dataUser.map((data) => [
+  const listData = dataCabang.map((data) => [
     data,
     data,
     data,
     data,
     data, // Tambahkan objek lengkap di sini
   ]);
-
-  const optionAkses = [
-    {
-      value: true,
-      text: "Boleh Akses",
-    },
-    {
-      value: false,
-      text: "Tidak Boleh Akses",
-    },
+  const optionCabang = [
+    { value: "", text: "1" },
+    { value: "2", text: "2" },
+    { value: "3", text: "3" },
+    { value: "4", text: "4" },
+    { value: "5", text: "5" },
+    { value: "6", text: "6" },
+    { value: "7", text: "7" },
+    { value: "8", text: "8" },
+    { value: "9", text: "9" },
+    { value: "10", text: "10" },
+    { value: "11", text: "11" },
+    { value: "12", text: "12" },
   ];
-  console.log(dataDetail, "Detail data");
   return (
     <div ref={targetRef}>
       {isLoad ? (
@@ -460,9 +387,7 @@ function MasterUser() {
               data-aos-delay="50"
               className="w-full flex justify-center items-center bg-gradient-to-r from-[#1d4ed8] to-[#a2bbff] p-2 rounded-md"
             >
-              <h3 className="text-white text-base font-normal">
-                List Pengguna
-              </h3>
+              <h3 className="text-white text-base font-normal">List Cabang</h3>
             </div>
             <div className="w-full flex justify-start gap-10 items-center mt-10 h-full">
               <div
@@ -472,17 +397,40 @@ function MasterUser() {
               >
                 <div className="cookieDescription">
                   <h3 className="text-xl font-medium">
-                    {dataUser.length} Pengguna
+                    {dataCabang.length} Cabang
                   </h3>
                 </div>
                 <h3 className="text-xs font-normal text-white w-full">
-                  Total Pengguna
+                  Total Cabang
+                </h3>
+                <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full shadow-lg">
+                  <FaLuggageCart className="text-blue-700 text-[2rem]" />
+                </div>
+              </div>
+              <div
+                data-aos="fade-up"
+                data-aos-delay="250"
+                className="cookieCard w-[40%]"
+              >
+                <div className="cookieDescription">
+                  <h3 className="text-xl font-medium">
+                    {" "}
+                    Cabang{" "}
+                    {getObjectString(
+                      dataCabang,
+                      sessionStorage.getItem("cabang")
+                    )}
+                  </h3>
+                </div>
+                <h3 className="text-xs font-normal text-white w-full">
+                  Cabang Terpilih
                 </h3>
                 <div className="z-[9999] absolute right-[5%] p-4 flex justify-center items-center bg-white rounded-full shadow-lg">
                   <FaLuggageCart className="text-blue-700 text-[2rem]" />
                 </div>
               </div>
             </div>
+
             <div
               data-aos="fade-up"
               data-aos-delay="350"
@@ -498,11 +446,7 @@ function MasterUser() {
                     setIsEdit(false);
                     setIsAdd(true);
                     setNama("");
-                    setEmail("");
-                    setPassword("");
-                    setDeskripsi("");
-                    setPeran({});
-                    setCabang({});
+                    setAlamat("");
                   } else {
                     setIsOpen(!isOpen);
                     setIsEdit(false);
@@ -518,23 +462,7 @@ function MasterUser() {
                 <p className="translate-x-2 text-xs text-white">Tambah Data</p>
               </button>
             </div>
-            <div
-              className={`w-full ${
-                !isDetail ? "h-0 p-0" : "h-auto p-6 mt-3"
-              } duration-500 flex-col justify-start items-start rounded-md bg-white shadow-md`}
-            >
-              <div
-                className={`w-full ${
-                  !isDetail ? "hidden" : "flex flex-col"
-                } justify-start items-start gap-4`}
-              >
-                <h5 className="text-base font-medium">Nama Barang</h5>
-                <p className="text-xs font-normal">{dataDetail.nameCategory}</p>
-                <p className="text-xs font-normal">{dataDetail.description}</p>
-                <h5 className="text-base font-medium">Jumlah Barang</h5>
-                <p className="text-xs font-normal">{dataDetail.jumlahBarang}</p>
-              </div>
-            </div>
+
             <div
               className={`w-full ${
                 !isOpen ? "h-0 p-0" : "h-[16rem] p-2 mt-3"
@@ -555,103 +483,31 @@ function MasterUser() {
                   />
                 </div>
                 <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                  <h4 className="font-medium text-xs">Email</h4>
+                  <h4 className="font-medium text-xs">Alamat</h4>
                   <input
                     type="text"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={alamat}
+                    onChange={(e) => setAlamat(e.target.value)}
                     className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
                   />
                 </div>
-                {!isEdit ? (
-                  <>
-                    <div className="w-[33%] text-xs flex flex-col justify-start items-start p-2 gap-4">
-                      <h4 className="font-medium text-xs">Password</h4>
-                      <input
-                        type="text"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full flex p-2 font-normal border-blue-500 border rounded-lg justify-start items-center h-[2rem]"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                      <h4 className="font-medium text-xs">Boleh Akses ?</h4>
-                      <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                        <DropdownSearch
-                          change={(data) => {
-                            setAkses(data);
-                            setRefresh(true);
-                          }}
-                          options={optionAkses}
-                          value={akses}
-                          refresh={refresh}
-                          name={"Akses Sistem"}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div
-                className={`w-full ${
-                  !isOpen ? "hidden" : "flex"
-                } justify-start items-center gap-4`}
-              >
                 <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                  <h4 className="font-medium text-xs">Peran</h4>
-                  <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                    <DropdownSearch
-                      change={(data) => {
-                        setPeran(data);
-                        setRefresh(true);
-                      }}
-                      options={optionPeran}
-                      value={peran}
-                      refresh={refresh}
-                      name={"Peran User"}
-                    />
-                  </div>
-                </div>
-                <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                  <h4 className="font-medium text-xs">Cabang</h4>
+                  <h4 className="font-medium text-xs">Cabang Ke</h4>
                   <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
                     <DropdownSearch
                       change={(data) => {
                         setCabang(data);
                         setRefresh(true);
                       }}
-                      options={dataBranch}
+                      options={optionCabang}
                       refresh={refresh}
                       value={cabang}
                       name={"Cabang"}
                     />
                   </div>
                 </div>
-
-                {!isEdit && (
-                  <>
-                    <div className="w-[33%] text-xs  flex flex-col justify-start items-start p-2  gap-4 ">
-                      <h4 className="font-medium text-xs">Boleh Akses ?</h4>
-                      <div className="w-full flex p-2 bg-white font-normal border-blue-500 border rounded-lg justify-start text-xs items-center h-[2rem]">
-                        <DropdownSearch
-                          change={(data) => {
-                            setAkses(data);
-                            setRefresh(true);
-                          }}
-                          options={optionAkses}
-                          value={akses}
-                          refresh={refresh}
-                          name={"Akses Sistem"}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
+
               <div
                 className={`w-full ${
                   !isOpen ? "hidden" : "flex"
@@ -726,4 +582,4 @@ function MasterUser() {
   );
 }
 
-export default MasterUser;
+export default MasterCabang;

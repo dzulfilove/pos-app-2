@@ -46,6 +46,7 @@ import OtherIncomeReport from "./pages/report/mainOtherIncome";
 import TodayEmoney from "./pages/report/mainTodayEmoney";
 import { FaUsers } from "react-icons/fa6";
 import MasterUser from "./pages/masterData/masterDataUser/masterUser";
+import MasterCabang from "./pages/masterData/masterDataCabang/masterCabang";
 const App = () => {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn");
   const peran = sessionStorage.getItem("peran");
@@ -76,8 +77,14 @@ const App = () => {
       main: false,
     },
     {
-      name: "Data User",
+      name: "User",
       link: "data-user",
+      icon: FaUsers,
+      main: false,
+    },
+    {
+      name: "Cabang",
+      link: "data-branch",
       icon: FaUsers,
       main: false,
     },
@@ -165,6 +172,17 @@ const App = () => {
                             }`}
                           >
                             APIN CELL
+                          </h5>
+                          <h5
+                            style={{
+                              transitionDelay: `${4}00ms`,
+                            }}
+                            className={`text-base font-semibold text-blue-100 text-center whitespace-pre duration-500 ${
+                              !open &&
+                              "opacity-0 translate-x-28 overflow-hidden"
+                            }`}
+                          >
+                            {sessionStorage.getItem("branchName")}
                           </h5>
                         </>
                       )}
@@ -345,6 +363,7 @@ const App = () => {
                         <Route path="/history" element={<MainHistory />} />
                         <Route path="/history-cash" element={<HistoryCash />} />
                         <Route path="/history-stok" element={<HistoryStok />} />
+                        <Route path="/data-branch" element={<MasterCabang />} />
                         <Route
                           path="/transaction-other"
                           element={<OtherIncomeReport />}

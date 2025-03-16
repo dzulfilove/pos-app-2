@@ -32,6 +32,21 @@ class Auth extends Component {
     };
   }
 
+  async checkBranch(value) {
+    try {
+      const q = query(collection(db, "branch"), where("value", "==", value)); // Ganti 'property' sesuai field yang ada di Firestore
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      return data[0];
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+      return [];
+    }
+  }
   handleEmailChange = (event) => {
     this.setState({ email: event.target.value.toLowerCase() });
   };
@@ -121,12 +136,15 @@ class Auth extends Component {
         });
         return;
       }
+
+      const branch = await this.checkBranch(userData.cabang);
       console.log(userData.nama);
       sessionStorage.setItem("isLoggedIn", true);
       sessionStorage.setItem("userEmail", email);
       sessionStorage.setItem("nama", userData.nama);
       sessionStorage.setItem("peran", userData.peran);
       sessionStorage.setItem("cabang", userData.cabang);
+      sessionStorage.setItem("branchName", branch.branchName);
 
       Swal.fire({
         icon: "success",
